@@ -65,6 +65,75 @@
         </nav>
     </div>
 
+
+    <section class="hist-panel" aria-label="Buscar facturación">
+        <h3>Buscar ODT o requisición</h3>
+        <form method="get" action="{% url 'historial_facturacion' %}"
+              style="display:flex;flex-wrap:wrap;gap:12px;align-items:end;">
+            {% if periodo_seleccionado %}
+              <input type="hidden" name="periodo" value="{{ periodo_seleccionado.pk|stringformat:'d' }}">
+            {% endif %}
+            {% if facturacion_seleccionada %}
+              <input type="hidden" name="contratista" value="{{ facturacion_seleccionada.pk|stringformat:'d' }}">
+            {% endif %}
+            <div class="field">
+                <label for="buscarODT">Número de ODT</label>
+                <input id="buscarODT" type="text" inputmode="numeric" name="buscar_odt"
+                       value="{{ buscar_odt }}" placeholder="Ej.: 77527" maxlength="30">
+            </div>
+            <div class="field">
+                <label for="buscarRequisicion">Número de requisición</label>
+                <input id="buscarRequisicion" type="text" name="buscar_requisicion"
+                       value="{{ buscar_requisicion }}" placeholder="Número completo o parte" maxlength="100">
+            </div>
+            <button type="submit" class="btn">Buscar</button>
+            <a class="btn alt" href="{% url 'historial_facturacion' %}{% if periodo_seleccionado %}?periodo={{ periodo_seleccionado.pk|stringformat:'d' }}{% if facturacion_seleccionada %}&amp;contratista={{ facturacion_seleccionada.pk|stringformat:'d' }}{% endif %}{% endif %}">Limpiar búsqueda</a>
+            {% if periodo_seleccionado %}
+              <a class="hist-link" href="{% url 'historial_facturacion' %}?buscar_odt={{ buscar_odt|urlencode }}&amp;buscar_requisicion={{ buscar_requisicion|urlencode }}">Buscar en todos los períodos</a>
+            {% endif %}
+        </form>
+        <p class="hist-sub">
+            {% if periodo_seleccionado %}Busca dentro del período seleccionado.{% else %}Busca en todos los períodos facturados.{% endif %}
+            Puedes combinar ambos campos.
+        </p>
+        {% if error_busqueda %}<p role="alert">{{ error_busqueda }}</p>{% endif %}
+    </section>
+
+    {% if busqueda_activa %}
+    <section class="hist-panel">
+        <div class="hist-heading">
+            <h3>Resultados de búsqueda</h3>
+            <span class="hist-pill">{{ resultados_busqueda.paginator.count }} ODT</span>
+        </div>
+        <div class="hist-table-wrap">
+            <table class="hist-table">
+                <thead><tr><th>ODT</th><th>Requisición</th><th>Contratista</th><th>Período</th><th>Monto CLP</th><th>Acción</th></tr></thead>
+                <tbody>
+                {% for item in resultados_busqueda %}
+                  <tr>
+                    <td>{{ item.odt.numero|stringformat:'d' }}</td>
+                    <td>{{ item.facturacion.numero_requisicion|default:"Pendiente de requisición" }}</td>
+                    <td>{{ item.facturacion.contratista }}</td>
+                    <td>{{ item.facturacion.periodo.fecha_desde|date:"d/m/Y" }} al {{ item.facturacion.periodo.fecha_hasta|date:"d/m/Y" }}</td>
+                    <td>${{ item.monto_facturado|clp }}</td>
+                    <td><a class="hist-link" href="{% url 'detalle_facturacion' item.facturacion_id %}">Ver ODT de la facturación</a></td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="6" class="hist-empty">No se encontraron ODT facturadas que coincidan con la búsqueda.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if resultados_busqueda.has_other_pages %}
+          <div class="pagination">
+            {% if resultados_busqueda.has_previous %}<a href="?{{ query_busqueda }}&amp;page_busqueda={{ resultados_busqueda.previous_page_number }}">Anterior</a>{% endif %}
+            <span>Página {{ resultados_busqueda.number }} de {{ resultados_busqueda.paginator.num_pages }}</span>
+            {% if resultados_busqueda.has_next %}<a href="?{{ query_busqueda }}&amp;page_busqueda={{ resultados_busqueda.next_page_number }}">Siguiente</a>{% endif %}
+          </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
     <!-- ============================================
          PERÍODOS REGISTRADOS
          ============================================ -->
