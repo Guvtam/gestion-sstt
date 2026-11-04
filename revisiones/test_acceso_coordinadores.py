@@ -102,6 +102,18 @@ class AccesoCoordinadoresTests(TestCase):
     def test_plantilla_compila(self):
         engines["django"].get_template("revisiones/bandeja.html")
 
+
+    def test_enlace_odt_exacto_respeta_alcance_del_usuario(self):
+        for numero, expected in (("1", {1}), ("2", set()), ("3", set()), ("invalido", set())):
+            req = self.request(data={"numero_odt": numero, "estado": "",
+                                     "fecha_desde": "", "fecha_hasta": ""})
+            with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=self.info), \
+                 patch("revisiones.views.identificar_coordinador_odt", side_effect=self.info), \
+                 patch("revisiones.views.render", side_effect=lambda r, t, c: c):
+                context = views.bandeja(req)
+            self.assertEqual({o.numero for o in context["registros"]}, expected)
+
+
 class EstadoModificacionTests(TestCase):
     def setUp(self):
         from decimal import Decimal

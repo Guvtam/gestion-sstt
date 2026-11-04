@@ -427,6 +427,14 @@ def bandeja(request):
     # FILTRO POR COORDINADOR SOFTGUARD
     # ==================================================
 
+    # Enlace desde el historial: coincidencia exacta sin ampliar el alcance del usuario.
+    if "numero_odt" in request.GET:
+        numero_exacto = request.GET.get("numero_odt", "").strip()
+        if numero_exacto.isascii() and numero_exacto.isdigit() and len(numero_exacto) <= 10:
+            registros = registros.filter(numero=int(numero_exacto))
+        else:
+            registros = registros.none()
+
     if es_coordinador:
         filtros["coordinador"] = coordinador_sesion["usuario"]
         registros = limitar_odts_coordinador(request, registros)

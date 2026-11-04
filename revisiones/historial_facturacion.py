@@ -161,6 +161,7 @@ def historial_facturacion(request):
     buscar_requisicion = request.GET.get("buscar_requisicion", "").strip()
     busqueda_activa = bool(buscar_odt or buscar_requisicion)
     error_busqueda = ""
+    numero_odt_buscada = None
     resultados_busqueda = None
     parametros_busqueda = request.GET.copy()
     parametros_busqueda.pop("page_busqueda", None)
@@ -174,7 +175,8 @@ def historial_facturacion(request):
                 error_busqueda = "Ingresa un número de ODT válido."
                 resultados = resultados.none()
             else:
-                resultados = resultados.filter(odt__numero=int(numero_texto))
+                numero_odt_buscada = int(numero_texto)
+                resultados = resultados.filter(odt__numero=numero_odt_buscada)
         if buscar_requisicion:
             resultados = resultados.filter(
                 facturacion__numero_requisicion__icontains=buscar_requisicion)
@@ -318,6 +320,7 @@ def historial_facturacion(request):
         {
             "periodos": periodos,
             "buscar_odt": buscar_odt,
+            "numero_odt_buscada": numero_odt_buscada,
             "buscar_requisicion": buscar_requisicion,
             "busqueda_activa": busqueda_activa,
             "error_busqueda": error_busqueda,

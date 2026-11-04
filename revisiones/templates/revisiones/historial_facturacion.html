@@ -107,18 +107,29 @@
         </div>
         <div class="hist-table-wrap">
             <table class="hist-table">
-                <thead><tr><th>Cantidad total de ODT</th><th>Requisición</th><th>Contratista</th><th>Período</th><th>Acción</th></tr></thead>
+                <thead><tr>{% if numero_odt_buscada %}<th>ODT encontrada</th>{% endif %}<th>Cantidad total de ODT</th><th>Requisición</th><th>Contratista</th><th>Período</th><th>Acción</th></tr></thead>
                 <tbody>
                 {% for item in resultados_busqueda %}
                   <tr>
+                    {% if numero_odt_buscada %}
+                      <td><a class="hist-link" href="{% url 'bandeja' %}?numero_odt={{ numero_odt_buscada|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ numero_odt_buscada|stringformat:'d' }}</a></td>
+                    {% endif %}
                     <td>{{ item.cantidad_odt }}</td>
                     <td>{{ item.numero_requisicion|default:"Pendiente de requisición" }}</td>
                     <td>{{ item.contratista }}</td>
                     <td>{{ item.periodo.fecha_desde|date:"d/m/Y" }} al {{ item.periodo.fecha_hasta|date:"d/m/Y" }}</td>
-                    <td><a class="hist-link" href="{% url 'detalle_facturacion' item.pk %}">Ver ODT</a></td>
+                    <td>
+                      {% if numero_odt_buscada %}
+                        <a class="hist-link" href="{% url 'bandeja' %}?numero_odt={{ numero_odt_buscada|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">Ver información y acciones de ODT</a>
+                        <br>
+                        <a class="hist-link" href="{% url 'detalle_facturacion' item.pk %}">Ver todas las ODT de la facturación</a>
+                      {% else %}
+                        <a class="hist-link" href="{% url 'detalle_facturacion' item.pk %}">Ver ODT</a>
+                      {% endif %}
+                    </td>
                   </tr>
                 {% empty %}
-                  <tr><td colspan="5" class="hist-empty">No se encontraron facturaciones que coincidan con la búsqueda.</td></tr>
+                  <tr><td colspan="{% if numero_odt_buscada %}6{% else %}5{% endif %}" class="hist-empty">No se encontraron facturaciones que coincidan con la búsqueda.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>
