@@ -184,8 +184,16 @@ def historial_facturacion(request):
         contratista_busqueda = request.GET.get("contratista", "").strip()
         if contratista_busqueda.isascii() and contratista_busqueda.isdigit():
             resultados = resultados.filter(facturacion_id=int(contratista_busqueda))
+        # La búsqueda identifica facturaciones; el conteo incluye todas sus ODT.
+        facturaciones_encontradas = (
+            FacturacionContratista.objects
+            .filter(pk__in=resultados.values("facturacion_id"))
+            .select_related("periodo")
+            .annotate(cantidad_odt=Count("items"))
+            .order_by("-periodo__fecha_hasta", "contratista", "pk")
+        )
         resultados_busqueda = Paginator(
-            resultados.order_by("-facturacion__periodo__fecha_hasta", "odt__numero"), 50
+            facturaciones_encontradas, 50
         ).get_page(request.GET.get("page_busqueda"))
 
     # ==================================================

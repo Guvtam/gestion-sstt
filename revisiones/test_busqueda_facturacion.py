@@ -28,11 +28,11 @@ class BusquedaFacturacionTests(TestCase):
             return historial_facturacion(request)
 
     def numeros(self, context):
-        return [i.odt.numero for i in context["resultados_busqueda"]]
+        return [item.odt.numero for f in context["resultados_busqueda"] for item in f.items.select_related("odt").order_by("odt__numero")]
 
     def test_odt_exacta_con_formato(self):
-        self.assertEqual(self.numeros(self.buscar(buscar_odt="77.527")), [77527])
-        self.assertEqual(self.numeros(self.buscar(buscar_odt="77 527")), [77527])
+        self.assertEqual(self.numeros(self.buscar(buscar_odt="77.527")), [77527, 77528])
+        self.assertEqual(self.numeros(self.buscar(buscar_odt="77 527")), [77527, 77528])
 
     def test_requisicion_parcial_sin_distinguir_mayusculas(self):
         self.assertEqual(self.numeros(self.buscar(buscar_requisicion="abc")), [77527, 77528])
@@ -42,7 +42,7 @@ class BusquedaFacturacionTests(TestCase):
 
     def test_periodo_y_totales_no_cambian(self):
         context = self.buscar(buscar_odt="77527", periodo=str(self.periodos[0].pk))
-        self.assertEqual(self.numeros(context), [77527])
+        self.assertEqual(self.numeros(context), [77527, 77528])
         self.assertEqual(context["resumen_costos"]["cantidad"], 2)
         self.assertEqual(context["facturaciones"][0].cantidad_odt, 2)
         self.assertEqual(self.numeros(self.buscar(buscar_odt="77527", periodo=str(self.periodos[1].pk))), [])
@@ -66,3 +66,27 @@ class BusquedaFacturacionTests(TestCase):
         self.assertIn('name="buscar_odt"', html)
         self.assertIn('name="buscar_requisicion"', html)
         self.assertIn("REQ-ABC-100", html)
+
+    def test_una_fila_por_facturacion_y_conteo_total_al_buscar_una_odt(self):
+        context = self.buscar(buscar_odt="77527")
+        filas = list(context["resultados_busqueda"])
+        self.assertEqual(len(filas), 1)
+        self.assertEqual(filas[0].cantidad_odt, 2)
+        self.assertEqual(filas[0].numero_requisicion, "REQ-ABC-100")
+
+    def test_requisicion_repetida_no_mezcla_periodos(self):
+        FacturacionContratista.objects.update(numero_requisicion="MISMA")
+        context = self.buscar(buscar_requisicion="MISMA")
+        filas = list(context["resultados_busqueda"])
+        self.assertEqual(len(filas), 2)
+        self.assertEqual(sorted(f.cantidad_odt for f in filas), [1, 2])
+
+    def test_accion_abre_detalle_de_la_facturacion_completa(self):
+        context = self.buscar(buscar_odt="77527")
+        facturacion = context["resultados_busqueda"][0]
+        template = engines["django"].get_template("revisiones/historial_facturacion.html")
+        with patch("django.urls.reverse", side_effect=lambda name, args=None, kwargs=None, **rest: (
+                "/detalle/" + str(args[0]) + "/" if name == "detalle_facturacion" else "/test/")):
+            html = template.render(context)
+        self.assertIn('href="/detalle/' + str(facturacion.pk) + '/">Ver ODT</a>', html)
+        self.assertIn("Cantidad total de ODT", html)
