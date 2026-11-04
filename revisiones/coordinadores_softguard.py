@@ -9,7 +9,7 @@ COORDINADORES_SOFTGUARD = {
 }
 
 
-def identificar_coordinador_odt(numero):
+def identificar_coordinador_softguard(numero):
     """Busca acciones de coordinadores autorizados en TODO el historial.
 
     Prioriza la última acción registrada por un coordinador. No presupone
@@ -80,3 +80,25 @@ def identificar_coordinador_odt(numero):
         "fecha_ultima_accion": ultimo["fecha"],
     })
     return resultado
+
+
+def puede_asignar_coordinador(user):
+    return (user.is_authenticated and user.is_active
+            and user.get_username().strip().casefold() in ("admin", "jiturriaga"))
+
+
+def identificar_coordinador_odt(numero):
+    """La asignación local persiste y se utiliza en todas las vistas y filtros."""
+    from .models import AsignacionCoordinadorODT
+    asignacion = AsignacionCoordinadorODT.objects.filter(odt__numero=numero).first()
+    if asignacion is None:
+        return identificar_coordinador_softguard(numero)
+    datos = next((d for d in COORDINADORES_SOFTGUARD.values()
+                  if d["usuario"] == asignacion.usuario_coordinador), None)
+    if datos is None:
+        raise ValueError("Coordinador asignado no reconocido.")
+    return {
+        "nombre": datos["nombre"], "usuario": datos["usuario"],
+        "identificado": True, "asignacion_manual": True,
+        "fecha_ultima_accion": asignacion.asignado_en,
+    }

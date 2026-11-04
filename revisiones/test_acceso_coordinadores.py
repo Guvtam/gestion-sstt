@@ -166,3 +166,82 @@ class EstadoModificacionTests(TestCase):
             self.assertNotIn("Marcar procesada", html)
             self.assertIn(">Procesado</option>", html)
             self.assertEqual('<th hidden>Revisión</th>' in html, coordinador)
+
+
+class AsignacionCoordinadorTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.odt = ODT.objects.create(numero=77)
+        self.admin = User.objects.create_user("admin")
+        self.juan = User.objects.create_user("jiturriaga")
+        self.otro = User.objects.create_superuser("otro", password="test")
+
+    def asignar(self, user, usuario="rsilva"):
+        request = self.factory.post("/", {"numero": "77", "coordinador": usuario})
+        request.user = user
+        return views.asignar_coordinador(request)
+
+    def test_admin_y_juan_autorizados(self):
+        from .models import AsignacionCoordinadorODT
+        for user in (self.admin, self.juan):
+            with patch("revisiones.views.identificar_coordinador_softguard", return_value={"identificado": False}):
+                self.assertEqual(self.asignar(user).status_code, 200)
+            asignacion = AsignacionCoordinadorODT.objects.get(odt=self.odt)
+            self.assertEqual(asignacion.usuario_coordinador, "rsilva")
+            self.assertEqual(asignacion.asignado_por, user)
+            asignacion.delete()
+
+    def test_otros_usuarios_incluso_superusuario_denegados(self):
+        with self.assertRaises(PermissionDenied):
+            self.asignar(self.otro)
+
+    def test_identificada_y_fallo_sql_no_permiten_asignar(self):
+        from .models import AsignacionCoordinadorODT
+        with patch("revisiones.views.identificar_coordinador_softguard", return_value={"identificado": True}):
+            self.assertEqual(self.asignar(self.admin).status_code, 409)
+        with patch("revisiones.views.identificar_coordinador_softguard", side_effect=RuntimeError):
+            self.assertEqual(self.asignar(self.admin).status_code, 503)
+        self.assertFalse(AsignacionCoordinadorODT.objects.exists())
+
+    def test_asignacion_persistente_filtra_por_usuario_y_no_se_reasigna(self):
+        from .coordinadores_softguard import identificar_coordinador_odt
+        from .acceso_coordinadores import limitar_odts_coordinador
+        with patch("revisiones.views.identificar_coordinador_softguard", return_value={"identificado": False}):
+            self.assertEqual(self.asignar(self.juan).status_code, 200)
+            self.assertEqual(self.asignar(self.admin, "jtapia").status_code, 409)
+        self.assertEqual(identificar_coordinador_odt(77)["usuario"], "rsilva")
+        for usuario, expected in (("rsilva", 1), ("jtapia", 0)):
+            user = User.objects.create_user(usuario)
+            req = self.factory.get("/")
+            req.user = user
+            self.assertEqual(limitar_odts_coordinador(req, ODT.objects.all()).count(), expected)
+
+    def test_coordinador_invalido(self):
+        self.assertEqual(self.asignar(self.admin, "inventado").status_code, 400)
+
+    def test_selector_solo_procesado_como_opcion_manual(self):
+        from html.parser import HTMLParser
+        class Opciones(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.en_selector = False
+                self.opciones = []
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == "select":
+                    self.en_selector = "modification-select" in attrs.get("class", "")
+                if tag == "option" and self.en_selector and "hidden" not in attrs:
+                    self.opciones.append(attrs["value"])
+            def handle_endtag(self, tag):
+                if tag == "select":
+                    self.en_selector = False
+        template = engines["django"].get_template("revisiones/bandeja.html")
+        for estado in ("", "PENDIENTE", "EN_PROCESO", "ACTUALIZADA"):
+            self.odt.estado_modificacion = estado
+            self.odt.puede_procesar_modificacion = estado == "PENDIENTE"
+            with patch("django.urls.reverse", return_value="/test/"):
+                html = template.render({"registros": [self.odt], "filtros": {},
+                                        "es_coordinador": True, "request": SimpleNamespace(user=self.juan)})
+            parser = Opciones()
+            parser.feed(html)
+            self.assertEqual(parser.opciones, ["EN_PROCESO"])
