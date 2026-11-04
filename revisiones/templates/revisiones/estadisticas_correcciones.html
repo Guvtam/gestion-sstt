@@ -54,6 +54,8 @@
         </form>
     </section>
 
+    <a class="stats-btn" href="#detalle-odt-modificadas">Ver las ODT modificadas</a>
+
     <section class="stats-kpis" aria-label="Indicadores generales">
         <article class="stats-kpi"><span>ODT modificadas</span><strong>{{ total.cantidad }}</strong><small>ODT únicas</small></article>
         <article class="stats-kpi"><span>Correcciones de monto</span><strong>{{ total.monto }}</strong><small>Incluye modificaciones mixtas</small></article>
@@ -145,7 +147,7 @@
                 </tr></thead>
                 <tbody>
                     {% for f in filas %}
-                    <tr><td><strong>{{ f.nombre }}</strong></td><td class="num">{{ f.cantidad }}</td><td class="num">{{ f.solo_monto }}</td><td class="num">{{ f.solo_servicio }}</td><td class="num">{{ f.ambos }}</td><td class="num">{{ f.pendiente }}</td><td class="num">{{ f.en_proceso }}</td><td class="num">{{ f.actualizada }}</td><td class="num">$ {{ f.original|floatformat:0|intcomma }}</td><td class="num">$ {{ f.corregido|floatformat:0|intcomma }}</td><td class="num">$ {{ f.diferencia|floatformat:0|intcomma }}</td></tr>
+                    <tr><td><a href="?coordinador={{ f.usuario|urlencode }}&amp;tipo={{ tipo_filtro|urlencode }}&amp;estado={{ estado_filtro|urlencode }}#detalle-odt-modificadas"><strong>{{ f.nombre }}</strong></a></td><td class="num">{{ f.cantidad }}</td><td class="num">{{ f.solo_monto }}</td><td class="num">{{ f.solo_servicio }}</td><td class="num">{{ f.ambos }}</td><td class="num">{{ f.pendiente }}</td><td class="num">{{ f.en_proceso }}</td><td class="num">{{ f.actualizada }}</td><td class="num">$ {{ f.original|floatformat:0|intcomma }}</td><td class="num">$ {{ f.corregido|floatformat:0|intcomma }}</td><td class="num">$ {{ f.diferencia|floatformat:0|intcomma }}</td></tr>
                     {% empty %}
                     <tr><td colspan="11" class="stats-empty">Sin registros para los filtros seleccionados.</td></tr>
                     {% endfor %}
@@ -153,6 +155,50 @@
             </table>
         </div>
         <p class="stats-footnote">Cada ODT se cuenta una vez. Las estadísticas reflejan el seguimiento actual, no el total de eventos históricos.</p>
+    </section>
+
+    <section class="stats-panel stats-summary" id="detalle-odt-modificadas">
+        <div class="stats-section-heading">
+            <div>
+                <h2>Detalle de ODT modificadas</h2>
+                <p>Las mismas ODT de los indicadores, según coordinador, tipo y estado seleccionados.</p>
+            </div>
+            <span class="stats-count">{{ pagina_detalle.paginator.count }} ODT</span>
+        </div>
+        <div class="stats-table-wrap">
+            <table>
+                <thead><tr>
+                    <th>ODT</th><th>Coordinador</th><th>Contratista / técnico</th><th>Cuenta</th>
+                    <th>Modificación</th><th>Estado</th><th>Servicio SoftGuard</th><th>Servicio corregido</th>
+                    <th class="num">Monto SoftGuard</th><th class="num">Monto corregido</th><th class="num">Diferencia</th><th>Acción</th>
+                </tr></thead>
+                <tbody>
+                {% for odt in pagina_detalle %}
+                    <tr>
+                        <td>{{ odt.numero|stringformat:'d' }}</td><td>{{ odt.coordinador }}</td>
+                        <td>{{ odt.contratista|default:"Sin técnico" }}</td><td>{{ odt.cuenta|default:"Sin cuenta" }}</td>
+                        <td>{{ odt.tipo }}</td><td>{{ odt.estado }}</td>
+                        <td>{{ odt.servicio_softguard|default:"Sin servicio" }}</td>
+                        <td>{{ odt.servicio_corregido|default:"Sin servicio" }}</td>
+                        <td class="num">$ {{ odt.monto_softguard|floatformat:0|intcomma }}</td>
+                        <td class="num">$ {{ odt.monto_corregido|floatformat:0|intcomma }}</td>
+                        <td class="num">$ {{ odt.diferencia|floatformat:0|intcomma }}</td>
+                        <td><a class="stats-btn" href="{% url 'bandeja' %}?numero_odt={{ odt.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">Ver ODT</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="12" class="stats-empty">No hay ODT modificadas para los filtros seleccionados.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="stats-footnote">SoftGuard corresponde a la última sincronización guardada. El valor corregido es el objetivo de la corrección; al actualizarse pueden coincidir. Ver ODT abre la bandeja con sus acciones e historial según tus permisos.</p>
+        {% if pagina_detalle.has_other_pages %}
+        <nav aria-label="Páginas de ODT modificadas" class="stats-filter-actions">
+            {% if pagina_detalle.has_previous %}<a class="stats-btn" href="?{{ query_detalle }}&amp;page={{ pagina_detalle.previous_page_number }}#detalle-odt-modificadas">Anterior</a>{% endif %}
+            <span>Página {{ pagina_detalle.number }} de {{ pagina_detalle.paginator.num_pages }}</span>
+            {% if pagina_detalle.has_next %}<a class="stats-btn" href="?{{ query_detalle }}&amp;page={{ pagina_detalle.next_page_number }}#detalle-odt-modificadas">Siguiente</a>{% endif %}
+        </nav>
+        {% endif %}
     </section>
 </main>
 </body>

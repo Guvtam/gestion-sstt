@@ -2,6 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
+from django.core.paginator import Paginator
 from .models import CorreccionODT
 from .coordinadores_softguard import identificar_coordinador_odt
 
@@ -32,6 +33,7 @@ def estadisticas_correcciones(request):
     total = nuevo()
     grupos = defaultdict(nuevo)
     nombres = {}
+    detalle = []
     for seguimiento in qs.iterator(chunk_size=200):
         odt = seguimiento.odt
         try:
@@ -45,6 +47,22 @@ def estadisticas_correcciones(request):
             continue
         monto_original = odt.valor_pago_tecnico if odt.valor_pago_tecnico is not None else Decimal('0')
         monto_corregido = seguimiento.monto_objetivo if seguimiento.corrige_monto else monto_original
+        detalle.append({
+            "numero": odt.numero,
+            "coordinador": nombre,
+            "contratista": odt.contratista or odt.tecnico,
+            "cuenta": odt.cuenta_completa,
+            "tipo": ("Monto y servicio" if seguimiento.corrige_monto and seguimiento.corrige_servicio
+                     else "Solo monto" if seguimiento.corrige_monto
+                     else "Solo servicio" if seguimiento.corrige_servicio else "Sin cambios pendientes"),
+            "estado": {"PENDIENTE": "Pendiente", "EN_PROCESO": "Procesado",
+                       "ACTUALIZADA": "Actualizado"}.get(seguimiento.estado, seguimiento.estado),
+            "servicio_softguard": odt.servicio,
+            "servicio_corregido": seguimiento.servicio_objetivo if seguimiento.corrige_servicio else odt.servicio,
+            "monto_softguard": monto_original,
+            "monto_corregido": monto_corregido,
+            "diferencia": monto_corregido - monto_original,
+        })
         # Si la ODT solo corrige servicio, no se cuenta como corrección de monto.
         for destino in (total, grupos[usuario]):
             destino['cantidad'] += 1
@@ -66,8 +84,13 @@ def estadisticas_correcciones(request):
     filas = [{'usuario': k, 'nombre': nombres.get(k, k), **v} for k, v in grupos.items()]
     filas.sort(key=lambda x: (-x['cantidad'], x['nombre']))
     opciones = sorted([{'usuario': k, 'nombre': v} for k, v in nombres.items()], key=lambda x: x['nombre'])
+    pagina_detalle = Paginator(detalle, 50).get_page(request.GET.get("page"))
+    parametros = request.GET.copy()
+    parametros.pop("page", None)
     return render(request, 'revisiones/estadisticas_correcciones.html', {
         'total': total, 'filas': filas, 'coordinadores': opciones,
         'coordinador_filtro': coordinador_filtro, 'estado_filtro': estado_filtro,
         'tipo_filtro': tipo_filtro,
+        'pagina_detalle': pagina_detalle,
+        'query_detalle': parametros.urlencode(),
     })
