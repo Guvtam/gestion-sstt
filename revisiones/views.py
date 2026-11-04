@@ -15,8 +15,9 @@ from django.db.models import (
     Q, Sum, Count, DecimalField, OuterRef, Subquery
 )
 from django.db.models.functions import Coalesce
+from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
-from .acceso_coordinadores import es_coordinador_sstt, datos_coordinador, limitar_odts_coordinador
+from .acceso_coordinadores import es_coordinador_sstt, datos_coordinador, limitar_odts_coordinador, coordinador_visible
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -253,7 +254,7 @@ def bandeja(request):
 
     registros = (
         ODT.objects
-        .select_related("revision")
+        .select_related("revision", "seguimiento_correccion")
 
         # Duración del SLA.
         .annotate(
@@ -781,6 +782,15 @@ def bandeja(request):
     # ==================================================
 
     for odt in pagina.object_list:
+        seguimiento = getattr(odt, "seguimiento_correccion", None)
+        odt.estado_modificacion = (
+            seguimiento.estado if seguimiento else
+            ("PENDIENTE" if odt.servicio_editado is not None or odt.valor_pago_editado is not None else "")
+        )
+        odt.puede_procesar_modificacion = (
+            odt.estado_modificacion == "PENDIENTE"
+            and (es_coordinador or request.user.has_perm("revisiones.editar_odt_sstt"))
+        )
         try:
             info = identificar_coordinador_odt(odt.numero)
 
@@ -2110,9 +2120,11 @@ def odt_modificadas(request):
 
 
 @login_required
-@permission_required("revisiones.editar_odt_sstt", raise_exception=True)
 @require_POST
 def cambiar_estado_correccion(request):
+    coordinador = es_coordinador_sstt(request.user)
+    if not coordinador and not request.user.has_perm("revisiones.editar_odt_sstt"):
+        raise PermissionDenied
     from .correcciones import coinciden
     try:
         numero_recibido = str(request.POST.get("numero", "")).strip()
@@ -2133,14 +2145,25 @@ def cambiar_estado_correccion(request):
             {"error": "ODT inválida"},
             status=400
         )
+    if coordinador:
+        try:
+            permitido = coordinador_visible(request, numero)
+        except Exception:
+            return JsonResponse({"error": "No se pudo verificar el coordinador en SQL."}, status=503)
+        if not permitido:
+            raise PermissionDenied
     estado = request.POST.get("estado", "").strip()
+    if coordinador and estado != "EN_PROCESO":
+        return JsonResponse({"error": "Solo puedes marcar la modificación como Procesada."}, status=400)
     if estado not in ("PENDIENTE", "EN_PROCESO"):
         return JsonResponse({"error": "Estado manual no permitido"}, status=400)
     with transaction.atomic():
         odt = get_object_or_404(ODT.objects.select_for_update(), numero=numero)
         seguimiento = CorreccionODT.objects.select_for_update().filter(odt=odt).first()
         if not seguimiento:
-            return JsonResponse({"error": "Falta inicializar seguimiento de esta ODT"}, status=409)
+            if odt.servicio_editado is None and odt.valor_pago_editado is None:
+                return JsonResponse({"error": "La ODT no tiene modificaciones."}, status=409)
+            seguimiento = registrar_cambio_manual(odt, request.user)
         if seguimiento.estado == "ACTUALIZADA" or coinciden(odt, seguimiento):
             return JsonResponse({"error": "La ODT ya coincide con SoftGuard. Actualiza la pantalla."}, status=409)
         if seguimiento.estado != estado:

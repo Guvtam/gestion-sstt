@@ -54,7 +54,7 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
         if nombre in ("bandeja", "contratistas_disponibles_ajax"):
             return None
         # Operaciones internas de la bandeja, no páginas adicionales.
-        if nombre in ("historial_odt", "actualizar_informe"):
+        if nombre in ("historial_odt", "actualizar_informe", "cambiar_estado_correccion"):
             try:
                 numero = int(view_kwargs.get("numero") or request.POST.get("numero", ""))
             except (TypeError, ValueError):
