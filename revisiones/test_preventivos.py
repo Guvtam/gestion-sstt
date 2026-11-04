@@ -71,3 +71,44 @@ class PreventivosCuentasTests(TestCase):
         self.assertIn("numero_odt=2", html)
         bandeja = engines["django"].get_template("revisiones/bandeja.html").template.source
         self.assertLess(bandeja.index("Mantenimientos preventivos</a>"), bandeja.index("Análisis por coordinador"))
+
+    def test_proximo_seis_meses_calendario_y_fin_de_mes(self):
+        from datetime import date
+        from .mantenimientos_preventivos import sumar_meses
+        self.assertEqual(sumar_meses(date(2026,8,31),6), date(2027,2,28))
+        self.assertEqual(sumar_meses(date(2023,8,31),6), date(2024,2,29))
+        context = self.consultar(cuenta="FIR-100")
+        self.assertEqual(context["cuenta_seleccionada"]["proximo"], date(2027,4,5))
+        self.assertIsNone(self.consultar(cuenta="FIR-200")["cuenta_seleccionada"]["proximo"])
+
+    def test_rango_fecha_ultimo_y_proximo(self):
+        self.assertEqual(self.consultar(fecha_desde="2026-10-05", fecha_hasta="2026-10-05")["total_cuentas"],1)
+        self.assertEqual(self.consultar(fecha_desde="2026-10-06")["total_cuentas"],0)
+        self.assertEqual(self.consultar(campo_fecha="proximo", fecha_desde="2027-04-05",fecha_hasta="2027-04-05")["total_cuentas"],1)
+
+    def test_calendario_distingue_programado_y_estimado(self):
+        from datetime import date
+        ODT.objects.filter(numero=3).update(fecha_visita=date(2027,4,7))
+        context=self.consultar(mes="2027-04")
+        eventos=[evento for semana in context["semanas"] for dia in semana for evento in dia["eventos"]]
+        self.assertEqual(context["cantidad_programados"],1)
+        self.assertEqual(context["cantidad_estimados"],1)
+        self.assertEqual({e["tipo"] for e in eventos},{"Programado","Estimado"})
+        self.assertEqual(next(e for e in eventos if e["tipo"]=="Programado")["numero"],3)
+
+    def test_finalizados_cancelados_sin_visita_no_se_programan(self):
+        from datetime import date
+        ODT.objects.filter(numero=1).update(fecha_visita=date(2027,4,1))
+        ODT.objects.filter(numero=3).update(estado_softguard="Cancelado",fecha_visita=date(2027,4,7))
+        self.assertEqual(self.consultar(mes="2027-04")["cantidad_programados"],0)
+
+    def test_calendario_respeta_filtros_y_conserva_rango(self):
+        context=self.consultar(q="Sin preventivos", mes="2027-04",fecha_desde="2027-01-01",campo_fecha="proximo")
+        self.assertEqual(context["cantidad_estimados"],0)
+        self.assertIn("campo_fecha=proximo",context["url_mes_siguiente"])
+        self.assertIn("fecha_desde=2027-01-01",context["url_mes_siguiente"])
+
+    def test_fechas_invalidas_se_informan(self):
+        context=self.consultar(fecha_desde="2026-11-01",fecha_hasta="2026-10-01")
+        self.assertTrue(context["errores"])
+        self.assertEqual(context["total_cuentas"],0)

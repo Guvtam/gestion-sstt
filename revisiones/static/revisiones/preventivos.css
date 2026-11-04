@@ -66,3 +66,26 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible { 
  .hist-tarjeta-resumen { padding:13px; }
  .hist-tarjeta-resumen strong { font-size:24px; }
 }
+
+/* Fechas y calendario mensual */
+.preventivos-filtros { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.filtro-acciones { align-items:center; }
+.calendario-cabecera { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:16px; margin-bottom:16px; }
+.calendario-cabecera .hist-sub { margin-top:5px; }
+.calendario-leyenda { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; font-size:12px; }
+.calendario-leyenda span { padding:6px 10px; border-radius:5px; }
+.calendario-scroll { overflow-x:auto; border:1px solid #d7e3f2; border-radius:9px; }
+.calendario-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); min-width:840px; gap:1px; background:#dce6f2; }
+.calendario-semana { background:#eaf2fb; padding:10px; text-align:center; font-weight:700; font-size:12px; }
+.calendario-dia { min-height:118px; background:#fff; padding:9px; min-width:0; }
+.calendario-dia time { display:block; font-weight:600; margin-bottom:7px; }
+.calendario-dia.fuera-mes { background:#f5f7fa; color:#9aa9b9; }
+.calendario-dia.es-hoy { box-shadow:inset 0 0 0 2px #2274bc; }
+.calendario-evento { display:block; margin:5px 0; padding:6px; border-radius:5px; font-size:11px; overflow-wrap:anywhere; }
+.calendario-evento b,.calendario-evento span { display:block; }
+.evento-programado { background:#e0f5ed; color:#116d54; }
+.evento-estimado { background:#eaf0fd; color:#3d5c9e; }
+.estado-vencido { display:block; margin-top:4px; color:#ae6322; font-size:11px; }
+.error-fecha { color:#a32e2e; padding:8px; background:#fff0ee; border-radius:5px; }
+@media(max-width:900px) { .preventivos-filtros { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:560px) { .preventivos-filtros { grid-template-columns:1fr; } }
