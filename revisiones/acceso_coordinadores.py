@@ -15,6 +15,8 @@ def datos_coordinador(user):
 def es_coordinador_sstt(user):
     if not user.is_authenticated or user.is_superuser:
         return False
+    if user.get_username().strip().casefold() in ("admin", "jiturriaga"):
+        return False
     return (datos_coordinador(user) is not None or user.groups.filter(
         name__in=("Coordinador", "Coordinadores SSTT")).exists())
 

@@ -651,6 +651,19 @@
                       {{ r.coordinador_nombre|default:"Sin identificar" }}
                     </span>
                   {% endif %}
+
+                  {% if r.permite_asignar_coordinador %}
+                    <select class="row-select asignar-coordinador"
+                      data-numero="{{ r.numero|stringformat:'d' }}"
+                      data-url="{% url 'asignar_coordinador' %}"
+                      aria-label="Asignar coordinador a ODT {{ r.numero }}">
+                      <option value="">Asignar coordinador…</option>
+                      {% for c in coordinadores_asignables %}
+                        <option value="{{ c.usuario }}">{{ c.nombre }}</option>
+                      {% endfor %}
+                    </select>
+                    <span class="asignacion-error" role="alert"></span>
+                  {% endif %}
                 </td>
 
 
@@ -978,14 +991,15 @@
                     data-saved="{{ r.estado_modificacion|default:'SIN_MODIFICACION' }}"
                     {% if not r.puede_procesar_modificacion %}disabled{% endif %}
                     aria-label="Estado de modificación de ODT {{ r.numero }}">
-                    <option value="SIN_MODIFICACION" disabled
-                      {% if not r.estado_modificacion %}selected{% endif %}>Sin modificación</option>
-                    <option value="PENDIENTE"
-                      {% if r.estado_modificacion == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                    {% if not r.estado_modificacion %}
+                      <option value="SIN_MODIFICACION" selected hidden>Sin modificación</option>
+                    {% elif r.estado_modificacion == 'PENDIENTE' %}
+                      <option value="PENDIENTE" selected hidden>Pendiente</option>
+                    {% elif r.estado_modificacion == 'ACTUALIZADA' %}
+                      <option value="ACTUALIZADA" selected hidden>Actualizado</option>
+                    {% endif %}
                     <option value="EN_PROCESO"
                       {% if r.estado_modificacion == 'EN_PROCESO' %}selected{% endif %}>Procesado</option>
-                    <option value="ACTUALIZADA" disabled
-                      {% if r.estado_modificacion == 'ACTUALIZADA' %}selected{% endif %}>Actualizado</option>
                   </select>
                   <span class="modificacion-error" role="alert"></span>
                 </td>
@@ -1794,6 +1808,37 @@ document.addEventListener("change", async function (event) {
     selector.value = anterior;
     error.textContent = e.message || "No se pudo guardar.";
     selector.disabled = false;
+  }
+});
+</script>
+<script>
+document.addEventListener("change", async function(event) {
+  const selector = event.target.closest(".asignar-coordinador");
+  if (!selector || !selector.value || selector.disabled) return;
+  const nombre = selector.options[selector.selectedIndex].text;
+  if (!confirm("¿Asignar esta ODT a " + nombre + "?")) {
+    selector.value = "";
+    return;
+  }
+  const error = selector.closest("td").querySelector(".asignacion-error");
+  error.textContent = "";
+  selector.disabled = true;
+  try {
+    const response = await fetch(selector.dataset.url, {
+      method: "POST", credentials: "same-origin",
+      headers: {
+        "X-CSRFToken": document.querySelector('[name="csrfmiddlewaretoken"]').value,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({numero: selector.dataset.numero, coordinador: selector.value})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo asignar.");
+    window.location.reload();
+  } catch(e) {
+    error.textContent = e.message || "No se pudo asignar.";
+    selector.disabled = false;
+    selector.value = "";
   }
 });
 </script>

@@ -11,6 +11,7 @@ from .historial_facturacion import eliminar_periodo_facturacion
 
 
 urlpatterns = [
+    path("asignar-coordinador/", views.asignar_coordinador, name="asignar_coordinador"),
     path(
         "exportar-aprobados-pdf/",
         exportar_aprobados_pdf,

@@ -224,3 +224,10 @@ class EventoCorreccionODT(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     class Meta:
         ordering = ["-fecha", "-pk"]
+
+
+class AsignacionCoordinadorODT(models.Model):
+    odt = models.OneToOneField(ODT, on_delete=models.PROTECT, related_name="asignacion_coordinador")
+    usuario_coordinador = models.CharField(max_length=50)
+    asignado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    asignado_en = models.DateTimeField(auto_now_add=True)

@@ -25,7 +25,9 @@ from .models import ODT, Revision, EventoRevision, CatalogoCuenta, CorreccionODT
 from .correcciones import registrar_cambio_manual
 from .cuentas_utils import normalizar_codigo_cuenta
 from .servicios_sql import consultar_historial_odt
-from .coordinadores_softguard import identificar_coordinador_odt
+from .coordinadores_softguard import (identificar_coordinador_odt, puede_asignar_coordinador,
+    identificar_coordinador_softguard, COORDINADORES_SOFTGUARD)
+from .models import AsignacionCoordinadorODT
 
 from django.db.models import (
    
@@ -791,6 +793,7 @@ def bandeja(request):
             odt.estado_modificacion == "PENDIENTE"
             and (es_coordinador or request.user.has_perm("revisiones.editar_odt_sstt"))
         )
+        odt.permite_asignar_coordinador = False
         try:
             info = identificar_coordinador_odt(odt.numero)
 
@@ -799,6 +802,9 @@ def bandeja(request):
             )
             odt.coordinador_identificado = bool(
                 info.get("identificado", False)
+            )
+            odt.permite_asignar_coordinador = (
+                not odt.coordinador_identificado and puede_asignar_coordinador(request.user)
             )
 
         except Exception:
@@ -1005,6 +1011,7 @@ def bandeja(request):
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
             "coordinador_sesion": coordinador_sesion,
+            "coordinadores_asignables": list(COORDINADORES_SOFTGUARD.values()),
             
 
             "kpi_odt_modificadas": kpi_odt_modificadas,
@@ -2176,3 +2183,38 @@ def cambiar_estado_correccion(request):
                 estado_nuevo=estado, usuario=request.user,
                 detalle="Cambio manual del estado de gestión")
     return JsonResponse({"ok": True, "estado": estado})
+
+
+@login_required
+@require_POST
+def asignar_coordinador(request):
+    if not puede_asignar_coordinador(request.user):
+        raise PermissionDenied("Solo admin y jiturriaga pueden asignar coordinadores.")
+    try:
+        numero = int(request.POST.get("numero", ""))
+        if numero <= 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Número de ODT inválido."}, status=400)
+    usuario = request.POST.get("coordinador", "").strip()
+    datos = next((d for d in COORDINADORES_SOFTGUARD.values() if d["usuario"] == usuario), None)
+    if datos is None:
+        return JsonResponse({"error": "Coordinador inválido."}, status=400)
+    with transaction.atomic():
+        odt = get_object_or_404(ODT.objects.select_for_update(), numero=numero)
+        if AsignacionCoordinadorODT.objects.filter(odt=odt).exists():
+            return JsonResponse({"error": "La ODT ya tiene un coordinador asignado."}, status=409)
+        try:
+            info = identificar_coordinador_softguard(numero)
+        except Exception:
+            return JsonResponse({"error": "No se pudo verificar el coordinador en SoftGuard."}, status=503)
+        if info.get("identificado", False):
+            return JsonResponse({"error": "La ODT ya tiene coordinador identificado. Actualiza la pantalla."}, status=409)
+        AsignacionCoordinadorODT.objects.create(
+            odt=odt, usuario_coordinador=usuario, asignado_por=request.user)
+        revision = Revision.objects.filter(odt=odt).first()
+        estado = revision.estado if revision else "POR_REVISAR"
+        EventoRevision.objects.create(
+            odt=odt, estado_anterior=estado, estado_nuevo=estado,
+            usuario=request.user, comentario=f"Coordinador asignado en SSTT: {datos['nombre']}")
+    return JsonResponse({"ok": True, "coordinador": datos["nombre"]})
