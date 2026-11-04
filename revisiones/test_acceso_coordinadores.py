@@ -181,7 +181,7 @@ class EstadoModificacionTests(TestCase):
             self.assertIn("modification-select", html)
             self.assertNotIn("Marcar procesada", html)
             self.assertIn(">Procesado</option>", html)
-            self.assertEqual('<th hidden>Revisión</th>' in html, coordinador)
+            self.assertEqual('<th hidden>Estado pago</th>' in html, coordinador)
 
 
 class AsignacionCoordinadorTests(TestCase):

@@ -79,6 +79,9 @@ def _odts(desde, hasta, contratistas, servicios, datos):
         ))
     )
 
+    if datos.get("contratistas_filtrados") == "1" and not contratistas:
+        return qs.none()
+
     if contratistas:
         qs = qs.filter(
             contratista__in=contratistas
