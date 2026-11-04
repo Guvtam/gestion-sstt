@@ -192,6 +192,7 @@
       <div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
 
         {% if perms.revisiones.ver_bandeja_sstt %}
+          <a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a>
           <a class="btn alt"
             href="{% url 'estadisticas_correcciones' %}">
             Análisis por coordinador
