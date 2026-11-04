@@ -45,7 +45,7 @@ class AccesoCoordinadoresTests(TestCase):
         self.user.groups.add(Group.objects.create(name="Coordinadores SSTT"))
         self.assertTrue(es_coordinador_sstt(self.user))
 
-    def test_bandeja_impone_usuario_y_sin_identificar(self):
+    def test_bandeja_solo_propias_aunque_se_manipule_el_filtro(self):
         for parametro in ("", "jtapia", "SIN_IDENTIFICAR"):
             req = self.request(data={"coordinador": parametro, "estado": "",
                                      "fecha_desde": "", "fecha_hasta": ""})
@@ -53,7 +53,7 @@ class AccesoCoordinadoresTests(TestCase):
                  patch("revisiones.views.identificar_coordinador_odt", side_effect=self.info), \
                  patch("revisiones.views.render", side_effect=lambda r, t, c: c):
                 context = views.bandeja(req)
-            self.assertEqual({o.numero for o in context["registros"]}, {1, 3})
+            self.assertEqual({o.numero for o in context["registros"]}, {1})
             self.assertEqual(context["filtros"]["coordinador"], "rsilva")
             self.assertTrue(context["es_coordinador"])
 
@@ -65,14 +65,18 @@ class AccesoCoordinadoresTests(TestCase):
         with self.assertRaises(PermissionDenied):
             self.middleware(self.request("guardar_fila", "post"))
 
-    def test_historial_e_informe_solo_propias_o_sin_identificar(self):
+    def test_historial_informe_y_correccion_excluyen_sin_identificar(self):
         with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=self.info):
-            for n in (1, 3):
+            for n in (1,):
                 self.assertIsNone(self.middleware(self.request("historial_odt"), {"numero": n}))
             with self.assertRaises(PermissionDenied):
                 self.middleware(self.request("historial_odt"), {"numero": 2})
-            with self.assertRaises(PermissionDenied):
-                self.middleware(self.request("actualizar_informe", "post", {"numero": "2"}))
+            for n in ("2", "3"):
+                with self.assertRaises(PermissionDenied):
+                    self.middleware(self.request("historial_odt"), {"numero": int(n)})
+                for route in ("actualizar_informe", "cambiar_estado_correccion"):
+                    with self.assertRaises(PermissionDenied):
+                        self.middleware(self.request(route, "post", {"numero": n}))
 
     def test_fallo_sql_no_da_acceso(self):
         with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=RuntimeError):
@@ -93,7 +97,7 @@ class AccesoCoordinadoresTests(TestCase):
         with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=self.info):
             response = views.contratistas_disponibles_ajax(self.request("contratistas_disponibles_ajax"))
         import json
-        self.assertEqual(set(json.loads(response.content)["contratistas"]), {"1", "3"})
+        self.assertEqual(set(json.loads(response.content)["contratistas"]), {"1"})
 
     def test_plantilla_compila(self):
         engines["django"].get_template("revisiones/bandeja.html")

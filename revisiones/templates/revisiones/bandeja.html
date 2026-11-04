@@ -394,9 +394,9 @@
 
   {% if es_coordinador %}
   <select name="coordinador" disabled>
-    <option value="{{ coordinador_sesion.usuario }}" selected>{{ coordinador_sesion.nombre }} + Sin identificar</option>
+    <option value="{{ coordinador_sesion.usuario }}" selected>{{ coordinador_sesion.nombre }}</option>
   </select>
-  <small>Se muestran tus ODT y las que no tienen coordinador identificado.</small>
+  <small>Se muestran únicamente las ODT asignadas a tu usuario.</small>
   {% else %}
   <select name="coordinador">
     <option value="">Todos</option>
