@@ -4,17 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Estadísticas de correcciones · SSTT</title>
+    <title>Análisis por coordinador · SSTT</title>
     <link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261103-2">
 </head>
 <body>
 <header class="stats-header">
     <div class="stats-container stats-header-inner">
         <div>
-            <h1>Estadísticas de correcciones</h1>
-            <p>Seguimiento de correcciones de servicio y pago técnico · Sistema SSTT</p>
+            <h1>Análisis por coordinador</h1>
+            <p>Correcciones de servicio y pago técnico agrupadas por coordinador · Sistema SSTT</p>
         </div>
-        <a class="stats-btn stats-btn-header" href="{% url 'odt_modificadas' %}">Volver a ODT modificadas</a>
+        <a class="stats-btn stats-btn-header" href="{% url 'bandeja' %}">Volver a la bandeja</a>
     </div>
 </header>
 <main class="stats-container stats-main">

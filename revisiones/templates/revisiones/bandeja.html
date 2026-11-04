@@ -145,7 +145,6 @@
 
     
 
-{% if not es_coordinador %}
 <!-- INDICADORES OPERATIVOS -->
 <section class="kpis kpis-operativos">
 
@@ -185,7 +184,6 @@
 
 
 
-{% endif %}
     <!-- FILTROS -->
 
     <section class="panel">
@@ -195,8 +193,8 @@
 
         {% if perms.revisiones.ver_bandeja_sstt %}
           <a class="btn alt"
-            href="{% url 'odt_modificadas' %}">
-            ODT a Corregir
+            href="{% url 'estadisticas_correcciones' %}">
+            Análisis por coordinador
           </a>
         {% endif %}
 
