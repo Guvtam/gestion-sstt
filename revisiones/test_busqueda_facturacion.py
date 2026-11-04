@@ -98,7 +98,7 @@ class BusquedaFacturacionTests(TestCase):
         with patch("django.urls.reverse", return_value="/bandeja/"):
             html = template.render(context)
         self.assertIn('numero_odt=77527&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=', html)
-        self.assertIn("Ver información y acciones de ODT", html)
+        self.assertNotIn("Ver información y acciones de ODT", html)
         self.assertIn("Ver todas las ODT de la facturación", html)
 
     def test_busqueda_requisicion_conserva_enlace_grupal(self):

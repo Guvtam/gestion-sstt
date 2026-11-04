@@ -120,8 +120,6 @@
                     <td>{{ item.periodo.fecha_desde|date:"d/m/Y" }} al {{ item.periodo.fecha_hasta|date:"d/m/Y" }}</td>
                     <td>
                       {% if numero_odt_buscada %}
-                        <a class="hist-link" href="{% url 'bandeja' %}?numero_odt={{ numero_odt_buscada|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">Ver información y acciones de ODT</a>
-                        <br>
                         <a class="hist-link" href="{% url 'detalle_facturacion' item.pk %}">Ver todas las ODT de la facturación</a>
                       {% else %}
                         <a class="hist-link" href="{% url 'detalle_facturacion' item.pk %}">Ver ODT</a>
