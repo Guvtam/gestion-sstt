@@ -1,0 +1,74 @@
+{% load static formato_sstt %}
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mantenimientos preventivos por cuenta · SSTT</title>
+<link rel="stylesheet" href="{% static 'revisiones/bandeja.css' %}">
+<link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}">
+</head><body>
+<header class="header-sstt"><div class="header-contenido">
+<div class="header-titulo"><h1>Mantenimientos preventivos por cuenta</h1><p>Último mantenimiento realizado y seguimiento de órdenes preventivas</p></div>
+<a class="btn alt" href="{% url 'bandeja' %}">Volver a la bandeja</a>
+</div></header>
+<main class="hist-main">
+<section class="hist-panel">
+<form method="get" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end">
+<div class="field"><label for="buscarCuenta">Cuenta, nombre o CECO</label><input id="buscarCuenta" name="q" value="{{ q }}" placeholder="Ej.: FIR-C193"></div>
+<div class="field"><label for="situacion">Situación</label><select id="situacion" name="situacion">
+<option value="">Todas</option>
+<option value="CON_PREVENTIVO" {% if situacion == 'CON_PREVENTIVO' %}selected{% endif %}>Con preventivo finalizado</option>
+<option value="SIN_PREVENTIVO" {% if situacion == 'SIN_PREVENTIVO' %}selected{% endif %}>Sin preventivo finalizado</option>
+<option value="PENDIENTES" {% if situacion == 'PENDIENTES' %}selected{% endif %}>Con preventivos pendientes</option>
+</select></div>
+<button class="btn">Buscar</button><a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Limpiar</a>
+</form>
+<p class="hist-sub">Datos de la última sincronización. Solo las ODT finalizadas con fecha de finalización acreditan un preventivo realizado. Se usa el servicio corregido cuando existe.</p>
+</section>
+<section class="hist-panel">
+<div class="hist-resumen-odt">
+<div class="hist-tarjeta-resumen"><small>Cuentas filtradas</small><strong>{{ total_cuentas }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>Con preventivo finalizado</small><strong>{{ con_preventivo }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>Sin preventivo finalizado</small><strong>{{ sin_preventivo }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>Con preventivos pendientes</small><strong>{{ con_pendientes }}</strong></div>
+</div>
+<div class="hist-table-wrap"><table class="hist-table"><thead><tr>
+<th>Cuenta</th><th>Nombre</th><th>Tipo cliente</th><th>CECO</th><th>Último preventivo finalizado</th>
+<th>ODT</th><th>Técnico / contratista</th><th>Días transcurridos</th><th>Preventivos registrados</th><th>Pendientes</th><th>Acción</th>
+</tr></thead><tbody>
+{% for cuenta in pagina %}<tr>
+<td><strong>{{ cuenta.codigo }}</strong></td><td>{{ cuenta.nombre|default:"Sin nombre" }}</td>
+<td>{{ cuenta.tipo_cliente }}</td><td>{{ cuenta.ceco|default:"Sin CECO" }}</td>
+<td>{% if cuenta.ultimo %}{{ cuenta.ultimo.fecha_finalizacion|date:"d/m/Y H:i" }}{% else %}Sin preventivo finalizado{% endif %}</td>
+<td>{% if cuenta.ultimo %}<a href="{% url 'bandeja' %}?numero_odt={{ cuenta.ultimo.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ cuenta.ultimo.numero|stringformat:'d' }}</a>{% else %}—{% endif %}</td>
+<td>{% if cuenta.ultimo %}{{ cuenta.ultimo.tecnico|default:cuenta.ultimo.contratista|default:"Sin técnico" }}{% else %}—{% endif %}</td>
+<td>{{ cuenta.dias|default_if_none:"—" }}</td><td>{{ cuenta.cantidad }}</td><td>{{ cuenta.pendientes }}</td>
+<td><a class="hist-link" href="?q={{ q|urlencode }}&amp;situacion={{ situacion|urlencode }}&amp;page={{ pagina.number }}&amp;cuenta={{ cuenta.codigo|urlencode }}#historial-preventivos">Ver preventivos</a></td>
+</tr>{% empty %}<tr><td colspan="11" class="hist-empty">No hay cuentas para los filtros seleccionados.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if pagina.has_other_pages %}<nav class="pagination">
+{% if pagina.has_previous %}<a href="?{{ querystring }}&amp;page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+{% if pagina.has_next %}<a href="?{{ querystring }}&amp;page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}
+</nav>{% endif %}
+</section>
+{% if cuenta_seleccionada %}
+<section class="hist-panel" id="historial-preventivos">
+<h2>Preventivos de {{ cuenta_seleccionada.codigo }}</h2>
+<p class="hist-sub">{{ cuenta_seleccionada.nombre }} · {{ pagina_detalle.paginator.count }} ODT preventivas registradas</p>
+<div class="hist-table-wrap"><table class="hist-table"><thead><tr>
+<th>ODT</th><th>Servicio</th><th>Estado SoftGuard</th><th>Fecha creación</th><th>Fecha finalización</th><th>Técnico / contratista</th><th>Observaciones</th><th>Acción</th>
+</tr></thead><tbody>
+{% for odt in pagina_detalle %}<tr>
+<td>{{ odt.numero|stringformat:'d' }}</td><td>{{ odt.servicio_efectivo }}</td><td>{{ odt.estado_softguard|default:"Sin estado" }}</td>
+<td>{{ odt.fecha_creacion|date:"d/m/Y H:i"|default:"Sin fecha" }}</td><td>{{ odt.fecha_finalizacion|date:"d/m/Y H:i"|default:"Sin fecha" }}</td>
+<td>{{ odt.tecnico|default:odt.contratista|default:"Sin técnico" }}</td><td>{{ odt.observaciones_insumos|truncatechars:240|default:"Sin observaciones" }}</td>
+<td><a class="hist-link" href="{% url 'bandeja' %}?numero_odt={{ odt.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">Ver ODT</a></td>
+</tr>{% empty %}<tr><td colspan="8" class="hist-empty">Esta cuenta no tiene ODT preventivas registradas.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if pagina_detalle.has_other_pages %}<nav class="pagination">
+{% if pagina_detalle.has_previous %}<a href="?{{ query_detalle }}&amp;page_detalle={{ pagina_detalle.previous_page_number }}#historial-preventivos">Anterior</a>{% endif %}
+<span>Página {{ pagina_detalle.number }} de {{ pagina_detalle.paginator.num_pages }}</span>
+{% if pagina_detalle.has_next %}<a href="?{{ query_detalle }}&amp;page_detalle={{ pagina_detalle.next_page_number }}#historial-preventivos">Siguiente</a>{% endif %}
+</nav>{% endif %}
+</section>
+{% endif %}
+</main></body></html>
