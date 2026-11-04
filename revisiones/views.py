@@ -16,6 +16,7 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
+from .acceso_coordinadores import es_coordinador_sstt, datos_coordinador, limitar_odts_coordinador
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -116,6 +117,8 @@ def indicador(qs):
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
 def bandeja(request):
     inicio_bandeja = tiempo.perf_counter()
+    es_coordinador = es_coordinador_sstt(request.user)
+    coordinador_sesion = datos_coordinador(request.user) if es_coordinador else None
 
     # ==================================================
     # FILTROS DE LA BANDEJA
@@ -421,6 +424,10 @@ def bandeja(request):
     # FILTRO POR COORDINADOR SOFTGUARD
     # ==================================================
 
+    if es_coordinador:
+        filtros["coordinador"] = coordinador_sesion["usuario"]
+        registros = limitar_odts_coordinador(request, registros)
+
     coordinador_seleccionado = filtros["coordinador"]
 
     coordinadores_validos = {
@@ -431,7 +438,7 @@ def bandeja(request):
         "SIN_IDENTIFICAR",
     }
 
-    if coordinador_seleccionado:
+    if coordinador_seleccionado and not es_coordinador:
 
         if coordinador_seleccionado not in coordinadores_validos:
             registros = registros.none()
@@ -952,6 +959,8 @@ def bandeja(request):
                 }
             )
 
+    contratistas_disponibles = limitar_odts_coordinador(request, contratistas_disponibles)
+
     # Obtener únicamente contratistas con ODT coincidentes.
     contratistas_disponibles = (
         contratistas_disponibles
@@ -965,9 +974,7 @@ def bandeja(request):
     
     # Identificar usuarios con rol de coordinador.
     # El grupo debe existir en Django Admin.
-    es_coordinador = request.user.groups.filter(
-        name="Coordinadores SSTT"
-    ).exists()
+    es_coordinador = es_coordinador_sstt(request.user)
 
 
 
@@ -987,6 +994,7 @@ def bandeja(request):
 
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
+            "coordinador_sesion": coordinador_sesion,
             
 
             "kpi_odt_modificadas": kpi_odt_modificadas,
@@ -1037,7 +1045,7 @@ def contratistas_disponibles_ajax(request):
     estado = request.GET.get("estado", "")
     servicios = request.GET.getlist("servicios")
 
-    registros = ODT.objects.all()
+    registros = limitar_odts_coordinador(request, ODT.objects.all())
 
     # Fecha de finalización
     if fecha_desde:
