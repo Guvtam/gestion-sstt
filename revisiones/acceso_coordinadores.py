@@ -31,8 +31,8 @@ def coordinador_visible(request, numero):
     if numero not in cache:
         cache[numero] = identificar_coordinador_odt(numero)
     info = cache[numero]
-    return (not info.get("identificado", False)
-            or info.get("usuario") == datos["usuario"])
+    return (bool(info.get("identificado", False))
+            and info.get("usuario") == datos["usuario"])
 
 
 def limitar_odts_coordinador(request, registros):
