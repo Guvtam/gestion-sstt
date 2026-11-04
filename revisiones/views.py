@@ -43,6 +43,13 @@ from django.db.models import (
 )
 
 # Estados anteriores que ahora se consideran aprobados por defecto.
+SERVICIOS_PRINCIPALES = (
+    "MANTENCION CORRECTIVA CON COBRO",
+    "MANTENCION CORRECTIVA SIN COBRO",
+    "MANTENIMIENTO RENOVACIÓN",
+    "MANTENIMIENTO PREVENTIVO",
+)
+
 ESTADOS_APROBADOS = ("APROBADA", "POR_REVISAR")
 
 # Estados que se pueden seleccionar en la nueva bandeja.
@@ -203,6 +210,61 @@ def bandeja(request):
 
 
    
+    contratistas_disponibles = ODT.objects.all()
+    if filtros["estado"]:
+        contratistas_disponibles = contratistas_disponibles.filter(estado_softguard=filtros["estado"])
+
+    # Filtrar por servicios seleccionados.
+    if servicios_seleccionados:
+        contratistas_disponibles = contratistas_disponibles.filter(
+            Q(
+                servicio_editado__isnull=True,
+                servicio__in=servicios_seleccionados,
+            )
+            | Q(
+                servicio_editado__in=servicios_seleccionados
+            )
+        )
+
+    # Filtrar por fechas de finalización.
+    for campo, operador in (
+        ("fecha_desde", "gte"),
+        ("fecha_hasta", "lte"),
+    ):
+        valor = filtros[campo]
+
+        if valor:
+            try:
+                fecha_valida = date.fromisoformat(valor)
+            except ValueError:
+                continue
+
+            contratistas_disponibles = contratistas_disponibles.filter(
+                **{
+                    f"fecha_finalizacion__date__{operador}":
+                        fecha_valida
+                }
+            )
+
+    contratistas_disponibles = limitar_odts_coordinador(request, contratistas_disponibles)
+
+    # Obtener únicamente contratistas con ODT coincidentes.
+    contratistas_disponibles = list(
+        contratistas_disponibles
+        .exclude(contratista__isnull=True)
+        .exclude(contratista="")
+        .order_by("contratista")
+        .values_list("contratista", flat=True)
+        .distinct()
+    )
+
+    
+    seleccion_contratistas_explicita = (
+        "contratistas_filtrados" in request.GET or "contratista" in request.GET
+    )
+    if not seleccion_contratistas_explicita:
+        contratistas_seleccionados = list(contratistas_disponibles)
+
     # ==================================================
     # CONTADOR DE INCIDENCIAS - ÚLTIMOS 90 DÍAS
     # Misma cuenta + mismo contratista
@@ -338,6 +400,8 @@ def bandeja(request):
     # Contratista.
     if contratistas_seleccionados:
         registros = registros.filter(contratista__in=contratistas_seleccionados)
+    else:
+        registros = registros.none()
 
     # Estado SoftGuard.
     if filtros["estado"]:
@@ -892,6 +956,8 @@ def bandeja(request):
     
     parametros = request.GET.copy()
     parametros.pop("page", None)
+    parametros["contratistas_filtrados"] = "1"
+    parametros.setlist("contratista", contratistas_seleccionados)
 
     # Conservar los filtros efectivos en la paginación.
     parametros["estado"] = filtros["estado"]
@@ -949,53 +1015,6 @@ def bandeja(request):
     # CONTRATISTAS DISPONIBLES SEGÚN FECHAS Y SERVICIOS
     # ==================================================
 
-    contratistas_disponibles = ODT.objects.all()
-
-    # Filtrar por servicios seleccionados.
-    if servicios_seleccionados:
-        contratistas_disponibles = contratistas_disponibles.filter(
-            Q(
-                servicio_editado__isnull=True,
-                servicio__in=servicios_seleccionados,
-            )
-            | Q(
-                servicio_editado__in=servicios_seleccionados
-            )
-        )
-
-    # Filtrar por fechas de finalización.
-    for campo, operador in (
-        ("fecha_desde", "gte"),
-        ("fecha_hasta", "lte"),
-    ):
-        valor = filtros[campo]
-
-        if valor:
-            try:
-                fecha_valida = date.fromisoformat(valor)
-            except ValueError:
-                continue
-
-            contratistas_disponibles = contratistas_disponibles.filter(
-                **{
-                    f"fecha_finalizacion__date__{operador}":
-                        fecha_valida
-                }
-            )
-
-    contratistas_disponibles = limitar_odts_coordinador(request, contratistas_disponibles)
-
-    # Obtener únicamente contratistas con ODT coincidentes.
-    contratistas_disponibles = (
-        contratistas_disponibles
-        .exclude(contratista__isnull=True)
-        .exclude(contratista="")
-        .order_by("contratista")
-        .values_list("contratista", flat=True)
-        .distinct()
-    )
-
-    
     # Identificar usuarios con rol de coordinador.
     # El grupo debe existir en Django Admin.
     es_coordinador = es_coordinador_sstt(request.user)
@@ -1020,6 +1039,7 @@ def bandeja(request):
             "es_coordinador": es_coordinador,
             "coordinador_sesion": coordinador_sesion,
             "coordinadores_asignables": list(COORDINADORES_SOFTGUARD.values()),
+            "servicios_principales": SERVICIOS_PRINCIPALES,
             
 
             "kpi_odt_modificadas": kpi_odt_modificadas,
@@ -1366,6 +1386,9 @@ def guardar_fila(request):
             if odt.servicio_editado is not None
             else odt.servicio
         )
+
+        if servicio != servicio_anterior and servicio not in SERVICIOS_PRINCIPALES:
+            return JsonResponse({"error": "Selecciona uno de los cuatro servicios principales."}, status=400)
 
         cambio_monto = monto != monto_anterior
         cambio_servicio = servicio != servicio_anterior

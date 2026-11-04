@@ -231,6 +231,7 @@
         class="filters"
       >
 
+        <input type="hidden" name="contratistas_filtrados" value="1">
         <!-- FECHAS -->
 
         <div class="field">
@@ -370,7 +371,7 @@
         <!-- ESTADO REVISIÓN -->
 
         <div class="field">
-          <label class="field-label">Estado de revisión</label>
+          <label class="field-label">Estado pago</label>
 
           <select name="revision">
             <option value="">Todos</option>
@@ -551,7 +552,7 @@
 
               <th>Estado SoftGuard</th>
               <th>Pago técnico</th>
-              <th {% if es_coordinador %}hidden{% endif %}>Revisión</th>
+              <th {% if es_coordinador %}hidden{% endif %}>Estado pago</th>
               <th>Estado de modificación</th>
               <th>Informe</th>
               <th>Acciones</th>
@@ -617,15 +618,19 @@
 
                 <td class="service">
 
-                  <input
-                    type="text"
-                    class="row-input service-input {% if r.servicio_editado != None %}saved{% endif %}"
-                    maxlength="150"
-                    value="{% if r.servicio_editado != None %}{{ r.servicio_editado }}{% else %}{{ r.servicio }}{% endif %}"
+                  {% firstof r.servicio_editado r.servicio as servicio_actual %}
+                  <select
+                    class="row-input row-select service-input {% if r.servicio_editado != None %}saved{% endif %}"
                     data-original="{{ r.servicio }}"
                     title="{% if r.esta_facturada %}ODT facturada: edición bloqueada{% elif r.esta_rechazada %}ODT rechazada definitivamente: edición bloqueada{% endif %}"
-                    disabled
-                  >
+                    disabled>
+                    {% if servicio_actual not in servicios_principales %}
+                      <option value="{{ servicio_actual }}" selected disabled>{{ servicio_actual|default:"Sin servicio" }}</option>
+                    {% endif %}
+                    {% for servicio in servicios_principales %}
+                      <option value="{{ servicio }}" {% if servicio_actual == servicio %}selected{% endif %}>{{ servicio }}</option>
+                    {% endfor %}
+                  </select>
 
                   <span class="edited-mark">
                     {% if r.servicio_editado != None %}
@@ -1326,7 +1331,7 @@
 
           resumen.textContent = n
             ? `${n} ${singular}${n === 1 ? '' : 's'} seleccionado${n === 1 ? '' : 's'}`
-            : `Todos los ${singular}s`;
+            : (singular === "contratista" ? "Ningún contratista seleccionado" : `Todos los ${singular}s`);
 
           cantidad.textContent =
             `${n} seleccionado${n === 1 ? '' : 's'}`;
@@ -1513,7 +1518,7 @@
           lista: "listaContratistas",
           resumen: "contratistasResumen",
           contador: "cantidadContratistas",
-          todos: "Todos los contratistas",
+          todos: "Ningún contratista seleccionado",
           plural: "contratistas"
         },
         {
@@ -1617,7 +1622,7 @@
         if (resumenContratistas) {
             resumenContratistas.textContent = cantidad
                 ? `${cantidad} contratista${cantidad === 1 ? "" : "s"} seleccionado${cantidad === 1 ? "" : "s"}`
-                : "Todos los contratistas";
+                : "Ningún contratista seleccionado";
         }
 
         if (cantidadContratistas) {
@@ -1667,6 +1672,8 @@
             parametros.append("servicios", checkbox.value);
         });
 
+        const disponiblesAnteriores = new Set(Array.from(listaContratistas.querySelectorAll('input[name="contratista"]')).map(input => input.value));
+
         // Guardar contratistas seleccionados
         const seleccionados = new Set(
             Array.from(
@@ -1713,7 +1720,7 @@
                 checkbox.name = "contratista";
                 checkbox.value = nombre;
 
-                checkbox.checked = seleccionados.has(nombre);
+                checkbox.checked = seleccionados.has(nombre) || !disponiblesAnteriores.has(nombre);
 
                 const texto = document.createElement("span");
                 texto.textContent = nombre;

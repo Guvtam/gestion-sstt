@@ -54,6 +54,7 @@ from reportlab.platypus import (
     TableStyle,
     Paragraph,
     Spacer,
+    PageBreak,
 )
 
 from .models import ODT
@@ -545,43 +546,30 @@ def generar_pdf_contratista(
     story.append(P(titulo, "bold"))
     story.append(Spacer(1, 2 * mm))
 
-    listado = [
-        [
-            P("ODT", "white"),
-            P("Fecha finalización", "white"),
-            P("Cuenta", "white"),
-            P("Servicio", "white"),
-            P("Tipo cliente", "white"),
-            P("Monto", "white"),
-        ]
-    ]
-
+    resumen_servicios = OrderedDict()
     for odt, servicio, monto, _ in registros_contratista:
-        listado.append([
-            P(odt.numero),
-            P(fecha(odt.fecha_finalizacion)),
-            P(odt.cuenta_completa),
-            P(servicio),
-            P(odt.tipo_cliente),
-            P(dinero(monto), "bold"),
-        ])
+        nombre = str(servicio or "Sin servicio").strip()
+        normalizado = nombre.upper().replace("Ó", "O").replace("Á", "A")
+        if "CORRECTIVA" in normalizado and "SIN COBRO" in normalizado:
+            categoria = "Mantención correctiva sin cobro"
+        elif "CORRECTIVA" in normalizado and "CON COBRO" in normalizado:
+            categoria = "Mantención correctiva con cobro"
+        elif "RENOVACION" in normalizado:
+            categoria = "Renovación"
+        elif "PREVENTIVO" in normalizado:
+            categoria = "Mantenimiento preventivo"
+        else:
+            categoria = "Otros servicios"
+        grupo = resumen_servicios.setdefault(categoria, {"cantidad": 0, "monto": Decimal("0")})
+        grupo["cantidad"] += 1
+        grupo["monto"] += Decimal(str(monto or 0))
 
-    story.append(
-        tabla(
-            listado,
-            [
-                ancho * 0.08,
-                ancho * 0.16,
-                ancho * 0.25,
-                ancho * 0.25,
-                ancho * 0.11,
-                ancho * 0.15,
-            ],
-            header=True,
-        )
-    )
-
-    story.append(Spacer(1, 6 * mm))
+    listado = [[P("SERVICIO", "white"), P("CANTIDAD ODT", "white"), P("MONTO", "white")]]
+    for nombre, datos in resumen_servicios.items():
+        listado.append([P(nombre), P(datos["cantidad"]), P(dinero(datos["monto"]), "bold")])
+    listado.append([P("TOTAL", "bold"), P(len(registros_contratista), "bold"), P(dinero(subtotal), "bold")])
+    story.append(tabla(listado, [ancho * 0.60, ancho * 0.15, ancho * 0.25], header=True))
+    story.append(PageBreak())
 
     # --------------------------------------------------------
     # 2. HISTORIAL DE ACCIONES POR ODT
