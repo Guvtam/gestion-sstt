@@ -81,6 +81,7 @@ class MejorasBandejaTests(TestCase):
             pdf = generar_pdf_contratista("Contratista de prueba", registros,
                                          date(2026, 10, 21), date(2026, 11, 20), requisicion="REQ-123")
         reader = PdfReader(BytesIO(pdf))
-        self.assertIn("Resumen de servicios", reader.pages[0].extract_text())
+        self.assertIn("Listado de ODT", reader.pages[0].extract_text())
+        self.assertNotIn("Resumen de servicios", reader.pages[0].extract_text())
         self.assertNotIn("Historial de acciones por ODT", reader.pages[0].extract_text())
         self.assertIn("Historial de acciones por ODT", reader.pages[1].extract_text())
