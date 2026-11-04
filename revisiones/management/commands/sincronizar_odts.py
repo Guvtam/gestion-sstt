@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
+from revisiones.correcciones import verificar_sincronizacion
 from revisiones.models import ODT, CatalogoCuenta
 from revisiones.cuentas_utils import normalizar_codigo_cuenta
 from revisiones.servicios_sql import consultar_odts_completas
