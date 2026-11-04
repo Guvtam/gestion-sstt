@@ -162,5 +162,7 @@ class EstadoModificacionTests(TestCase):
                 html = template.render({"es_coordinador": coordinador, "registros": [self.odt],
                                         "filtros": {}, "request": SimpleNamespace(user=self.user)})
             self.assertIn("Estado de modificación", html)
-            self.assertIn("Marcar procesada", html)
+            self.assertIn("modification-select", html)
+            self.assertNotIn("Marcar procesada", html)
+            self.assertIn(">Procesado</option>", html)
             self.assertEqual('<th hidden>Revisión</th>' in html, coordinador)
