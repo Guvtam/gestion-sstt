@@ -972,22 +972,21 @@
                 </td>
 
                 <td class="modification">
-                  {% if r.estado_modificacion == 'ACTUALIZADA' %}
-                    <span>Actualizado</span>
-                  {% elif r.estado_modificacion == 'EN_PROCESO' %}
-                    <span>Procesada</span>
-                  {% elif r.estado_modificacion == 'PENDIENTE' %}
-                    <span>Pendiente</span>
-                    {% if r.puede_procesar_modificacion %}
-                      <button type="button" class="procesar-modificacion"
-                        data-numero="{{ r.numero|stringformat:'d' }}"
-                        data-url="{% url 'cambiar_estado_correccion' %}">
-                        Marcar procesada
-                      </button>
-                    {% endif %}
-                  {% else %}
-                    <span>Sin modificaciones</span>
-                  {% endif %}
+                  <select class="row-select modification-select"
+                    data-numero="{{ r.numero|stringformat:'d' }}"
+                    data-url="{% url 'cambiar_estado_correccion' %}"
+                    data-saved="{{ r.estado_modificacion|default:'SIN_MODIFICACION' }}"
+                    {% if not r.puede_procesar_modificacion %}disabled{% endif %}
+                    aria-label="Estado de modificación de ODT {{ r.numero }}">
+                    <option value="SIN_MODIFICACION" disabled
+                      {% if not r.estado_modificacion %}selected{% endif %}>Sin modificación</option>
+                    <option value="PENDIENTE"
+                      {% if r.estado_modificacion == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                    <option value="EN_PROCESO"
+                      {% if r.estado_modificacion == 'EN_PROCESO' %}selected{% endif %}>Procesado</option>
+                    <option value="ACTUALIZADA" disabled
+                      {% if r.estado_modificacion == 'ACTUALIZADA' %}selected{% endif %}>Actualizado</option>
+                  </select>
                   <span class="modificacion-error" role="alert"></span>
                 </td>
 
@@ -1765,28 +1764,36 @@
 
 
 <script>
-document.addEventListener("click", async function (event) {
-  const button = event.target.closest(".procesar-modificacion");
-  if (!button || button.disabled) return;
-  const cell = button.closest("td");
-  const error = cell.querySelector(".modificacion-error");
+document.addEventListener("change", async function (event) {
+  const selector = event.target.closest(".modification-select");
+  if (!selector || selector.disabled) return;
+  const anterior = selector.dataset.saved;
+  if (selector.value !== "EN_PROCESO" || anterior !== "PENDIENTE") {
+    selector.value = anterior;
+    return;
+  }
+  const error = selector.closest("td").querySelector(".modificacion-error");
   error.textContent = "";
-  if (!confirm("¿Confirmas que aplicaste los cambios de esta ODT en SoftGuard?")) return;
-  button.disabled = true;
+  if (!confirm("¿Confirmas que aplicaste los cambios de esta ODT en SoftGuard?")) {
+    selector.value = anterior;
+    return;
+  }
+  selector.disabled = true;
   try {
     const token = document.querySelector('[name="csrfmiddlewaretoken"]').value;
-    const response = await fetch(button.dataset.url, {
+    const response = await fetch(selector.dataset.url, {
       method: "POST", credentials: "same-origin",
       headers: {"X-CSRFToken": token, "Content-Type": "application/x-www-form-urlencoded"},
-      body: new URLSearchParams({numero: button.dataset.numero, estado: "EN_PROCESO"})
+      body: new URLSearchParams({numero: selector.dataset.numero, estado: "EN_PROCESO"})
     });
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo guardar.");
-    cell.querySelector("span").textContent = "Procesada";
-    button.remove();
+    selector.value = "EN_PROCESO";
+    selector.dataset.saved = "EN_PROCESO";
   } catch (e) {
+    selector.value = anterior;
     error.textContent = e.message || "No se pudo guardar.";
-    button.disabled = false;
+    selector.disabled = false;
   }
 });
 </script>
