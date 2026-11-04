@@ -1,3 +1,4 @@
+from .cuentas_utils import cargar_catalogo_cuentas, tipo_cliente_cuenta
 
 from collections import defaultdict
 from datetime import date, timedelta
@@ -555,6 +556,10 @@ def resumen_costos_periodo(periodo):
         .select_related("odt")
     )
 
+    catalogo_clientes = cargar_catalogo_cuentas(
+        items.values_list("odt__cuenta_completa", flat=True)
+    )
+
     total = Decimal("0")
     cantidad = 0
 
@@ -596,13 +601,8 @@ def resumen_costos_periodo(periodo):
         categorias[categoria]["monto"] += monto
         categorias[categoria]["cantidad"] += 1
 
-        # Clasificación actualmente guardada en ODT.
-        tipo = (
-            item.odt.tipo_cliente or ""
-        ).strip().upper()
-
-        if tipo not in ("B2B", "B2C"):
-            tipo = "SIN_CLASIFICAR"
+        # Clasificación actual del catálogo de cuentas.
+        tipo = tipo_cliente_cuenta(item.odt.cuenta_completa, catalogo_clientes)
 
         resumen_clientes[tipo] += monto
 

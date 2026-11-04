@@ -1,3 +1,4 @@
+from .cuentas_utils import cargar_catalogo_cuentas, tipo_cliente_cuenta
 
 from decimal import Decimal
 
@@ -80,6 +81,10 @@ def resumen_costos_periodo(periodo):
         .select_related("odt")
     )
 
+    catalogo_clientes = cargar_catalogo_cuentas(
+        items.values_list("odt__cuenta_completa", flat=True)
+    )
+
     total = Decimal("0")
     cantidad = 0
 
@@ -123,12 +128,7 @@ def resumen_costos_periodo(periodo):
         categorias[categoria]["cantidad"] += 1
         
 
-        tipo_cliente = (
-            item.odt.tipo_cliente or ""
-        ).strip().upper()
-
-        if tipo_cliente not in ("B2B", "B2C"):
-            tipo_cliente = "SIN_CLASIFICAR"
+        tipo_cliente = tipo_cliente_cuenta(item.odt.cuenta_completa, catalogo_clientes)
 
         clientes[tipo_cliente]["monto"] += monto
         clientes[tipo_cliente]["cantidad"] += 1

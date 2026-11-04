@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from revisiones.correcciones import verificar_sincronizacion
 from revisiones.models import ODT, CatalogoCuenta
-from revisiones.cuentas_utils import normalizar_codigo_cuenta
+from revisiones.cuentas_utils import normalizar_codigo_cuenta, cargar_catalogo_cuentas, tipo_cliente_cuenta
 from revisiones.servicios_sql import consultar_odts_completas
 
 
@@ -26,6 +26,7 @@ class Command(BaseCommand):
 
         registros = consultar_odts_completas()
 
+        catalogo_clientes = cargar_catalogo_cuentas(r.get("CuentaCompleta") for r in registros)
         total_registros = len(registros)
 
         self.stdout.write(
@@ -200,6 +201,8 @@ class Command(BaseCommand):
             codigo_cuenta = normalizar_codigo_cuenta(
                 datos["cuenta_completa"]
             )
+
+            datos["tipo_cliente"] = tipo_cliente_cuenta(datos["cuenta_completa"], catalogo_clientes)
 
             if codigo_cuenta:
                 cuentas_nuevas.add(codigo_cuenta)
