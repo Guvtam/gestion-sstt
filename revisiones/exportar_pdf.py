@@ -537,38 +537,21 @@ def generar_pdf_contratista(
     # 1. RESUMEN DE SERVICIOS
     # --------------------------------------------------------
 
-    titulo = (
-        "1. Resumen de servicios facturados"
-        if historico
-        else "1. Resumen de servicios aprobados"
-    )
-
+    titulo = "1. Listado de ODT facturadas" if historico else "1. Listado de ODT aprobadas"
     story.append(P(titulo, "bold"))
     story.append(Spacer(1, 2 * mm))
-
-    resumen_servicios = OrderedDict()
+    listado = [[P(columna, "white") for columna in (
+        "ODT", "Fecha finalización", "Cuenta", "Servicio", "Tipo cliente", "Monto"
+    )]]
     for odt, servicio, monto, _ in registros_contratista:
-        nombre = str(servicio or "Sin servicio").strip()
-        normalizado = nombre.upper().replace("Ó", "O").replace("Á", "A")
-        if "CORRECTIVA" in normalizado and "SIN COBRO" in normalizado:
-            categoria = "Mantención correctiva sin cobro"
-        elif "CORRECTIVA" in normalizado and "CON COBRO" in normalizado:
-            categoria = "Mantención correctiva con cobro"
-        elif "RENOVACION" in normalizado:
-            categoria = "Renovación"
-        elif "PREVENTIVO" in normalizado:
-            categoria = "Mantenimiento preventivo"
-        else:
-            categoria = "Otros servicios"
-        grupo = resumen_servicios.setdefault(categoria, {"cantidad": 0, "monto": Decimal("0")})
-        grupo["cantidad"] += 1
-        grupo["monto"] += Decimal(str(monto or 0))
-
-    listado = [[P("SERVICIO", "white"), P("CANTIDAD ODT", "white"), P("MONTO", "white")]]
-    for nombre, datos in resumen_servicios.items():
-        listado.append([P(nombre), P(datos["cantidad"]), P(dinero(datos["monto"]), "bold")])
-    listado.append([P("TOTAL", "bold"), P(len(registros_contratista), "bold"), P(dinero(subtotal), "bold")])
-    story.append(tabla(listado, [ancho * 0.60, ancho * 0.15, ancho * 0.25], header=True))
+        listado.append([
+            P(odt.numero), P(fecha(odt.fecha_finalizacion)), P(odt.cuenta_completa),
+            P(servicio), P(odt.tipo_cliente), P(dinero(monto), "bold"),
+        ])
+    story.append(tabla(listado, [
+        ancho * 0.07, ancho * 0.15, ancho * 0.27,
+        ancho * 0.26, ancho * 0.10, ancho * 0.15,
+    ], header=True))
     story.append(PageBreak())
 
     # --------------------------------------------------------

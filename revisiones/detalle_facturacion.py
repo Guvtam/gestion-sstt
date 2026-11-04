@@ -97,6 +97,11 @@ def detalle_facturacion(request, facturacion_id):
     cantidad_sin_cobro = 0
     monto_sin_cobro = Decimal("0")
 
+    cantidad_renovacion = 0
+    monto_renovacion = Decimal("0")
+    cantidad_preventivo = 0
+    monto_preventivo = Decimal("0")
+
     for item in items:
         servicio = normalizar_servicio(
             item.servicio_facturado
@@ -112,6 +117,14 @@ def detalle_facturacion(request, facturacion_id):
             cantidad_sin_cobro += 1
             monto_sin_cobro += monto
 
+        elif servicio in ("MANTENIMIENTO RENOVACION", "MANTENCION RENOVACION", "RENOVACION"):
+            cantidad_renovacion += 1
+            monto_renovacion += monto
+
+        elif servicio in ("MANTENIMIENTO PREVENTIVO", "MANTENCION PREVENTIVA", "PREVENTIVO"):
+            cantidad_preventivo += 1
+            monto_preventivo += monto
+
 
     return render(
         request,
@@ -125,5 +138,9 @@ def detalle_facturacion(request, facturacion_id):
             "monto_con_cobro": monto_con_cobro,
             "cantidad_sin_cobro": cantidad_sin_cobro,
             "monto_sin_cobro": monto_sin_cobro,
+            "cantidad_renovacion": cantidad_renovacion,
+            "monto_renovacion": monto_renovacion,
+            "cantidad_preventivo": cantidad_preventivo,
+            "monto_preventivo": monto_preventivo,
         },
     )
