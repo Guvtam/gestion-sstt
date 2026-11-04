@@ -88,5 +88,24 @@ class BusquedaFacturacionTests(TestCase):
         with patch("django.urls.reverse", side_effect=lambda name, args=None, kwargs=None, **rest: (
                 "/detalle/" + str(args[0]) + "/" if name == "detalle_facturacion" else "/test/")):
             html = template.render(context)
-        self.assertIn('href="/detalle/' + str(facturacion.pk) + '/">Ver ODT</a>', html)
+        self.assertIn('href="/detalle/' + str(facturacion.pk) + '/">Ver todas las ODT de la facturación</a>', html)
         self.assertIn("Cantidad total de ODT", html)
+
+    def test_busqueda_odt_enlaza_orden_exacta_sin_filtros_de_fecha(self):
+        context = self.buscar(buscar_odt="77.527")
+        self.assertEqual(context["numero_odt_buscada"], 77527)
+        template = engines["django"].get_template("revisiones/historial_facturacion.html")
+        with patch("django.urls.reverse", return_value="/bandeja/"):
+            html = template.render(context)
+        self.assertIn('numero_odt=77527&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=', html)
+        self.assertIn("Ver información y acciones de ODT", html)
+        self.assertIn("Ver todas las ODT de la facturación", html)
+
+    def test_busqueda_requisicion_conserva_enlace_grupal(self):
+        context = self.buscar(buscar_requisicion="ABC")
+        self.assertIsNone(context["numero_odt_buscada"])
+        template = engines["django"].get_template("revisiones/historial_facturacion.html")
+        with patch("django.urls.reverse", return_value="/test/"):
+            html = template.render(context)
+        self.assertNotIn("ODT encontrada", html)
+        self.assertNotIn("Ver información y acciones de ODT", html)
