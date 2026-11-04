@@ -57,7 +57,8 @@ from reportlab.platypus import (
     PageBreak,
 )
 
-from .models import ODT
+from .models import ODT, CatalogoCuenta
+from .cuentas_utils import normalizar_codigo_cuenta
 from .facturacion_models import (
     PeriodoFacturacion,
     FacturacionODT,
@@ -459,6 +460,21 @@ def generar_pdf_contratista(
         ]
     """
 
+    # Usar la misma clasificación actual del catálogo que el detalle web.
+    codigos = {
+        normalizar_codigo_cuenta(odt.cuenta_completa)
+        for odt, _, _, _ in registros_contratista
+    }
+    codigos.discard("")
+    tipos_por_cuenta = dict(
+        CatalogoCuenta.objects.filter(codigo_cuenta__in=codigos)
+        .values_list("codigo_cuenta", "tipo_cliente")
+    )
+
+    def tipo_cliente_pdf(odt):
+        tipo = tipos_por_cuenta.get(normalizar_codigo_cuenta(odt.cuenta_completa))
+        return tipo if tipo in ("B2B", "B2C") else "Sin clasificar"
+
     buffer = BytesIO()
 
     doc = SimpleDocTemplate(
@@ -546,7 +562,7 @@ def generar_pdf_contratista(
     for odt, servicio, monto, _ in registros_contratista:
         listado.append([
             P(odt.numero), P(fecha(odt.fecha_finalizacion)), P(odt.cuenta_completa),
-            P(servicio), P(odt.tipo_cliente), P(dinero(monto), "bold"),
+            P(servicio), P(tipo_cliente_pdf(odt)), P(dinero(monto), "bold"),
         ])
     story.append(tabla(listado, [
         ancho * 0.07, ancho * 0.15, ancho * 0.27,
@@ -622,7 +638,7 @@ def generar_pdf_contratista(
                     P(odt.localidad),
                     P(servicio),
                     P(odt.observaciones_insumos),
-                    P(odt.tipo_cliente),
+                    P(tipo_cliente_pdf(odt)),
                     P(dinero(monto), "bold"),
                 ],
             ],
