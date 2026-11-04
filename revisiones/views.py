@@ -23,7 +23,7 @@ from django.views.decorators.http import require_POST
 
 from .models import ODT, Revision, EventoRevision, CatalogoCuenta, CorreccionODT, EventoCorreccionODT
 from .correcciones import registrar_cambio_manual
-from .cuentas_utils import normalizar_codigo_cuenta
+from .cuentas_utils import normalizar_codigo_cuenta, cargar_catalogo_cuentas, tipo_cliente_cuenta
 from .servicios_sql import consultar_historial_odt
 from .coordinadores_softguard import (identificar_coordinador_odt, puede_asignar_coordinador,
     identificar_coordinador_softguard, COORDINADORES_SOFTGUARD)
@@ -920,34 +920,19 @@ def bandeja(request):
 
     # CECO y clasificación del catálogo para las 50 ODT visibles.
     # Se consulta una sola vez por página, sin subconsultas adicionales.
-    codigos_pagina = {
-        normalizar_codigo_cuenta(odt.cuenta_completa)
-        for odt in pagina.object_list
-    }
-    codigos_pagina.discard("")
-
     print(
         f"[SSTT] Paginación y obtención de ODT: "
         f"{tiempo.perf_counter() - inicio_paginacion:.2f} s"
     )
 
-    catalogo_pagina = {
-        cuenta.codigo_cuenta: cuenta
-        for cuenta in CatalogoCuenta.objects.filter(
-            codigo_cuenta__in=codigos_pagina
-        )
-    }
+    catalogo_pagina = cargar_catalogo_cuentas(odt.cuenta_completa for odt in pagina.object_list)
 
     for odt in pagina.object_list:
         codigo = normalizar_codigo_cuenta(odt.cuenta_completa)
         cuenta = catalogo_pagina.get(codigo)
         odt.codigo_cuenta_catalogo = codigo
         odt.ceco_catalogo = cuenta.ceco if cuenta else ""
-        odt.tipo_cliente_catalogo = (
-            cuenta.tipo_cliente
-            if cuenta
-            else "SIN_CLASIFICAR"
-        )
+        odt.tipo_cliente_catalogo = tipo_cliente_cuenta(odt.cuenta_completa, catalogo_pagina)
         odt.ceco_requiere_revision = (
             cuenta.requiere_revision_ceco if cuenta else False
         )

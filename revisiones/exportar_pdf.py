@@ -57,8 +57,8 @@ from reportlab.platypus import (
     PageBreak,
 )
 
-from .models import ODT, CatalogoCuenta
-from .cuentas_utils import normalizar_codigo_cuenta
+from .models import ODT
+from .cuentas_utils import cargar_catalogo_cuentas, tipo_cliente_cuenta
 from .facturacion_models import (
     PeriodoFacturacion,
     FacturacionODT,
@@ -460,20 +460,13 @@ def generar_pdf_contratista(
         ]
     """
 
-    # Usar la misma clasificación actual del catálogo que el detalle web.
-    codigos = {
-        normalizar_codigo_cuenta(odt.cuenta_completa)
-        for odt, _, _, _ in registros_contratista
-    }
-    codigos.discard("")
-    tipos_por_cuenta = dict(
-        CatalogoCuenta.objects.filter(codigo_cuenta__in=codigos)
-        .values_list("codigo_cuenta", "tipo_cliente")
+    catalogo_clientes = cargar_catalogo_cuentas(
+        odt.cuenta_completa for odt, _, _, _ in registros_contratista
     )
 
     def tipo_cliente_pdf(odt):
-        tipo = tipos_por_cuenta.get(normalizar_codigo_cuenta(odt.cuenta_completa))
-        return tipo if tipo in ("B2B", "B2C") else "Sin clasificar"
+        tipo = tipo_cliente_cuenta(odt.cuenta_completa, catalogo_clientes)
+        return "Sin clasificar" if tipo == "SIN_CLASIFICAR" else tipo
 
     buffer = BytesIO()
 

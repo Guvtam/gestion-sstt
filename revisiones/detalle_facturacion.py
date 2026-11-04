@@ -13,8 +13,7 @@ from .facturacion_models import (
     FacturacionContratista,
     FacturacionODT,
 )
-from .models import CatalogoCuenta
-from .cuentas_utils import normalizar_codigo_cuenta
+from .cuentas_utils import normalizar_codigo_cuenta, cargar_catalogo_cuentas, tipo_cliente_cuenta
 
 
 @login_required
@@ -37,21 +36,7 @@ def detalle_facturacion(request, facturacion_id):
         .order_by("odt__numero")
     )
 
-    # Obtener los códigos de cuenta de las ODT facturadas.
-    # Se utiliza la misma normalización que en la bandeja.
-    codigos = {
-        normalizar_codigo_cuenta(item.odt.cuenta_completa)
-        for item in items
-    }
-    codigos.discard("")
-
-    # Consultar el catálogo una sola vez.
-    catalogo = {
-        cuenta.codigo_cuenta: cuenta
-        for cuenta in CatalogoCuenta.objects.filter(
-            codigo_cuenta__in=codigos
-        )
-    }
+    catalogo = cargar_catalogo_cuentas(item.odt.cuenta_completa for item in items)
 
     # Asignar a cada ODT su clasificación real.
     for item in items:
@@ -61,11 +46,7 @@ def detalle_facturacion(request, facturacion_id):
 
         cuenta = catalogo.get(codigo)
 
-        item.odt.tipo_cliente_catalogo = (
-            cuenta.tipo_cliente
-            if cuenta
-            else "SIN_CLASIFICAR"
-        )
+        item.odt.tipo_cliente_catalogo = tipo_cliente_cuenta(item.odt.cuenta_completa, catalogo)
 
         item.odt.ceco_catalogo = (
             cuenta.ceco if cuenta else ""

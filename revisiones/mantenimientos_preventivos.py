@@ -7,7 +7,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import ODT, CatalogoCuenta
-from .cuentas_utils import normalizar_codigo_cuenta
+from .cuentas_utils import normalizar_codigo_cuenta, normalizar_tipo_cliente
 
 
 SERVICIOS_PREVENTIVOS = ("MANTENIMIENTO PREVENTIVO", "MANTENCION PREVENTIVA", "PREVENTIVO")
@@ -27,12 +27,14 @@ def mantenimientos_preventivos(request):
             continue
         cuentas[codigo] = {
             "codigo": codigo, "nombre": cuenta.nombre_cuenta,
-            "tipo_cliente": cuenta.tipo_cliente, "ceco": cuenta.ceco,
+            "tipo_cliente": normalizar_tipo_cliente(cuenta.tipo_cliente), "ceco": cuenta.ceco,
             "cantidad": 0, "pendientes": 0, "ultimo": None,
         }
     # Incorporar cuentas que aún no estén registradas en el catálogo.
     for texto in ODT.objects.order_by().values_list("cuenta_completa", flat=True).distinct().iterator(chunk_size=1000):
         codigo = normalizar_codigo_cuenta(texto)
+        if codigo in cuentas and not cuentas[codigo]["nombre"]:
+            cuentas[codigo]["nombre"] = texto
         if codigo and codigo not in cuentas:
             cuentas[codigo] = {"codigo": codigo, "nombre": texto, "tipo_cliente": "SIN_CLASIFICAR",
                               "ceco": "", "cantidad": 0, "pendientes": 0, "ultimo": None}
