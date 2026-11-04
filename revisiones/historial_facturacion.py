@@ -157,6 +157,37 @@ def resumen_costos_periodo(periodo):
 @require_GET
 def historial_facturacion(request):
 
+    buscar_odt = request.GET.get("buscar_odt", "").strip()
+    buscar_requisicion = request.GET.get("buscar_requisicion", "").strip()
+    busqueda_activa = bool(buscar_odt or buscar_requisicion)
+    error_busqueda = ""
+    resultados_busqueda = None
+    parametros_busqueda = request.GET.copy()
+    parametros_busqueda.pop("page_busqueda", None)
+    if busqueda_activa:
+        from django.core.paginator import Paginator
+        resultados = FacturacionODT.objects.select_related(
+            "odt", "facturacion", "facturacion__periodo")
+        if buscar_odt:
+            numero_texto = buscar_odt.replace(".", "").replace(" ", "")
+            if not numero_texto.isascii() or not numero_texto.isdigit() or len(numero_texto) > 10:
+                error_busqueda = "Ingresa un número de ODT válido."
+                resultados = resultados.none()
+            else:
+                resultados = resultados.filter(odt__numero=int(numero_texto))
+        if buscar_requisicion:
+            resultados = resultados.filter(
+                facturacion__numero_requisicion__icontains=buscar_requisicion)
+        periodo_busqueda = request.GET.get("periodo", "").strip()
+        if periodo_busqueda.isascii() and periodo_busqueda.isdigit():
+            resultados = resultados.filter(facturacion__periodo_id=int(periodo_busqueda))
+        contratista_busqueda = request.GET.get("contratista", "").strip()
+        if contratista_busqueda.isascii() and contratista_busqueda.isdigit():
+            resultados = resultados.filter(facturacion_id=int(contratista_busqueda))
+        resultados_busqueda = Paginator(
+            resultados.order_by("-facturacion__periodo__fecha_hasta", "odt__numero"), 50
+        ).get_page(request.GET.get("page_busqueda"))
+
     # ==================================================
     # PERÍODOS DE FACTURACIÓN REGISTRADOS
     # ==================================================
@@ -278,6 +309,12 @@ def historial_facturacion(request):
         "revisiones/historial_facturacion.html",
         {
             "periodos": periodos,
+            "buscar_odt": buscar_odt,
+            "buscar_requisicion": buscar_requisicion,
+            "busqueda_activa": busqueda_activa,
+            "error_busqueda": error_busqueda,
+            "resultados_busqueda": resultados_busqueda,
+            "query_busqueda": parametros_busqueda.urlencode(),
 
             "periodo_seleccionado": (
                 periodo_seleccionado
