@@ -1,0 +1,1734 @@
+
+{% load static %}
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestión de pagos SSTT</title>
+
+  <link
+    rel="stylesheet"
+    href="{% static 'revisiones/bandeja.css' %}"
+  >
+</head>
+
+<body
+  data-puede-editar="{% if perms.revisiones.editar_odt_sstt %}1{% else %}0{% endif %}"
+  data-puede-revisar="{% if perms.revisiones.revisar_pago_sstt %}1{% else %}0{% endif %}"
+  data-guardar-url="{% if perms.revisiones.editar_odt_sstt %}{% url 'guardar_fila' %}{% endif %}"
+  data-revision-url="{% if perms.revisiones.revisar_pago_sstt %}{% url 'actualizar_revision' %}{% endif %}"
+  data-informe-url="{% url 'actualizar_informe' %}"
+>
+
+  <div id="csrf-container" hidden>
+    {% csrf_token %}
+  </div>
+
+  <header class="header-sstt">
+    <div class="header-contenido">
+
+      <div class="header-titulo">
+        <h1>Gestión de pagos SSTT</h1>
+        <p>
+          Bandeja de revisión y aprobación
+          de órdenes de trabajo
+        </p>
+      </div>
+
+      <div class="header-usuario">
+        <div class="usuario-info">
+
+          <div class="usuario-avatar">
+            {{ request.user.username|first|upper }}
+          </div>
+
+          <div class="usuario-datos">
+            <span>Sesión iniciada</span>
+            <strong>
+              {{ request.user.get_full_name|default:request.user.username }}
+            </strong>
+          </div>
+
+        </div>
+
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-cerrar-sesion">
+            Cerrar sesión
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </header>
+
+  <main>
+
+    {% for msg in messages %}
+      <div class="message {% if msg.tags == 'error' %}error{% endif %}">
+        {{ msg }}
+      </div>
+    {% endfor %}
+
+    <!-- INDICADORES FINANCIEROS -->
+    {% if not es_coordinador %}
+    <section class="kpis">
+
+      <div class="kpi">
+        <small>ODT filtradas</small>
+        <strong>{{ total.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ total.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto original SoftGuard</div>
+      </div>
+
+      <div class="kpi">
+        <small>Aprobados</small>
+        <strong>{{ aprobadas.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ aprobadas.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Pago aprobado, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>En revisión</small>
+        <strong>{{ en_revision.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ en_revision.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Pago en revisión, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Rechazados</small>
+        <strong>{{ rechazadas.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ rechazadas.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Pago rechazado, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantención correctiva con cobro</small>
+        <strong>{{ mantencion_con_cobro.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ mantencion_con_cobro.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantención correctiva sin cobro</small>
+        <strong>{{ mantencion_sin_cobro.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ mantencion_sin_cobro.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento renovación</small>
+        <strong>{{ renovacion.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ renovacion.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento preventivo</small>
+        <strong>{{ mantenimiento_preventivo.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ mantenimiento_preventivo.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+    </section>
+    {% endif %}
+
+    
+
+<!-- INDICADORES OPERATIVOS -->
+<section class="kpis kpis-operativos">
+
+  <div class="kpi">
+    <small>Total ODT</small>
+    <strong>{{ total.cantidad|default:0 }}</strong>
+    <div class="hint">
+      Órdenes según los filtros aplicados
+    </div>
+  </div>
+
+  <div class="kpi">
+    <small>ODT modificadas</small>
+    <strong>{{ kpi_odt_modificadas|default:0 }}</strong>
+    <div class="hint">
+      Órdenes con modificaciones registradas
+    </div>
+  </div>
+
+  <div class="kpi">
+    <small>Servicios a corregir</small>
+    <strong>{{ kpi_servicios_corregir|default:0 }}</strong>
+    <div class="hint">
+      Correcciones de servicio pendientes
+    </div>
+  </div>
+
+  <div class="kpi">
+    <small>Montos a corregir</small>
+    <strong>{{ kpi_montos_corregir|default:0 }}</strong>
+    <div class="hint">
+      Correcciones de monto pendientes
+    </div>
+  </div>
+
+</section>
+
+
+
+    <!-- FILTROS -->
+
+    <section class="panel">
+
+      <div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+
+        {% if perms.revisiones.ver_bandeja_sstt %}
+          <a class="btn alt"
+            href="{% url 'odt_modificadas' %}">
+            ODT a Corregir
+          </a>
+        {% endif %}
+
+
+        {% if perms.revisiones.exportar_pagos_sstt %}
+          <a class="btn alt"
+             href="{% url 'historial_facturacion' %}">
+            Facturación
+          </a>
+        {% endif %}
+
+        {% if perms.contratistas.gestionar_contratistas_sstt %}
+          <a class="btn alt"
+             href="{% url 'contratistas:listado' %}">
+            Administrar contratistas
+          </a>
+        {% endif %}
+
+        {% if perms.revisiones.administrar_cuentas_sstt %}
+          <a class="btn alt"
+             href="{% url 'administrar_cuentas' %}">
+            Administrar cuentas SSTT
+          </a>
+        {% endif %}
+
+      </div>
+
+      <h2>Filtros de ODT</h2>
+
+      <form
+        method="get"
+        action="{% url 'bandeja' %}"
+        class="filters"
+      >
+
+        <!-- FECHAS -->
+
+        <div class="field">
+          <label class="field-label">Finalización desde</label>
+          <input
+            type="date"
+            name="fecha_desde"
+            value="{{ filtros.fecha_desde }}"
+          >
+        </div>
+
+        <div class="field">
+          <label class="field-label">Finalización hasta</label>
+          <input
+            type="date"
+            name="fecha_hasta"
+            value="{{ filtros.fecha_hasta }}"
+          >
+        </div>
+
+
+        <!-- ESTADO SOFTGUARD -->
+
+        <div class="field">
+          <label class="field-label">Estado SoftGuard</label>
+
+          <select name="estado">
+            <option value="">Todos</option>
+
+            {% for e in estados %}
+              <option
+                value="{{ e }}"
+                {% if filtros.estado == e %}selected{% endif %}
+              >
+                {{ e }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- SERVICIOS -->
+
+        <div class="field">
+          <label class="field-label">Servicios</label>
+
+          <details class="multi" id="serviciosDropdown">
+            <summary id="serviciosResumen">
+              Todos los servicios
+            </summary>
+
+            <div class="multi-panel">
+              <input
+                type="text"
+                id="buscarServicio"
+                placeholder="Buscar servicio..."
+              >
+
+              <div class="multi-options" id="listaServicios">
+                {% for s in servicios %}
+                  <label class="multi-option">
+                    <input
+                      type="checkbox"
+                      name="servicios"
+                      value="{{ s }}"
+                      {% if s in servicios_seleccionados %}checked{% endif %}
+                    >
+                    <span>{{ s }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+
+              <div class="multi-footer">
+                <span id="cantidadServicios">
+                  0 seleccionados
+                </span>
+
+                <button
+                  type="button"
+                  id="limpiarServicios"
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+
+         <!-- CONTRATISTAS -->
+
+        <div class="field">
+          <label class="field-label">Contratista</label>
+
+          <details class="multi" id="contratistasDropdown">
+            <summary id="contratistasResumen">
+              Todos los contratistas
+            </summary>
+
+            <div class="multi-panel">
+              <input
+                type="text"
+                id="buscarContratista"
+                placeholder="Buscar contratista..."
+                autocomplete="off"
+              >
+
+              <div class="multi-options" id="listaContratistas">
+                {% for c in contratistas %}
+                  <label class="multi-option">
+                    <input
+                      type="checkbox"
+                      name="contratista"
+                      value="{{ c }}"
+                      {% if c in contratistas_seleccionados %}checked{% endif %}
+                    >
+                    <span>{{ c }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+
+              <div class="multi-footer">
+                <span id="cantidadContratistas">
+                  0 seleccionados
+                </span>
+
+                <button
+                  type="button"
+                  id="limpiarContratistas"
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <!-- ESTADO REVISIÓN -->
+
+        <div class="field">
+          <label class="field-label">Estado de revisión</label>
+
+          <select name="revision">
+            <option value="">Todos</option>
+
+            {% for valor, nombre in opciones %}
+              <option
+                value="{{ valor }}"
+                {% if filtros.revision == valor %}selected{% endif %}
+              >
+                {{ nombre }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        
+<!-- COORDINADOR -->
+
+<div class="field">
+  <label class="field-label">Coordinador</label>
+
+  <select name="coordinador">
+    <option value="">Todos</option>
+
+    <option value="jtapia"
+      {% if filtros.coordinador == 'jtapia' %}selected{% endif %}>
+      Josué Tapia
+    </option>
+
+    <option value="jbicz"
+      {% if filtros.coordinador == 'jbicz' %}selected{% endif %}>
+      Jurguen Bicz
+    </option>
+
+    <option value="yramirez"
+      {% if filtros.coordinador == 'yramirez' %}selected{% endif %}>
+      Yasna Ramírez
+    </option>
+
+    <option value="rsilva"
+      {% if filtros.coordinador == 'rsilva' %}selected{% endif %}>
+      Romina Silva
+    </option>
+
+    <option value="SIN_IDENTIFICAR"
+      {% if filtros.coordinador == 'SIN_IDENTIFICAR' %}selected{% endif %}>
+      Sin identificar
+    </option>
+  </select>
+</div>
+
+       
+        <!-- BÚSQUEDA -->
+
+        <div class="field wide">
+          <label class="field-label">
+            Buscar ODT, técnico, cuenta o dirección
+          </label>
+
+          <input
+            type="text"
+            name="q"
+            value="{{ filtros.q }}"
+            placeholder="Número o texto..."
+          >
+        </div>
+
+        <div class="filter-actions">
+          <button type="submit">
+            Aplicar filtros
+          </button>
+
+          <a class="btn alt" href="{% url 'bandeja' %}">
+            Limpiar
+          </a>
+        </div>
+
+      </form>
+
+      {% if perms.revisiones.exportar_pagos_sstt %}
+        <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+
+          <form
+              id="formFacturarPeriodo"
+              method="get"
+              action="{% url 'facturacion_previsualizar' %}"
+          >
+              <button
+                  type="submit"
+                  class="btn"
+                  style="background:#137c65; color:white;"
+              >
+                  Facturar período
+              </button>
+          </form>
+
+          <span class="hint">
+            Facturación: fechas del 21 al 20, según finalización.
+            El PDF requiere un contratista y ambas fechas.
+          </span>
+
+        </div>
+      {% endif %}
+
+    </section>
+
+    <!-- BANDEJA DE ODT -->
+
+    <section class="panel">
+
+      <h2>Órdenes de trabajo</h2>
+
+      <p class="hint">
+        {{ total.cantidad }} ODT encontradas.
+        Se muestran hasta 50 por página.
+
+        {% if perms.revisiones.editar_odt_sstt %}
+          Presiona Editar para modificar una ODT.
+          Las celdas amarillas indican valores corregidos.
+        {% else %}
+          Puedes consultar el historial y actualizar
+          el estado del informe.
+        {% endif %}
+      </p>
+
+      <!-- BARRA HORIZONTAL SUPERIOR -->
+
+      <p class="tabla-ayuda">
+        Desplázate con Shift + rueda del mouse o
+        utiliza la barra horizontal superior.
+        Las primeras seis columnas permanecen fijas.
+      </p>
+
+      <div
+        class="table-scroll-top"
+        id="tablaScrollSuperior"
+      >
+        <div id="tablaScrollAncho"></div>
+      </div>
+
+      <div
+        class="table-scroll"
+        id="tablaScrollPrincipal"
+      >
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>ODT</th>
+              <th>Cuenta</th>
+              <th>Localidad</th>
+              <th>Técnico / contratista</th>
+              <th>Servicio</th>
+              <th>Observaciones SoftGuard</th>
+              <th>Coordinador</th>
+
+              <th>CECO</th>
+              <th>Tipo cliente</th>
+              
+              <th>Creador ODT</th>
+             
+              <th>Fecha creación</th>
+              <th>Fecha finalización</th>
+              <th>Último preventivo</th>
+
+              {% if perms.revisiones.revisar_pago_sstt %}
+                <th>Incidencias 90 días</th>
+                <th>SLA 48 hrs</th>
+              {% endif %}
+
+              <th>Estado SoftGuard</th>
+              <th>Pago técnico</th>
+              <th>Revisión</th>
+              <th>Informe</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            {% for r in registros %}
+
+              <tr data-numero="{{ r.numero }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}">
+
+                <!-- NÚMERO ODT -->
+
+                <td>
+                  <a href="{% url 'detalle' r.numero %}">
+                    {{ r.numero }}
+                  </a>
+                  {% if r.esta_facturada %}
+                    <span class="odt-bloqueo-etiqueta" title="ODT facturada: no admite modificaciones">Bloqueada · Facturada</span>
+                  {% elif r.esta_rechazada %}
+                    <span class="odt-bloqueo-etiqueta" title="Rechazo definitivo: no admite modificaciones">Bloqueada · Rechazada</span>
+                  {% endif %}
+                </td>
+
+                <!-- CUENTA -->
+
+                <td class="account">
+                  {{ r.cuenta_completa|default:'—' }}
+                </td>
+
+                <!-- LOCALIDAD -->
+
+                <td class="localidad">
+                  {{ r.localidad|default:"—" }}
+                </td>
+
+                <!-- TÉCNICO Y CONTRATISTA -->
+
+                <td class="technician">
+
+                  {% if r.tecnico %}
+                    <strong>{{ r.tecnico }}</strong>
+                  {% else %}
+                    <span class="hint">
+                      Sin técnico asignado
+                    </span>
+                  {% endif %}
+
+                  {% if r.contratista and r.contratista != r.tecnico %}
+                    <div class="hint">
+                      {{ r.contratista }}
+                    </div>
+                  {% endif %}
+
+                </td>
+
+                <!-- SERVICIO -->
+
+                <td class="service">
+
+                  <input
+                    type="text"
+                    class="row-input service-input {% if r.servicio_editado != None %}saved{% endif %}"
+                    maxlength="150"
+                    value="{% if r.servicio_editado != None %}{{ r.servicio_editado }}{% else %}{{ r.servicio }}{% endif %}"
+                    data-original="{{ r.servicio }}"
+                    title="{% if r.esta_facturada %}ODT facturada: edición bloqueada{% elif r.esta_rechazada %}ODT rechazada definitivamente: edición bloqueada{% endif %}"
+                    disabled
+                  >
+
+                  <span class="edited-mark">
+                    {% if r.servicio_editado != None %}
+                      Servicio editado
+                    {% endif %}
+                  </span>
+
+                </td>
+
+                <!-- OBSERVACIONES -->
+
+                <td class="obs">
+                  {{ r.observaciones_insumos|truncatechars:260|default:'Sin observaciones' }}
+                </td>
+
+                
+                <!-- COORDINADOR SOFTGUARD -->
+                <td class="coordinador-odt">
+                  {% if r.coordinador_identificado %}
+                    <strong>{{ r.coordinador_nombre }}</strong>
+                  {% else %}
+                    <span class="hint">
+                      {{ r.coordinador_nombre|default:"Sin identificar" }}
+                    </span>
+                  {% endif %}
+                </td>
+
+
+                <!-- CECO -->
+
+                <td class="ceco-catalogo">
+
+                  {% if r.ceco_requiere_revision %}
+                    <span
+                      title="Esta cuenta tiene CECO en conflicto; revisar en Cuentas SSTT"
+                      style="color:#b45309;font-weight:600;"
+                    >
+                      Revisar CECO
+                    </span>
+
+                  {% elif r.ceco_catalogo %}
+                    {{ r.ceco_catalogo }}
+
+                  {% else %}
+                    <span class="hint">Sin CECO</span>
+                  {% endif %}
+
+                </td>
+
+                <!-- TIPO CLIENTE -->
+
+                <td class="tipo-cliente-catalogo">
+
+                  {% if r.tipo_cliente_catalogo == "B2B" %}
+                    <span class="tipo-b2b">B2B</span>
+
+                  {% elif r.tipo_cliente_catalogo == "B2C" %}
+                    <span class="tipo-b2c">B2C</span>
+
+                  {% else %}
+                    <span class="tipo-sin-clasificar">
+                      Sin clasificar
+                    </span>
+                  {% endif %}
+
+                </td>
+
+                
+
+                <!-- CREADOR DE LA ODT -->
+
+                <td class="creador-odt">
+
+                  {% if r.usuario_creador %}
+
+                    <div class="creador-contenedor">
+
+                      <span class="creador-nombre">
+                        {{ r.usuario_creador }}
+                      </span>
+
+                      {% if r.correo_creador %}
+                        <span
+                          class="creador-correo"
+                          title="{{ r.correo_creador }}"
+                        >
+                          {{ r.correo_creador }}
+                        </span>
+                      {% endif %}
+
+                    </div>
+
+                  {% else %}
+
+                    <span class="creador-sin-datos">
+                      Sin identificar
+                    </span>
+
+                  {% endif %}
+
+                </td>
+
+                
+
+                <!-- FECHA CREACIÓN -->
+
+                <td class="fecha-odt">
+
+                  {% if r.fecha_creacion %}
+
+                    <div class="fecha-contenedor">
+                      <span class="fecha-principal">
+                        {{ r.fecha_creacion|date:"d-m-Y" }}
+                      </span>
+
+                      <span class="fecha-hora">
+                        {{ r.fecha_creacion|date:"H:i" }} hrs
+                      </span>
+                    </div>
+
+                  {% else %}
+                    <span class="hint">—</span>
+                  {% endif %}
+
+                </td>
+
+                <!-- FECHA FINALIZACIÓN -->
+
+                <td class="fecha-odt">
+
+                  {% if r.fecha_finalizacion %}
+
+                    <div class="fecha-contenedor">
+                      <span class="fecha-principal">
+                        {{ r.fecha_finalizacion|date:"d-m-Y" }}
+                      </span>
+
+                      <span class="fecha-hora">
+                        {{ r.fecha_finalizacion|date:"H:i" }} hrs
+                      </span>
+                    </div>
+
+                  {% else %}
+                    <span class="hint">—</span>
+                  {% endif %}
+
+                </td>
+
+                <!-- ÚLTIMO PREVENTIVO -->
+
+                <td class="fecha-odt">
+
+                  {% if r.fecha_ultimo_preventivo %}
+
+                    <div class="fecha-contenedor">
+
+                      <span class="fecha-principal">
+                        {{ r.fecha_ultimo_preventivo|date:"d-m-Y" }}
+                      </span>
+
+                      <span class="fecha-hora">
+                        {{ r.fecha_ultimo_preventivo|date:"H:i" }} hrs
+                      </span>
+
+                    </div>
+
+                  {% else %}
+                    <span class="hint">
+                      Sin preventivo
+                    </span>
+                  {% endif %}
+
+                </td>
+
+                {% if perms.revisiones.revisar_pago_sstt %}
+
+                  <!-- INCIDENCIAS -->
+
+                  <td class="incidencias-celda">
+
+                    {% if r.cantidad_incidencias >= 3 %}
+
+                      <span
+                        class="incidencia-badge incidencia-alta"
+                        title="Tres o más visitas del mismo técnico a la misma cuenta en 90 días"
+                      >
+                        {{ r.cantidad_incidencias }}
+                      </span>
+
+                    {% elif r.cantidad_incidencias == 2 %}
+
+                      <span
+                        class="incidencia-badge incidencia-media"
+                        title="Dos visitas del mismo técnico a la misma cuenta en 90 días"
+                      >
+                        2
+                      </span>
+
+                    {% elif r.cantidad_incidencias == 1 %}
+
+                      <span
+                        class="incidencia-badge incidencia-baja"
+                        title="Una visita del mismo técnico a la misma cuenta en 90 días"
+                      >
+                        1
+                      </span>
+
+                    {% else %}
+
+                      <span class="incidencia-badge incidencia-sin-datos">
+                        0
+                      </span>
+
+                    {% endif %}
+
+                  </td>
+
+                  <!-- SLA -->
+
+                  <td class="sla">
+
+                    {% if r.estado_sla == "CUMPLE" %}
+
+                      <span class="sla-badge sla-cumple">
+                        Cumple
+                      </span>
+
+                    {% elif r.estado_sla == "NO_CUMPLE" %}
+
+                      <span class="sla-badge sla-no-cumple">
+                        No cumple
+                      </span>
+
+                    {% elif r.estado_sla == "PENDIENTE" %}
+
+                      <span class="sla-badge sla-pendiente">
+                        Pendiente
+                      </span>
+
+                    {% elif r.estado_sla == "ERROR_FECHAS" %}
+
+                      <span class="sla-badge sla-sin-datos">
+                        Revisar fechas
+                      </span>
+
+                    {% else %}
+
+                      <span class="sla-badge sla-sin-datos">
+                        Sin datos
+                      </span>
+
+                    {% endif %}
+
+                    {% if r.duracion_sla and r.estado_sla != "ERROR_FECHAS" %}
+                      <div
+                        class="sla-tiempo"
+                        data-segundos="{{ r.duracion_sla.total_seconds|stringformat:'.0f' }}"
+                      ></div>
+                    {% endif %}
+
+                  </td>
+
+                {% endif %}
+
+                <!-- ESTADO SOFTGUARD -->
+
+                <td>
+                  <span class="softguard">
+                    {{ r.estado_softguard|default:'—' }}
+                  </span>
+                </td>
+
+                <!-- MONTO PAGO TÉCNICO -->
+
+                <td class="amount">
+
+                  <input
+                    type="text"
+                    class="row-input amount-input {% if r.valor_pago_editado != None %}saved{% endif %}"
+                    inputmode="decimal"
+                    autocomplete="off"
+                    value="{% if r.valor_pago_editado != None %}{{ r.valor_pago_editado|stringformat:'.2f' }}{% else %}{{ r.valor_pago_tecnico|stringformat:'.2f' }}{% endif %}"
+                    data-original="{{ r.valor_pago_tecnico|stringformat:'.2f' }}"
+                    title="{% if r.esta_facturada %}ODT facturada: edición bloqueada{% elif r.esta_rechazada %}ODT rechazada definitivamente: edición bloqueada{% endif %}"
+                    disabled
+                  >
+
+                  <span class="edited-mark">
+
+                    {% if r.valor_pago_editado != None %}
+
+                      Monto editado · Original:
+
+                      <span
+                        class="money-original"
+                        data-amount="{{ r.valor_pago_tecnico|stringformat:'.2f' }}"
+                      ></span>
+
+                    {% endif %}
+
+                  </span>
+
+                </td>
+
+                <!-- ESTADO DE REVISIÓN -->
+
+                <td class="review">
+
+                  <select
+                    class="row-select review-select"
+                    {% if not perms.revisiones.revisar_pago_sstt or r.esta_bloqueada %}disabled{% endif %}
+                    data-saved="{% if not r.revision or r.revision.estado == 'POR_REVISAR' %}APROBADA{% else %}{{ r.revision.estado }}{% endif %}"
+                  >
+
+                    <option
+                      value="APROBADA"
+                      {% if not r.revision or r.revision.estado == 'POR_REVISAR' or r.revision.estado == 'APROBADA' %}selected{% endif %}
+                    >
+                      Aprobado
+                    </option>
+
+                    <option
+                      value="EN_REVISION"
+                      {% if r.revision and r.revision.estado == 'EN_REVISION' %}selected{% endif %}
+                    >
+                      En revisión
+                    </option>
+
+                    <option
+                      value="RECHAZADA"
+                      {% if r.revision and r.revision.estado == 'RECHAZADA' %}selected{% endif %}
+                    >
+                      Rechazado
+                    </option>
+
+                    {% if r.revision and r.revision.estado == 'OBSERVADA' %}
+                      <option value="OBSERVADA" selected>
+                        Observada (estado anterior)
+                      </option>
+                    {% endif %}
+
+                  </select>
+
+                </td>
+
+                <!-- ESTADO DEL INFORME -->
+
+                <td class="report">
+
+                  <select
+                    class="row-select report-select"
+                    data-saved="{{ r.estado_informe }}"
+                    {% if r.esta_bloqueada %}disabled{% endif %}
+                    aria-label="Estado del informe de ODT {{ r.numero }}"
+                  >
+
+                    <option
+                      value="NO_ENVIADO"
+                      {% if r.estado_informe == 'NO_ENVIADO' %}selected{% endif %}
+                    >
+                      No enviado
+                    </option>
+
+                    <option
+                      value="ENVIADO"
+                      {% if r.estado_informe == 'ENVIADO' %}selected{% endif %}
+                    >
+                      Enviado
+                    </option>
+
+                    <option
+                      value="NO_APLICA"
+                      {% if r.estado_informe == 'NO_APLICA' %}selected{% endif %}
+                    >
+                      No aplica
+                    </option>
+
+                  </select>
+
+                </td>
+
+                <!-- ACCIONES -->
+
+                <td>
+
+                  <div class="row-actions">
+
+                    {% if perms.revisiones.editar_odt_sstt %}
+
+                      
+                      <button
+                        type="button"
+                        class="edit-row"
+                        {% if r.esta_bloqueada %}
+                          disabled
+                          title="{% if r.esta_facturada %}ODT facturada: no permite modificaciones{% else %}ODT rechazada definitivamente: no permite modificaciones{% endif %}"
+                        {% endif %}
+                      >
+                        Editar
+                      </button>
+
+
+                      <button
+                        type="button"
+                        class="save-row"
+                        {% if r.esta_bloqueada %}disabled{% endif %}
+                        hidden
+                      >
+                        Guardar
+                      </button>
+
+                      <button
+                        type="button"
+                        class="cancel-row alt"
+                        {% if r.esta_bloqueada %}disabled{% endif %}
+                        hidden
+                      >
+                        Cancelar
+                      </button>
+
+                    {% else %}
+
+                      <button
+                        type="button"
+                        class="edit-row"
+                        hidden
+                        disabled
+                        style="display:none!important"
+                        aria-hidden="true"
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        class="save-row"
+                        hidden
+                        disabled
+                        style="display:none!important"
+                        aria-hidden="true"
+                      >
+                        Guardar
+                      </button>
+
+                      <button
+                        type="button"
+                        class="cancel-row alt"
+                        hidden
+                        disabled
+                        style="display:none!important"
+                        aria-hidden="true"
+                      >
+                        Cancelar
+                      </button>
+
+                    {% endif %}
+
+                    {% if perms.revisiones.ver_historial_sstt %}
+
+                      <button
+                        type="button"
+                        class="history-row alt"
+                        data-url="{% url 'historial_odt' r.numero %}"
+                      >
+                        Historial
+                      </button>
+
+                    {% endif %}
+
+                  </div>
+
+                  <span class="error-row"></span>
+
+                </td>
+
+              </tr>
+
+            {% empty %}
+
+              <tr>
+                <td colspan="{% if perms.revisiones.revisar_pago_sstt %}19{% else %}17{% endif %}">
+                  No hay ODT con estos filtros.
+                </td>
+              </tr>
+
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <!-- PAGINACIÓN -->
+
+      {% if pagina.has_other_pages %}
+
+        <div class="pagination">
+
+          <span>
+            Página {{ pagina.number }}
+            de {{ pagina.paginator.num_pages }}
+          </span>
+
+          <div>
+
+            {% if pagina.has_previous %}
+
+              <a
+                class="btn alt"
+                href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.previous_page_number }}"
+              >
+                Anterior
+              </a>
+
+            {% endif %}
+
+            {% if pagina.has_next %}
+
+              <a
+                class="btn alt"
+                href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.next_page_number }}"
+              >
+                Siguiente
+              </a>
+
+            {% endif %}
+
+          </div>
+
+        </div>
+
+      {% endif %}
+
+    </section>
+
+  </main>
+
+  <footer>
+    Sistema SSTT · Entorno de desarrollo
+  </footer>
+
+  <!-- MODAL HISTORIAL -->
+
+  <dialog id="modalHistorial" class="historial-modal">
+
+    <div class="historial-encabezado">
+
+      <div>
+        <h2>
+          Historial de ODT
+          <span id="historialNumero"></span>
+        </h2>
+
+        <p class="hint">
+          Registro de modificaciones realizadas
+          durante el proceso de revisión de pagos.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        id="cerrarHistorial"
+        class="alt"
+      >
+        Cerrar
+      </button>
+
+    </div>
+
+    <div id="historialContenido">
+      <p class="hint">
+        Cargando historial...
+      </p>
+    </div>
+
+  </dialog>
+
+  <!-- CONFIRMACIÓN DE CAMBIO DE MONTO -->
+
+  <dialog id="confirmarMonto">
+
+    <h2>Confirmar modificación de pago</h2>
+
+    <p>
+      Vas a modificar el monto de pago de la ODT
+      <strong id="dialogODT"></strong>.
+    </p>
+
+    <div class="dialog-line">
+      <span>Monto anterior</span>
+      <strong id="dialogAnterior"></strong>
+    </div>
+
+    <div class="dialog-line">
+      <span>Monto nuevo</span>
+      <strong id="dialogNuevo"></strong>
+    </div>
+
+    <div class="dialog-line">
+      <span>Diferencia</span>
+      <strong id="dialogDiferencia"></strong>
+    </div>
+
+    <div class="dialog-actions">
+
+      <button
+        type="button"
+        class="alt"
+        id="cancelarMonto"
+      >
+        Cancelar
+      </button>
+
+      <button
+        type="button"
+        id="aceptarMonto"
+      >
+        Confirmar y guardar
+      </button>
+
+    </div>
+
+  </dialog>
+
+  <!-- JAVASCRIPT PRINCIPAL -->
+
+  <script src="{% static 'revisiones/bandeja.js' %}?v=20261102-bloqueo"></script>
+
+  <!-- FILTROS Y FACTURACIÓN -->
+
+  <script>
+    (function () {
+
+      const form = document.querySelector('form.filters');
+
+      function configurarMulti(
+        id,
+        listaId,
+        buscarId,
+        resumenId,
+        cantidadId,
+        limpiarId,
+        singular
+      ) {
+
+        const contenedor = document.getElementById(id);
+        const lista = document.getElementById(listaId);
+
+        if (!contenedor || !lista) return;
+
+        const buscar = document.getElementById(buscarId);
+        const resumen = document.getElementById(resumenId);
+        const cantidad = document.getElementById(cantidadId);
+
+        const opciones = [
+          ...lista.querySelectorAll('label.multi-option')
+        ];
+
+        function actualizar() {
+
+          const n = lista.querySelectorAll(
+            'input[type=checkbox]:checked'
+          ).length;
+
+          resumen.textContent = n
+            ? `${n} ${singular}${n === 1 ? '' : 's'} seleccionado${n === 1 ? '' : 's'}`
+            : `Todos los ${singular}s`;
+
+          cantidad.textContent =
+            `${n} seleccionado${n === 1 ? '' : 's'}`;
+        }
+
+        lista.addEventListener('change', actualizar);
+
+        buscar.addEventListener('input', function () {
+
+          const q = this.value
+            .toLocaleLowerCase('es')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+
+          opciones.forEach(el => {
+
+            const texto = el.textContent
+              .toLocaleLowerCase('es')
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '');
+
+            el.style.display = texto.includes(q)
+              ? ''
+              : 'none';
+
+          });
+        });
+
+        document.getElementById(limpiarId)
+          .addEventListener('click', function () {
+
+            lista.querySelectorAll(
+              'input[type=checkbox]'
+            ).forEach(el => el.checked = false);
+
+            actualizar();
+          });
+
+        actualizar();
+      }
+
+      configurarMulti(
+        'contratistasDropdown',
+        'listaContratistas',
+        'buscarContratista',
+        'contratistasResumen',
+        'cantidadContratistas',
+        'limpiarContratistas',
+        'contratista'
+      );
+
+      function copiarFiltros(destino) {
+
+        destino.querySelectorAll(
+          'input[type=hidden]'
+        ).forEach(el => el.remove());
+
+        const datos = new FormData(form);
+
+        for (const [nombre, valor] of datos.entries()) {
+
+          const campo = document.createElement('input');
+
+          campo.type = 'hidden';
+          campo.name = nombre;
+          campo.value = valor;
+
+          destino.appendChild(campo);
+        }
+
+        return datos;
+      }
+
+      const facturar = document.getElementById(
+        'formFacturarPeriodo'
+      );
+
+      if (facturar) {
+
+        facturar.addEventListener('submit', function (e) {
+
+          const datos = copiarFiltros(this);
+
+          if (
+            !datos.get('fecha_desde') ||
+            !datos.get('fecha_hasta')
+          ) {
+
+            e.preventDefault();
+
+            alert(
+              'Selecciona las fechas del período: desde el día 21 hasta el día 20 del mes siguiente.'
+            );
+          }
+        });
+      }
+
+      const pdf = document.getElementById(
+        'formExportarPDF'
+      );
+
+      if (pdf) {
+
+        pdf.addEventListener('submit', function (e) {
+
+          const datos = copiarFiltros(this);
+
+          const contratistas = datos
+            .getAll('contratista')
+            .filter(Boolean);
+
+          if (
+            contratistas.length !== 1 ||
+            !datos.get('fecha_desde') ||
+            !datos.get('fecha_hasta')
+          ) {
+
+            e.preventDefault();
+
+            alert(
+              'Para exportar PDF, selecciona exactamente un contratista y ambas fechas.'
+            );
+          }
+        });
+      }
+
+    })();
+  </script>
+
+  <!-- RESUMEN DE FILTROS -->
+
+  <script>
+    (function () {
+
+      "use strict";
+
+      function actualizarResumenFiltro(config) {
+
+        const lista = document.getElementById(
+          config.lista
+        );
+
+        const resumen = document.getElementById(
+          config.resumen
+        );
+
+        const contador = document.getElementById(
+          config.contador
+        );
+
+        if (!lista || !resumen) return;
+
+        const seleccionados = Array.from(
+          lista.querySelectorAll(
+            'input[type="checkbox"]:checked'
+          )
+        );
+
+        const cantidad = seleccionados.length;
+
+        if (cantidad === 0) {
+
+          resumen.textContent = config.todos;
+
+        } else if (cantidad === 1) {
+
+          resumen.textContent = seleccionados[0].value;
+
+        } else {
+
+          resumen.textContent =
+            `${cantidad} ${config.plural} seleccionados`;
+        }
+
+        if (contador) {
+
+          contador.textContent =
+            `${cantidad} seleccionado${cantidad === 1 ? "" : "s"}`;
+        }
+      }
+
+      const filtros = [
+        {
+          lista: "listaContratistas",
+          resumen: "contratistasResumen",
+          contador: "cantidadContratistas",
+          todos: "Todos los contratistas",
+          plural: "contratistas"
+        },
+        {
+          lista: "listaServicios",
+          resumen: "serviciosResumen",
+          contador: "cantidadServicios",
+          todos: "Todos los servicios",
+          plural: "servicios"
+        }
+      ];
+
+      function actualizarTodos() {
+
+        filtros.forEach(actualizarResumenFiltro);
+      }
+
+      function iniciar() {
+
+        filtros.forEach(config => {
+
+          const lista = document.getElementById(
+            config.lista
+          );
+
+          const limpiar = document.getElementById(
+            config.lista === "listaServicios"
+              ? "limpiarServicios"
+              : "limpiarContratistas"
+          );
+
+          if (lista) {
+
+            lista.addEventListener(
+              "change",
+              actualizarTodos
+            );
+          }
+
+          if (limpiar) {
+
+            limpiar.addEventListener(
+              "click",
+              () => {
+                actualizarTodos();
+              }
+            );
+          }
+
+        });
+
+        actualizarTodos();
+      }
+
+      if (document.readyState === "loading") {
+
+        document.addEventListener(
+          "DOMContentLoaded",
+          iniciar
+        );
+
+      } else {
+
+        iniciar();
+      }
+
+    })();
+  </script>
+
+  
+<script>
+(function () {
+    "use strict";
+
+    const formulario = document.querySelector("form.filters");
+    const listaContratistas = document.getElementById(
+        "listaContratistas"
+    );
+    const resumenContratistas = document.getElementById(
+        "contratistasResumen"
+    );
+    const cantidadContratistas = document.getElementById(
+        "cantidadContratistas"
+    );
+
+    if (!formulario || !listaContratistas) {
+        return;
+    }
+
+    const urlAjax = "{% url 'contratistas_disponibles_ajax' %}";
+
+    let controladorAnterior = null;
+    let numeroSolicitud = 0;
+
+    function actualizarResumen() {
+        const seleccionados = listaContratistas.querySelectorAll(
+            'input[name="contratista"]:checked'
+        );
+
+        const cantidad = seleccionados.length;
+
+        if (resumenContratistas) {
+            resumenContratistas.textContent = cantidad
+                ? `${cantidad} contratista${cantidad === 1 ? "" : "s"} seleccionado${cantidad === 1 ? "" : "s"}`
+                : "Todos los contratistas";
+        }
+
+        if (cantidadContratistas) {
+            cantidadContratistas.textContent =
+                `${cantidad} seleccionado${cantidad === 1 ? "" : "s"}`;
+        }
+    }
+
+    async function actualizarContratistas() {
+
+        if (controladorAnterior) {
+            controladorAnterior.abort();
+        }
+
+        controladorAnterior = new AbortController();
+        const solicitudActual = ++numeroSolicitud;
+
+        const parametros = new URLSearchParams();
+
+        const fechaDesde = formulario.querySelector(
+            '[name="fecha_desde"]'
+        );
+
+        const fechaHasta = formulario.querySelector(
+            '[name="fecha_hasta"]'
+        );
+
+        const estado = formulario.querySelector(
+            '[name="estado"]'
+        );
+
+        if (fechaDesde && fechaDesde.value) {
+            parametros.set("fecha_desde", fechaDesde.value);
+        }
+
+        if (fechaHasta && fechaHasta.value) {
+            parametros.set("fecha_hasta", fechaHasta.value);
+        }
+
+        if (estado && estado.value) {
+            parametros.set("estado", estado.value);
+        }
+
+        formulario.querySelectorAll(
+            'input[name="servicios"]:checked'
+        ).forEach(function (checkbox) {
+            parametros.append("servicios", checkbox.value);
+        });
+
+        // Guardar contratistas seleccionados
+        const seleccionados = new Set(
+            Array.from(
+                listaContratistas.querySelectorAll(
+                    'input[name="contratista"]:checked'
+                )
+            ).map(input => input.value)
+        );
+
+        try {
+
+            const respuesta = await fetch(
+                `${urlAjax}?${parametros.toString()}`,
+                {
+                    method: "GET",
+                    credentials: "same-origin",
+                    signal: controladorAnterior.signal
+                }
+            );
+
+            if (!respuesta.ok) {
+                throw new Error(
+                    `Error HTTP ${respuesta.status}`
+                );
+            }
+
+            const datos = await respuesta.json();
+
+            if (solicitudActual !== numeroSolicitud) {
+                return;
+            }
+
+            listaContratistas.replaceChildren();
+
+            const contratistas = datos.contratistas || [];
+
+            contratistas.forEach(function (nombre) {
+
+                const etiqueta = document.createElement("label");
+                etiqueta.className = "multi-option";
+
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.name = "contratista";
+                checkbox.value = nombre;
+
+                checkbox.checked = seleccionados.has(nombre);
+
+                const texto = document.createElement("span");
+                texto.textContent = nombre;
+
+                etiqueta.appendChild(checkbox);
+                etiqueta.appendChild(texto);
+
+                listaContratistas.appendChild(etiqueta);
+            });
+
+            if (contratistas.length === 0) {
+
+                const mensaje = document.createElement("div");
+                mensaje.className = "hint";
+                mensaje.textContent =
+                    "No hay contratistas para los filtros seleccionados.";
+
+                listaContratistas.appendChild(mensaje);
+            }
+
+            // Aplicar también el texto de búsqueda existente
+            const buscar = document.getElementById(
+                "buscarContratista"
+            );
+
+            if (buscar && buscar.value) {
+                buscar.dispatchEvent(
+                    new Event("input", { bubbles: true })
+                );
+            }
+
+            actualizarResumen();
+
+        } catch (error) {
+
+            if (error.name !== "AbortError") {
+                console.error(
+                    "No se pudieron actualizar los contratistas:",
+                    error
+                );
+            }
+        }
+    }
+
+    // Cambios de fecha, estado y servicios
+    formulario.addEventListener("change", function (evento) {
+
+        const campo = evento.target;
+
+        if (
+            campo.matches('[name="fecha_desde"]') ||
+            campo.matches('[name="fecha_hasta"]') ||
+            campo.matches('[name="estado"]') ||
+            campo.matches('input[name="servicios"]')
+        ) {
+            actualizarContratistas();
+        }
+    });
+
+})();
+</script>
+
+
+</body>
+</html>

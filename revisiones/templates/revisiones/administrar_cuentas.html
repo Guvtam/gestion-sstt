@@ -1,0 +1,354 @@
+
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Administración de cuentas SSTT</title>
+
+    <link rel="stylesheet"
+          href="{% static 'revisiones/bandeja.css' %}">
+
+    <style>
+        .cuentas-contenedor {
+            max-width: 1600px;
+            margin: 24px auto;
+            padding: 0 20px;
+        }
+
+        .cuentas-encabezado {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .cuentas-indicadores {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cuentas-indicador {
+            background: white;
+            padding: 20px;
+            border: 1px solid #dce5ef;
+            border-radius: 10px;
+        }
+
+        .cuentas-indicador strong {
+            display: block;
+            font-size: 26px;
+            margin-top: 8px;
+        }
+
+        .cuentas-panel {
+            background: white;
+            border: 1px solid #dce5ef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .cuentas-filtros {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: end;
+            gap: 12px;
+        }
+
+        .cuentas-filtros input,
+        .cuentas-filtros select {
+            min-height: 38px;
+            padding: 8px;
+        }
+
+        .cuentas-tabla-contenedor {
+            overflow-x: auto;
+        }
+
+        .cuentas-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1050px;
+        }
+
+        .cuentas-tabla th,
+        .cuentas-tabla td {
+            padding: 12px;
+            border-bottom: 1px solid #e5eaf0;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .cuentas-tabla th {
+            background: #edf3f9;
+        }
+
+        .cuentas-tabla input,
+        .cuentas-tabla select {
+            width: 100%;
+            min-width: 100px;
+            padding: 8px;
+        }
+
+        .cuentas-tabla textarea {
+            width: 100%;
+            min-width: 180px;
+            padding: 8px;
+            resize: vertical;
+        }
+
+        .cuentas-codigo {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .cuentas-pendiente {
+            color: #92400e;
+            font-weight: 600;
+        }
+
+        .cuentas-paginacion {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            gap: 12px;
+        }
+
+        @media (max-width: 800px) {
+            .cuentas-indicadores {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<main class="cuentas-contenedor">
+
+    <div class="cuentas-encabezado">
+        <div>
+            <h1>Administración de cuentas SSTT</h1>
+            <p>Clasificación de clientes y centros de costo</p>
+        </div>
+
+        <a class="btn alt" href="{% url 'bandeja' %}">
+            Volver a bandeja
+        </a>
+    </div>
+
+    {% for mensaje in messages %}
+        <div class="message">{{ mensaje }}</div>
+    {% endfor %}
+
+    <section class="cuentas-indicadores">
+
+        <div class="cuentas-indicador">
+            <span>Total de cuentas</span>
+            <strong>{{ total_cuentas }}</strong>
+        </div>
+
+        <div class="cuentas-indicador">
+            <span>Sin clasificar</span>
+            <strong>{{ sin_clasificar }}</strong>
+        </div>
+
+        <div class="cuentas-indicador">
+            <span>CECO pendiente de revisión</span>
+            <strong>{{ revisar_ceco }}</strong>
+        </div>
+
+    </section>
+
+    <section class="cuentas-panel">
+
+        <h2>Buscar y filtrar cuentas</h2>
+
+        <form method="get" class="cuentas-filtros">
+
+            <div>
+                <label>Buscar cuenta o CECO</label>
+                <input type="text"
+                       name="q"
+                       value="{{ busqueda }}"
+                       placeholder="Código, cliente o CECO">
+            </div>
+
+            <div>
+                <label>Clasificación</label>
+                <select name="tipo">
+                    <option value="">Todas</option>
+                    <option value="B2B"
+                        {% if tipo == 'B2B' %}selected{% endif %}>
+                        B2B
+                    </option>
+                    <option value="B2C"
+                        {% if tipo == 'B2C' %}selected{% endif %}>
+                        B2C
+                    </option>
+                    <option value="SIN_CLASIFICAR"
+                        {% if tipo == 'SIN_CLASIFICAR' %}selected{% endif %}>
+                        Sin clasificar
+                    </option>
+                </select>
+            </div>
+
+            <div>
+                <label>
+                    <input type="checkbox"
+                           name="pendientes"
+                           value="1"
+                           {% if pendientes == '1' %}checked{% endif %}>
+                    Solo pendientes
+                </label>
+            </div>
+
+            <button type="submit">Aplicar filtros</button>
+
+            <a class="btn alt"
+               href="{% url 'administrar_cuentas' %}">
+                Limpiar
+            </a>
+
+        </form>
+
+    </section>
+
+    <section class="cuentas-panel">
+
+        <h2>Catálogo de cuentas</h2>
+
+        <div class="cuentas-tabla-contenedor">
+
+            <table class="cuentas-tabla">
+
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre de cuenta</th>
+                        <th>CECO</th>
+                        <th>Tipo de cliente</th>
+                        <th>Observaciones</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for cuenta in cuentas %}
+
+                    <tr>
+                        <td class="cuentas-codigo">
+                            {{ cuenta.codigo_cuenta }}
+                        </td>
+
+                        <td>
+                            {{ cuenta.nombre_cuenta }}
+                        </td>
+
+                        <td>
+                            <input
+                                form="form-cuenta-{{ cuenta.id }}"
+                                type="text"
+                                name="ceco"
+                                maxlength="50"
+                                value="{{ cuenta.ceco }}"
+                                placeholder="Sin CECO">
+                        </td>
+
+                        <td>
+                            <select
+                                form="form-cuenta-{{ cuenta.id }}"
+                                name="tipo_cliente">
+
+                                <option value="B2B"
+                                    {% if cuenta.tipo_cliente == 'B2B' %}selected{% endif %}>
+                                    B2B
+                                </option>
+
+                                <option value="B2C"
+                                    {% if cuenta.tipo_cliente == 'B2C' %}selected{% endif %}>
+                                    B2C
+                                </option>
+
+                                <option value="SIN_CLASIFICAR"
+                                    {% if cuenta.tipo_cliente == 'SIN_CLASIFICAR' %}selected{% endif %}>
+                                    Sin clasificar
+                                </option>
+
+                            </select>
+                        </td>
+
+                        <td>
+                            <textarea
+                                form="form-cuenta-{{ cuenta.id }}"
+                                name="observaciones"
+                                rows="2">{{ cuenta.observaciones }}</textarea>
+                        </td>
+
+                        <td>
+                            <form
+                                id="form-cuenta-{{ cuenta.id }}"
+                                method="post"
+                                action="{% url 'guardar_cuenta' cuenta.id %}">
+                                {% csrf_token %}
+                                <button type="submit">
+                                    Guardar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="6">
+                            No se encontraron cuentas.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="cuentas-paginacion">
+
+            <span>
+                Página {{ pagina.number }}
+                de {{ pagina.paginator.num_pages }}
+            </span>
+
+            <div>
+                {% if pagina.has_previous %}
+                    <a class="btn alt"
+                       href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.previous_page_number }}">
+                        Anterior
+                    </a>
+                {% endif %}
+
+                {% if pagina.has_next %}
+                    <a class="btn alt"
+                       href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.next_page_number }}">
+                        Siguiente
+                    </a>
+                {% endif %}
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+</body>
+</html>

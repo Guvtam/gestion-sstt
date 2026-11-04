@@ -1,0 +1,182 @@
+@login_required
+@permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
+def odt_modificadas(request):
+    """Listado de cambios y comparación con la última sincronización SoftGuard."""
+    from .coordinadores_softguard import (
+        COORDINADORES_SOFTGUARD,
+        identificar_coordinador_odt,
+    )
+    from django.db.models import F
+
+    registros = (
+        ODT.objects.select_related("revision", "seguimiento_correccion")
+        .filter(
+            Q(seguimiento_correccion__isnull=False)
+            | Q(servicio_editado__isnull=False)
+            | Q(valor_pago_editado__isnull=False)
+        )
+        .order_by("-numero")
+    )
+
+    coordinador_seleccionado = request.GET.get("coordinador", "").strip()
+    tipo = request.GET.get("tipo", "").strip()
+    correccion = request.GET.get("correccion", "").strip()
+    q = request.GET.get("q", "").strip()
+
+    if tipo == "MONTO":
+        registros = registros.filter(valor_pago_editado__isnull=False)
+    elif tipo == "SERVICIO":
+        registros = registros.filter(servicio_editado__isnull=False)
+    elif tipo == "AMBOS":
+        registros = registros.filter(
+            servicio_editado__isnull=False,
+            valor_pago_editado__isnull=False,
+        )
+
+    if q:
+        condicion = (
+            Q(tecnico__icontains=q)
+            | Q(contratista__icontains=q)
+            | Q(cuenta_completa__icontains=q)
+        )
+        numero_buscado = q.replace(".", "").replace(" ", "")
+        if numero_buscado.isdigit():
+            condicion |= Q(numero=int(numero_buscado))
+        registros = registros.filter(condicion)
+
+    # Filtrar por estado persistente (sin perder ODT actualizadas).
+    # Los registros anteriores se inicializan con el comando incluido.
+    if correccion in ("PENDIENTE", "EN_PROCESO", "ACTUALIZADA"):
+        registros = registros.filter(seguimiento_correccion__estado=correccion)
+
+    # Guardar resultados solo durante esta solicitud, para no repetir
+    # la consulta SQL de historial por cada ODT.
+    cache_coordinadores = {}
+
+    def obtener_coordinador(numero):
+        if numero not in cache_coordinadores:
+            try:
+                cache_coordinadores[numero] = identificar_coordinador_odt(numero)
+            except Exception:
+                cache_coordinadores[numero] = {
+                    "nombre": "No disponible",
+                    "usuario": None,
+                    "identificado": False,
+                }
+        return cache_coordinadores[numero]
+
+    # El coordinador no está guardado aún en ODT, por lo que el
+    # filtro requiere identificarlo antes de calcular la paginación.
+    if coordinador_seleccionado:
+        numeros = registros.values_list("numero", flat=True).iterator()
+        numeros_filtrados = []
+        for numero in numeros:
+            info = obtener_coordinador(numero)
+            if coordinador_seleccionado == "SIN_IDENTIFICAR":
+                coincide = not info.get("identificado", False)
+            else:
+                coincide = info.get("usuario") == coordinador_seleccionado
+            if coincide:
+                numeros_filtrados.append(numero)
+        registros = registros.filter(numero__in=numeros_filtrados)
+
+    resumen = registros.aggregate(
+        cantidad=Count("pk"),
+        monto_original=Sum("valor_pago_tecnico"),
+        monto_corregido=Sum(importe_efectivo()),
+    )
+    monto_original = resumen["monto_original"] or Decimal("0")
+    monto_corregido = resumen["monto_corregido"] or Decimal("0")
+
+    pagina = Paginator(registros, 50).get_page(request.GET.get("page"))
+    filas = []
+
+    for odt in pagina.object_list:
+        coordinador = obtener_coordinador(odt.numero)
+        monto_original_fila = odt.valor_pago_tecnico or Decimal("0")
+        cambio_monto = odt.valor_pago_editado is not None
+        cambio_servicio = odt.servicio_editado is not None
+        monto_actual = (
+            odt.valor_pago_editado if cambio_monto else monto_original_fila
+        )
+        servicio_actual = (
+            odt.servicio_editado if cambio_servicio else odt.servicio
+        )
+
+        seguimiento = getattr(odt, "seguimiento_correccion", None)
+        estado_correccion = seguimiento.estado if seguimiento else "PENDIENTE"
+        if seguimiento:
+            cambio_monto = seguimiento.corrige_monto
+            cambio_servicio = seguimiento.corrige_servicio
+            monto_actual = seguimiento.monto_objetivo
+            servicio_actual = seguimiento.servicio_objetivo
+
+        filas.append({
+            "numero": odt.numero,
+            "coordinador": coordinador.get("nombre", "Sin identificar"),
+            "coordinador_identificado": coordinador.get("identificado", False),
+            "contratista": odt.contratista,
+            "tecnico": odt.tecnico,
+            "cuenta": odt.cuenta_completa,
+            "fecha_finalizacion": odt.fecha_finalizacion,
+            "servicio_original": odt.servicio,
+            "servicio_actual": servicio_actual,
+            "monto_original": monto_original_fila,
+            "monto_actual": monto_actual,
+            "cambio_monto": cambio_monto,
+            "cambio_servicio": cambio_servicio,
+            "estado_correccion": estado_correccion,
+        })
+
+    parametros = request.GET.copy()
+    parametros.pop("page", None)
+    coordinadores = [
+        {"usuario": datos["usuario"], "nombre": datos["nombre"]}
+        for datos in COORDINADORES_SOFTGUARD.values()
+    ]
+
+    return render(request, "revisiones/odt_modificadas.html", {
+        "filas": filas,
+        "pagina": pagina,
+        "coordinadores": coordinadores,
+        "coordinador_seleccionado": coordinador_seleccionado,
+        "tipo_seleccionado": tipo,
+        "correccion_seleccionada": correccion,
+        "q": q,
+        "querystring": parametros.urlencode(),
+        "cantidad": resumen["cantidad"],
+        "monto_original": monto_original,
+        "monto_corregido": monto_corregido,
+        "diferencia_total": monto_corregido - monto_original,
+    })
+
+
+@login_required
+@permission_required("revisiones.editar_odt_sstt", raise_exception=True)
+@require_POST
+def cambiar_estado_correccion(request):
+    from .correcciones import coinciden
+    try:
+        numero = int(request.POST.get("numero", ""))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "ODT inválida"}, status=400)
+    estado = request.POST.get("estado", "").strip()
+    if estado not in ("PENDIENTE", "EN_PROCESO"):
+        return JsonResponse({"error": "Estado manual no permitido"}, status=400)
+    with transaction.atomic():
+        odt = get_object_or_404(ODT.objects.select_for_update(), numero=numero)
+        seguimiento = CorreccionODT.objects.select_for_update().filter(odt=odt).first()
+        if not seguimiento:
+            return JsonResponse({"error": "Falta inicializar seguimiento de esta ODT"}, status=409)
+        if seguimiento.estado == "ACTUALIZADA" or coinciden(odt, seguimiento):
+            return JsonResponse({"error": "La ODT ya coincide con SoftGuard. Actualiza la pantalla."}, status=409)
+        if seguimiento.estado != estado:
+            anterior = seguimiento.estado
+            seguimiento.estado = estado
+            seguimiento.actualizado_por = request.user
+            seguimiento.gestionado_en = timezone.now()
+            seguimiento.save(update_fields=["estado", "actualizado_por", "gestionado_en"])
+            EventoCorreccionODT.objects.create(odt=odt, estado_anterior=anterior,
+                estado_nuevo=estado, usuario=request.user,
+                detalle="Cambio manual del estado de gestión")
+    return JsonResponse({"ok": True, "estado": estado})

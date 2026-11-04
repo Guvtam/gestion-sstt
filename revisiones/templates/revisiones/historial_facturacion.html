@@ -1,0 +1,857 @@
+
+{% load static formato_sstt %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Historial de facturación · SSTT</title>
+
+    <link rel="stylesheet"
+          href="{% static 'revisiones/bandeja.css' %}">
+
+    <link rel="stylesheet"
+          href="{% static 'revisiones/historial_facturacion.css' %}?v=20261103-ejecutivo">
+</head>
+
+<body>
+
+<header class="header-sstt">
+    <div class="header-contenido">
+        <div class="header-titulo">
+            <h1>Gestión de pagos SSTT</h1>
+            <p>Historial de facturación y requisiciones</p>
+        </div>
+
+        <a class="btn alt" href="{% url 'bandeja' %}">
+            Volver a bandeja
+        </a>
+    </div>
+</header>
+
+<main class="hist-main">
+
+    <!-- MENSAJES DEL SISTEMA -->
+
+    {% if messages %}
+    <section class="hist-mensajes" aria-live="polite">
+        {% for message in messages %}
+        <p role="status">{{ message }}</p>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- ENCABEZADO -->
+
+    <div class="hist-top">
+        <div>
+            <h2>Historial de facturación</h2>
+            <p class="hist-sub">
+                Consulta de períodos facturados,
+                requisiciones y órdenes de trabajo.
+            </p>
+        </div>
+
+        <nav class="hist-nav" aria-label="Navegación">
+            <a class="hist-tab" href="{% url 'bandeja' %}">
+                Bandeja
+            </a>
+            <span class="hist-tab active"
+                  aria-current="page">
+                Historial
+            </span>
+        </nav>
+    </div>
+
+    <!-- ============================================
+         PERÍODOS REGISTRADOS
+         ============================================ -->
+
+    <section class="hist-panel">
+
+        <div class="hist-heading">
+            <div>
+                <h3>Períodos registrados</h3>
+                <p class="hist-sub">
+                    Información histórica de facturación
+                    guardada en el sistema.
+                </p>
+            </div>
+
+            <span class="hist-pill">
+                {{ periodos|length }} períodos
+            </span>
+        </div>
+
+        <div class="hist-table-wrap">
+            <table class="hist-table tabla-periodos">
+                <thead>
+                    <tr>
+                        <th>Período</th>
+                        <th>Contratistas</th>
+                        <th>ODT</th>
+                        <th>Monto CLP</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for periodo in periodos %}
+                    <tr class="{% if periodo_seleccionado.id == periodo.id %}hist-fila-seleccionada{% endif %}">
+
+                        <td>
+                            <strong>
+                                {{ periodo.fecha_desde|date:"d/m/Y" }}
+                                al
+                                {{ periodo.fecha_hasta|date:"d/m/Y" }}
+                            </strong>
+                        </td>
+
+                        <td class="center">
+                            {{ periodo.cantidad_contratistas }}
+                        </td>
+
+                        <td class="center">
+                            {{ periodo.cantidad_odt }}
+                        </td>
+
+                        <td class="right">
+                            <strong>
+                                ${{ periodo.monto_total|clp }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            <div class="hist-acciones-tabla">
+
+                                <a class="hist-link"
+                                   href="?periodo={{ periodo.id }}">
+                                    {% if periodo_seleccionado.id == periodo.id %}
+                                        Período seleccionado
+                                    {% else %}
+                                        Ver contratistas
+                                    {% endif %}
+                                </a>
+
+                                {% if request.user.is_staff %}
+                                <form
+                                    method="post"
+                                    class="hist-form-eliminar"
+                                    action="{% url 'eliminar_periodo_facturacion' periodo.id %}"
+                                    data-periodo="{{ periodo.fecha_desde|date:'d/m/Y' }} al {{ periodo.fecha_hasta|date:'d/m/Y' }}"
+                                    data-contratistas="{{ periodo.cantidad_contratistas }}"
+                                    data-odt="{{ periodo.cantidad_odt }}"
+                                    onsubmit="return confirmarEliminarPeriodo(this);">
+
+                                    {% csrf_token %}
+
+                                    <input
+                                        type="hidden"
+                                        name="motivo"
+                                        class="motivo-eliminacion">
+
+                                    <input
+                                        type="hidden"
+                                        name="confirmacion"
+                                        class="confirmacion-eliminacion">
+
+                                    <button
+                                        type="submit"
+                                        class="hist-btn-eliminar"
+                                        title="Eliminar facturación del período">
+                                        Eliminar
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                            </div>
+                        </td>
+
+                    </tr>
+
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="hist-empty">
+                            Todavía no existen períodos
+                            de facturación registrados.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ============================================
+         RESUMEN FINANCIERO EJECUTIVO
+         ============================================ -->
+
+    {% if periodo_seleccionado and resumen_costos %}
+
+    <section class="hist-panel hist-panel-ejecutivo">
+
+        <div class="hist-heading">
+            <div>
+                <span class="hist-eyebrow">
+                    ANÁLISIS FINANCIERO
+                </span>
+
+                <h3>Resumen de costos del período</h3>
+
+                <p class="hist-sub">
+                    {{ periodo_seleccionado.fecha_desde|date:"d/m/Y" }}
+                    al
+                    {{ periodo_seleccionado.fecha_hasta|date:"d/m/Y" }}
+                    · Montos efectivamente facturados
+                </p>
+            </div>
+
+            <span class="hist-pill">
+                {{ resumen_costos.cantidad }} ODT
+            </span>
+        </div>
+
+        <!-- INDICADORES PRINCIPALES -->
+
+        <div class="hist-kpi-grid">
+
+            <div class="hist-kpi hist-kpi-principal">
+                <span class="hist-kpi-label">
+                    Total facturado
+                </span>
+
+                <strong class="hist-kpi-valor">
+                    ${{ resumen_costos.total|clp }}
+                </strong>
+
+                <span class="hist-kpi-nota">
+                    Monto total del período seleccionado
+                </span>
+            </div>
+
+            <div class="hist-kpi">
+                <span class="hist-kpi-label">
+                    Órdenes de trabajo
+                </span>
+
+                <strong class="hist-kpi-valor">
+                    {{ resumen_costos.cantidad }}
+                </strong>
+
+                <span class="hist-kpi-nota">
+                    ODT incluidas en facturación
+                </span>
+            </div>
+
+            <div class="hist-kpi">
+                <span class="hist-kpi-label">
+                    Costo promedio por ODT
+                </span>
+
+                <strong class="hist-kpi-valor"
+                        id="histPromedioODT">
+                    —
+                </strong>
+
+                <span class="hist-kpi-nota">
+                    Total facturado / cantidad de ODT
+                </span>
+            </div>
+
+        </div>
+
+        <!-- DISTRIBUCIÓN POR SERVICIO -->
+
+        <div class="hist-seccion-ejecutiva">
+
+            <div class="hist-seccion-titulo">
+                <div>
+                    <h4>Distribución por servicio</h4>
+                    <p class="hist-sub">
+                        Participación de cada categoría
+                        en el costo total.
+                    </p>
+                </div>
+            </div>
+
+            <div class="hist-servicios-lista">
+
+                {% for clave, categoria in resumen_costos.categorias.items %}
+
+                <div class="hist-servicio"
+                     data-monto="{{ categoria.monto }}"
+                     data-total="{{ resumen_costos.total }}">
+
+                    <div class="hist-servicio-encabezado">
+
+                        <span class="hist-servicio-nombre">
+                            {{ categoria.nombre }}
+                        </span>
+
+                        <strong class="hist-servicio-monto">
+                            ${{ categoria.monto|clp }}
+                        </strong>
+
+                    </div>
+
+                    <div class="hist-barra-fondo"
+                         role="progressbar"
+                         aria-label="{{ categoria.nombre }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-valuenow="0">
+
+                        <div class="hist-barra-relleno
+                            {% if clave == 'correctiva_con_cobro' %}
+                                hist-barra-con-cobro
+                            {% elif clave == 'correctiva_sin_cobro' %}
+                                hist-barra-sin-cobro
+                            {% elif clave == 'renovacion' %}
+                                hist-barra-renovacion
+                            {% elif clave == 'preventivo' %}
+                                hist-barra-preventivo
+                            {% else %}
+                                hist-barra-otros
+                            {% endif %}">
+                        </div>
+
+                    </div>
+
+                    <div class="hist-servicio-pie">
+                        <span>
+                            {{ categoria.cantidad }} ODT
+                        </span>
+
+                        <span class="hist-servicio-porcentaje">
+                            0,0 %
+                        </span>
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <!-- DISTRIBUCIÓN POR CLIENTE -->
+
+        <div class="hist-seccion-ejecutiva">
+
+            <div class="hist-seccion-titulo">
+                <div>
+                    <h4>Distribución por tipo de cliente</h4>
+                    <p class="hist-sub">
+                        Clasificación B2B, B2C y registros
+                        pendientes de clasificación.
+                    </p>
+                </div>
+            </div>
+
+            
+<div class="hist-clientes-grid">
+
+    <div class="hist-cliente-card hist-cliente-b2b"
+         data-monto="{{ resumen_costos.clientes.B2B.monto }}">
+
+        <span class="hist-cliente-titulo">B2B</span>
+
+        <strong>
+            ${{ resumen_costos.clientes.B2B.monto|clp }}
+        </strong>
+
+        <span class="hist-cliente-porcentaje">
+            0,0 % del total
+        </span>
+
+        <div class="hist-cliente-detalle">
+            <div>
+                <span>Cantidad de ODT</span>
+                <strong>{{ resumen_costos.clientes.B2B.cantidad }}</strong>
+            </div>
+            <div>
+                <span>Costo promedio por ODT</span>
+                <strong>${{ resumen_costos.clientes.B2B.promedio|clp }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="hist-cliente-card hist-cliente-b2c"
+         data-monto="{{ resumen_costos.clientes.B2C.monto }}">
+
+        <span class="hist-cliente-titulo">B2C</span>
+
+        <strong>
+            ${{ resumen_costos.clientes.B2C.monto|clp }}
+        </strong>
+
+        <span class="hist-cliente-porcentaje">
+            0,0 % del total
+        </span>
+
+        <div class="hist-cliente-detalle">
+            <div>
+                <span>Cantidad de ODT</span>
+                <strong>{{ resumen_costos.clientes.B2C.cantidad }}</strong>
+            </div>
+            <div>
+                <span>Costo promedio por ODT</span>
+                <strong>${{ resumen_costos.clientes.B2C.promedio|clp }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="hist-cliente-card hist-cliente-sin"
+         data-monto="{{ resumen_costos.clientes.SIN_CLASIFICAR.monto }}">
+
+        <span class="hist-cliente-titulo">Sin clasificar</span>
+
+        <strong>
+            ${{ resumen_costos.clientes.SIN_CLASIFICAR.monto|clp }}
+        </strong>
+
+        <span class="hist-cliente-porcentaje">
+            0,0 % del total
+        </span>
+
+        <div class="hist-cliente-detalle">
+            <div>
+                <span>Cantidad de ODT</span>
+                <strong>{{ resumen_costos.clientes.SIN_CLASIFICAR.cantidad }}</strong>
+            </div>
+            <div>
+                <span>Costo promedio por ODT</span>
+                <strong>${{ resumen_costos.clientes.SIN_CLASIFICAR.promedio|clp }}</strong>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+            <div class="hist-distribucion-clientes"
+                 role="img"
+                 aria-label="Distribución porcentual del costo por tipo de cliente">
+
+                <div class="hist-segmento hist-segmento-b2b"
+                     id="histSegmentoB2B"></div>
+
+                <div class="hist-segmento hist-segmento-b2c"
+                     id="histSegmentoB2C"></div>
+
+                <div class="hist-segmento hist-segmento-sin"
+                     id="histSegmentoSin"></div>
+
+            </div>
+
+            <div class="hist-leyenda">
+                <span>
+                    <i class="hist-punto hist-punto-b2b"></i>
+                    B2B
+                </span>
+
+                <span>
+                    <i class="hist-punto hist-punto-b2c"></i>
+                    B2C
+                </span>
+
+                <span>
+                    <i class="hist-punto hist-punto-sin"></i>
+                    Sin clasificar
+                </span>
+            </div>
+
+        </div>
+
+        <div class="hist-nota-datos">
+            <strong>Nota:</strong>
+            Los montos y servicios corresponden a los
+            valores guardados al facturar. La clasificación
+            B2B/B2C corresponde a la clasificación actual
+            de cada ODT.
+        </div>
+
+    </section>
+
+    {% endif %}
+
+    <!-- ============================================
+         CONTRATISTAS DEL PERÍODO
+         ============================================ -->
+
+    {% if periodo_seleccionado %}
+
+    <section class="hist-panel">
+
+        <div class="hist-heading">
+            <div>
+                <h3>
+                    Contratistas del período
+                    {{ periodo_seleccionado.fecha_desde|date:"d/m/Y" }}
+                    al
+                    {{ periodo_seleccionado.fecha_hasta|date:"d/m/Y" }}
+                </h3>
+
+                <p class="hist-sub">
+                    Requisiciones y montos registrados.
+                </p>
+            </div>
+
+            <div class="hist-acciones-periodo">
+
+                {% if perms.revisiones.exportar_pagos_sstt %}
+                <a href="{% url 'exportar_aprobados_pdf' %}?periodo={{ periodo_seleccionado.id }}"
+                   class="hist-btn-pdf">
+                    Exportar PDF
+                </a>
+                {% endif %}
+
+                <a href="{% url 'historial_facturacion' %}"
+                   class="hist-secondary">
+                    Ver todos los períodos
+                </a>
+
+            </div>
+        </div>
+
+        <div class="hist-table-wrap">
+
+            <table class="hist-table tabla-contratistas">
+
+                <thead>
+                    <tr>
+                        <th>Contratista</th>
+                        <th>Requisición</th>
+                        <th>ODT</th>
+                        <th>Monto CLP</th>
+                        <th>Fecha registro</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                {% for f in facturaciones %}
+
+                    <tr>
+                        <td>
+                            <strong>
+                                {{ f.contratista }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            <form method="post"
+                                  action="{% url 'actualizar_requisicion' f.id %}"
+                                  class="hist-form-requisicion">
+
+                                {% csrf_token %}
+
+                                <input
+                                    type="text"
+                                    name="numero_requisicion"
+                                    value="{{ f.numero_requisicion|default_if_none:'' }}"
+                                    maxlength="100"
+                                    placeholder="Pendiente de requisición"
+                                    aria-label="Requisición de {{ f.contratista }}">
+
+                                <button type="submit"
+                                        class="hist-btn-guardar">
+                                    Guardar
+                                </button>
+                            </form>
+                        </td>
+
+                        <td class="center">
+                            {{ f.cantidad_odt }}
+                        </td>
+
+                        <td class="right">
+                            <strong>
+                                ${{ f.monto_total|clp }}
+                            </strong>
+                        </td>
+
+                        <td>
+                            {{ f.creado_en|date:"d/m/Y H:i" }}
+                        </td>
+
+                        <td>
+                            <a class="hist-link"
+                               href="{% url 'detalle_facturacion' f.id %}">
+                                Ver ODT
+                            </a>
+                        </td>
+                    </tr>
+
+                {% empty %}
+
+                    <tr>
+                        <td colspan="6" class="hist-empty">
+                            Sin contratistas registrados
+                            para este período.
+                        </td>
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+    </section>
+
+    {% endif %}
+
+</main>
+
+<script>
+/* ==============================================
+   CONFIRMACIÓN DE ELIMINACIÓN DE PERÍODO
+   Se conserva el comportamiento existente.
+   ============================================== */
+
+function confirmarEliminarPeriodo(formulario) {
+    const periodo = formulario.dataset.periodo;
+    const contratistas = formulario.dataset.contratistas;
+    const cantidadODT = formulario.dataset.odt;
+
+    const mensaje =
+        "ELIMINAR PERÍODO DE FACTURACIÓN\n\n" +
+        "Período: " + periodo + "\n" +
+        "Contratistas: " + contratistas + "\n" +
+        "ODT facturadas: " + cantidadODT + "\n\n" +
+        "Esta acción eliminará los registros de facturación " +
+        "del período seleccionado.\n\n" +
+        "Las ODT originales y sus revisiones se conservarán.\n\n" +
+        "¿Deseas continuar?";
+
+    if (!confirm(mensaje)) {
+        return false;
+    }
+
+    const motivo = prompt(
+        "Indica el motivo de eliminación del período " +
+        periodo + ":"
+    );
+
+    if (motivo === null || !motivo.trim()) {
+        alert(
+            "La eliminación fue cancelada. " +
+            "Debes indicar un motivo."
+        );
+        return false;
+    }
+
+    const confirmacion = prompt(
+        "CONFIRMACIÓN FINAL\n\n" +
+        "Para eliminar el período " + periodo +
+        ", escribe exactamente:\n\nELIMINAR"
+    );
+
+    if (confirmacion !== "ELIMINAR") {
+        alert(
+            "No se eliminó el período. " +
+            "La confirmación no es válida."
+        );
+        return false;
+    }
+
+    formulario.querySelector(
+        ".motivo-eliminacion"
+    ).value = motivo.trim();
+
+    formulario.querySelector(
+        ".confirmacion-eliminacion"
+    ).value = confirmacion;
+
+    const boton = formulario.querySelector(
+        ".hist-btn-eliminar"
+    );
+
+    if (boton) {
+        boton.disabled = true;
+        boton.textContent = "Eliminando...";
+    }
+
+    return true;
+}
+
+
+/* ==============================================
+   RESUMEN FINANCIERO EJECUTIVO
+   Porcentajes y costo promedio.
+   No modifica datos de facturación.
+   ============================================== */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const panel = document.querySelector(
+        ".hist-panel-ejecutivo"
+    );
+
+    if (!panel) {
+        return;
+    }
+
+    const leerNumero = function (valor) {
+        const texto = String(valor ?? "")
+            .trim()
+            .replace(/\s/g, "");
+
+        if (!texto) {
+            return 0;
+        }
+
+        // DecimalField de Django normalmente
+        // produce valores como 123456.00.
+        const numero = Number(texto.replace(",", "."));
+
+        return Number.isFinite(numero) ? numero : 0;
+    };
+
+    const formatoCLP = function (numero) {
+        return "$" + Math.round(numero).toLocaleString(
+            "es-CL"
+        );
+    };
+
+    const formatoPorcentaje = function (numero) {
+        return numero.toLocaleString("es-CL", {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1
+        }) + " %";
+    };
+
+    const servicios = panel.querySelectorAll(
+        ".hist-servicio"
+    );
+
+    let total = 0;
+    let sumaMontos = 0;
+
+    servicios.forEach(function (servicio) {
+        const monto = leerNumero(
+            servicio.dataset.monto
+        );
+
+        sumaMontos += monto;
+        total = leerNumero(
+            servicio.dataset.total
+        );
+    });
+
+    servicios.forEach(function (servicio) {
+
+        const monto = leerNumero(
+            servicio.dataset.monto
+        );
+
+        const porcentaje = total > 0
+            ? monto / total * 100
+            : 0;
+
+        const barra = servicio.querySelector(
+            ".hist-barra-relleno"
+        );
+
+        const etiqueta = servicio.querySelector(
+            ".hist-servicio-porcentaje"
+        );
+
+        const contenedor = servicio.querySelector(
+            ".hist-barra-fondo"
+        );
+
+        if (barra) {
+            barra.style.width = porcentaje + "%";
+        }
+
+        if (etiqueta) {
+            etiqueta.textContent = formatoPorcentaje(
+                porcentaje
+            ) + " del total";
+        }
+
+        if (contenedor) {
+            contenedor.setAttribute(
+                "aria-valuenow",
+                porcentaje.toFixed(1)
+            );
+        }
+    });
+
+    const tarjetasClientes = panel.querySelectorAll(
+        ".hist-cliente-card"
+    );
+
+    const porcentajes = [];
+
+    tarjetasClientes.forEach(function (tarjeta) {
+
+        const monto = leerNumero(
+            tarjeta.dataset.monto
+        );
+
+        const porcentaje = total > 0
+            ? monto / total * 100
+            : 0;
+
+        porcentajes.push(porcentaje);
+
+        const etiqueta = tarjeta.querySelector(
+            ".hist-cliente-porcentaje"
+        );
+
+        if (etiqueta) {
+            etiqueta.textContent = (
+                formatoPorcentaje(porcentaje) +
+                " del total"
+            );
+        }
+    });
+
+    const idsSegmentos = [
+        "histSegmentoB2B",
+        "histSegmentoB2C",
+        "histSegmentoSin"
+    ];
+
+    idsSegmentos.forEach(function (id, indice) {
+        const segmento = document.getElementById(id);
+
+        if (segmento) {
+            segmento.style.width = (
+                porcentajes[indice] || 0
+            ) + "%";
+        }
+    });
+
+    const cantidadTexto = (
+        "{{ resumen_costos.cantidad|default:0 }}"
+    );
+
+    const cantidad = Number(cantidadTexto) || 0;
+
+    const promedio = cantidad > 0
+        ? total / cantidad
+        : 0;
+
+    const elementoPromedio = document.getElementById(
+        "histPromedioODT"
+    );
+
+    if (elementoPromedio) {
+        elementoPromedio.textContent = formatoCLP(
+            promedio
+        );
+    }
+
+});
+</script>
+
+</body>
+</html>

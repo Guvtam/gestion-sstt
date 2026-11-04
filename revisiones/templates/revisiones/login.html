@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Iniciar sesión | SSTT</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f5f9;
+            font-family: Arial, sans-serif;
+            color: #24364b;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 36px;
+            margin: 20px;
+            background: white;
+            border: 1px solid #e1e7ee;
+            border-radius: 14px;
+            box-shadow: 0 12px 36px rgba(0,0,0,.07);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .logo-icon {
+            width: 54px;
+            height: 54px;
+            margin: 0 auto 16px;
+            border-radius: 12px;
+            background: #173d64;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 23px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #758398;
+            line-height: 1.5;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d5dfe9;
+            border-radius: 7px;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2c76b8;
+            box-shadow: 0 0 0 3px rgba(44,118,184,.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 7px;
+            background: #173d64;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #235783;
+        }
+
+        .error {
+            background: #fff0ee;
+            color: #b83c37;
+            border: 1px solid #f3d0cb;
+            padding: 12px;
+            border-radius: 7px;
+            font-size: 12px;
+            margin-bottom: 18px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-card">
+
+    <div class="logo">
+        <div class="logo-icon">FS</div>
+
+        <h1>Sistema de Pagos SSTT</h1>
+
+        <div class="subtitle">
+            First Security<br>
+            Gestión y revisión de pagos de contratistas
+        </div>
+    </div>
+
+    {% if form.errors %}
+    <div class="error">
+        Usuario o contraseña incorrectos.
+        Verifica tus credenciales.
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label for="id_username">Usuario</label>
+
+        <input
+            type="text"
+            name="username"
+            id="id_username"
+            autocomplete="username"
+            required
+            autofocus
+        >
+
+        <label for="id_password">Contraseña</label>
+
+        <input
+            type="password"
+            name="password"
+            id="id_password"
+            autocomplete="current-password"
+            required
+        >
+
+        <input
+            type="hidden"
+            name="next"
+            value="{{ next }}"
+        >
+
+        <button type="submit">
+            Iniciar sesión
+        </button>
+
+    </form>
+
+    <div class="footer">
+        Acceso exclusivo para usuarios autorizados
+    </div>
+
+</div>
+
+</body>
+</html>

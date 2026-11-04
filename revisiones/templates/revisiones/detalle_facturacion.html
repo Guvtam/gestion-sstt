@@ -1,0 +1,312 @@
+
+{% load static formato_sstt %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>ODT facturadas · SSTT</title>
+
+    <link rel="stylesheet"
+          href="{% static 'revisiones/bandeja.css' %}">
+
+    <link rel="stylesheet"
+          href="{% static 'revisiones/historial_facturacion.css' %}">
+</head>
+
+<body>
+
+    <!-- ENCABEZADO -->
+    <header class="header-sstt">
+        <div class="header-contenido">
+
+            <div class="header-titulo">
+                <h1>Gestión de pagos SSTT</h1>
+                <p>Detalle de órdenes de trabajo facturadas</p>
+            </div>
+
+            <a
+                class="btn alt"
+                href="{% url 'historial_facturacion' %}?periodo={{ facturacion.periodo_id }}"
+            >
+                Volver a facturación
+            </a>
+
+        </div>
+    </header>
+
+    <main class="hist-main">
+
+        <!-- TÍTULO -->
+        <div class="hist-top">
+            <div>
+                <h2>ODT facturadas</h2>
+
+                <p class="hist-sub">
+                    {{ facturacion.contratista }}
+                    ·
+                    {{ facturacion.periodo.fecha_desde|date:"d/m/Y" }}
+                    al
+                    {{ facturacion.periodo.fecha_hasta|date:"d/m/Y" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- PANEL PRINCIPAL -->
+        <section class="hist-panel">
+
+            <div class="hist-heading">
+                <div>
+                    <h3>{{ facturacion.contratista }}</h3>
+
+                    <p class="hist-sub">
+                        Requisición:
+
+                        {% if facturacion.numero_requisicion %}
+                            <strong>
+                                {{ facturacion.numero_requisicion }}
+                            </strong>
+                        {% else %}
+                            Pendiente de requisición
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- INDICADORES -->
+            
+<div class="hist-resumen-odt">
+
+    <!-- TOTAL ODT -->
+    <div class="hist-tarjeta-resumen">
+        <small>ODT facturadas</small>
+        <strong>{{ cantidad }}</strong>
+    </div>
+
+    <!-- MANTENCIÓN CORRECTIVA CON COBRO -->
+    <div class="hist-tarjeta-resumen tarjeta-con-cobro">
+        <small>Mantención correctiva con cobro</small>
+
+        <strong>${{ monto_con_cobro|clp }}</strong>
+
+        <span class="hist-tarjeta-cantidad">
+            {{ cantidad_con_cobro }} ODT
+        </span>
+    </div>
+
+                <!-- MANTENCIÓN CORRECTIVA SIN COBRO -->
+                <div class="hist-tarjeta-resumen tarjeta-sin-cobro">
+                    <small>Mantención correctiva sin cobro</small>
+
+                    <strong>${{ monto_sin_cobro|clp }}</strong>
+
+                    <span class="hist-tarjeta-cantidad">
+                        {{ cantidad_sin_cobro }} ODT
+                    </span>
+                </div>
+
+                <!-- MONTO TOTAL FACTURADO -->
+                <div class="hist-tarjeta-resumen">
+                    <small>Monto total facturado</small>
+                    <strong>${{ monto_total|clp }}</strong>
+                </div>
+
+            </div>
+
+
+            <!-- TABLA DE ODT -->
+            <div class="hist-table-wrap">
+
+                <table class="hist-table tabla-odt-resumida">
+
+                    <thead>
+                        <tr>
+                            <th>ODT</th>
+                            <th>Cuenta</th>
+                            <th>Tipo cliente</th>
+                            <th>CECO</th>
+                            <th>Técnico</th>
+                            <th>Servicio facturado</th>
+                            <th>Observación ODT</th>
+                            <th>Finalización</th>
+                            <th>Monto CLP</th>
+                            <th>Historial</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in items %}
+
+                        <tr>
+
+                            <!-- NÚMERO ODT -->
+                            <td>
+                                <strong>
+                                    {{ item.odt.numero }}
+                                </strong>
+                            </td>
+
+                            <!-- CUENTA -->
+                            <td>
+                                {{ item.odt.cuenta_completa|default:"—" }}
+                            </td>
+
+                            <!-- TIPO CLIENTE -->
+                            <td>
+                                {% if item.odt.tipo_cliente_catalogo == "B2B" %}
+                                    <span class="tipo-b2b">
+                                        B2B
+                                    </span>
+                                {% elif item.odt.tipo_cliente_catalogo == "B2C" %}
+                                    <span class="tipo-b2c">
+                                        B2C
+                                    </span>
+                                {% else %}
+                                    <span class="tipo-sin-clasificar">
+                                        Sin clasificar
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- CECO -->
+                            <td class="celda-ceco">
+                                {% if item.odt.ceco_catalogo %}
+                                    {{ item.odt.ceco_catalogo }}
+                                {% else %}
+                                    <span class="ceco-pendiente">Revisar CECO</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- TÉCNICO -->
+                            <td>
+                                {{ item.odt.tecnico|default:"—" }}
+                            </td>
+
+                            <!-- SERVICIO FACTURADO -->
+                            <td>
+                                {{ item.servicio_facturado|default:"—" }}
+                            </td>
+
+                            <!-- OBSERVACIÓN ODT -->
+                            <td class="observacion-odt">
+
+                                {% if item.odt.observaciones_insumos %}
+
+                                    <span title="{{ item.odt.observaciones_insumos }}">
+                                        {{ item.odt.observaciones_insumos }}
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="hist-sub">
+                                        Sin observaciones
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <!-- FECHA FINALIZACIÓN -->
+                            <td>
+
+                                {% if item.odt.fecha_finalizacion %}
+
+                                    {{ item.odt.fecha_finalizacion|date:"d/m/Y" }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+                            <!-- MONTO FACTURADO -->
+                            <td class="right">
+                                <strong>
+                                    ${{ item.monto_facturado|clp }}
+                                </strong>
+                            </td>
+
+                            <!-- HISTORIAL -->
+                            <td>
+                                <button
+                                    type="button"
+                                    class="hist-link btn-historial-odt"
+                                    data-numero="{{ item.odt.numero }}"
+                                    data-url="{% url 'historial_odt' item.odt.numero %}"
+                                >
+                                    Ver historial
+                                </button>
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+                            <td colspan="10" class="hist-empty">
+                                No hay ODT facturadas.
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ==========================================
+         VENTANA EMERGENTE: HISTORIAL DE ODT
+         ========================================== -->
+
+    <dialog id="modalHistorial" class="historial-modal">
+
+        <div class="historial-encabezado">
+
+            <div>
+                <h2>
+                    Historial de ODT
+                    <span id="historialNumero"></span>
+                </h2>
+
+                <p class="hint">
+                    Registro de actividades, observaciones
+                    y modificaciones de la orden de trabajo.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                id="cerrarHistorial"
+                class="alt"
+            >
+                Cerrar
+            </button>
+
+        </div>
+
+        <div id="historialContenido">
+            <p class="hint">
+                Cargando historial...
+            </p>
+        </div>
+
+    </dialog>
+
+    <!-- JAVASCRIPT DEL HISTORIAL -->
+    <script
+        src="{% static 'revisiones/historial_facturacion_odt.js' %}?v=2"
+    ></script>
+
+</body>
+</html>

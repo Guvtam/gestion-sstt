@@ -1,0 +1,1321 @@
+/* =====================================================
+   SISTEMA SSTT - ESTILOS GENERALES
+   ===================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #f2f5fa;
+    color: #19314c;
+    font: 13px "Segoe UI", Arial, sans-serif;
+}
+
+header {
+    background: #17395e;
+    color: white;
+    padding: 20px 2%;
+}
+
+h1 {
+    font-size: 23px;
+    margin: 0;
+}
+
+header p {
+    margin: 5px 0 0;
+    color: #cbd8e8;
+}
+
+main {
+    padding: 18px 1.5%;
+}
+
+h2 {
+    font-size: 17px;
+    margin: 0 0 13px;
+}
+
+/* =====================================================
+   PANELES E INDICADORES
+   ===================================================== */
+
+.panel,
+.kpi {
+    background: white;
+    border: 1px solid #dce5ef;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px #142d4e0a;
+}
+
+.panel {
+    padding: 18px;
+    margin-bottom: 16px;
+}
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.kpi {
+    padding: 16px;
+    border-top: 3px solid #3178b9;
+}
+
+.kpi:nth-child(2) {
+    border-color: #249d6b;
+}
+
+.kpi:nth-child(3) {
+    border-color: #628ad0;
+}
+
+.kpi:nth-child(4) {
+    border-color: #dc6e50;
+}
+
+.kpi small {
+    color: #61778e;
+}
+
+.kpi strong {
+    display: block;
+    font-size: 25px;
+    margin: 8px 0;
+}
+
+.kpi b {
+    font-size: 18px;
+}
+
+/* =====================================================
+   FILTROS
+   ===================================================== */
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+}
+
+.field {
+    flex: 1 1 155px;
+    min-width: 130px;
+}
+
+.field.wide {
+    flex: 2 1 240px;
+}
+
+.field-label {
+    display: block;
+    font-size: 11px;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+select,
+input[type="text"],
+input[type="date"] {
+    width: 100%;
+    border: 1px solid #c9d5e4;
+    border-radius: 6px;
+    padding: 9px;
+    background: white;
+    color: #18314d;
+    font: inherit;
+}
+
+button,
+.btn {
+    background: #1765ad;
+    color: white;
+    border: 0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.btn.alt,
+button.alt {
+    background: #e9eff6;
+    color: #294963;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 7px;
+}
+
+/* =====================================================
+   FILTRO MÚLTIPLE DE SERVICIOS
+   ===================================================== */
+
+.multi {
+    position: relative;
+}
+
+.multi summary {
+    cursor: pointer;
+    list-style: none;
+    border: 1px solid #c9d5e4;
+    border-radius: 6px;
+    padding: 9px;
+    background: white;
+}
+
+.multi summary::-webkit-details-marker {
+    display: none;
+}
+
+.multi-panel {
+    position: absolute;
+    z-index: 20;
+    background: white;
+    border: 1px solid #c9d5e4;
+    box-shadow: 0 8px 20px #1235;
+    border-radius: 8px;
+    width: 330px;
+    max-width: 90vw;
+    padding: 10px;
+}
+
+.multi-options {
+    max-height: 230px;
+    overflow: auto;
+}
+
+.multi-option {
+    display: flex;
+    gap: 8px;
+    align-items: start;
+    padding: 7px;
+    font-size: 12px;
+}
+
+.multi-option input {
+    margin-top: 2px;
+}
+
+.multi-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.multi-footer button {
+    padding: 6px 9px;
+}
+
+/* =====================================================
+   TABLA DE ÓRDENES DE TRABAJO
+   ===================================================== */
+
+.table-scroll {
+    overflow: auto;
+    max-width: 100%;
+    border: 1px solid #dce5ef;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    min-width: 1500px;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th {
+    background: #eaf1f8;
+    text-align: left;
+    font-size: 11px;
+    padding: 11px 8px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+/* CORRECCIÓN PRINCIPAL:
+   todas las celdas centradas verticalmente */
+
+td {
+    border-top: 1px solid #e5edf5;
+    padding: 9px 8px;
+    vertical-align: middle;
+}
+
+/* Anchos de columnas existentes */
+
+td.obs {
+    min-width: 300px;
+    max-width: 450px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+td.account {
+    min-width: 230px;
+}
+
+td.technician {
+    min-width: 180px;
+}
+
+td.service {
+    min-width: 210px;
+}
+
+td.amount {
+    min-width: 150px;
+}
+
+td.review {
+    min-width: 155px;
+}
+
+td.date {
+    white-space: nowrap;
+}
+
+td a {
+    font-weight: 700;
+    color: #1765ad;
+}
+
+.localidad {
+    min-width: 130px;
+}
+
+/* =====================================================
+   EDICIÓN DE SERVICIO Y PAGO TÉCNICO
+   ===================================================== */
+
+.row-input {
+    min-width: 160px;
+}
+
+.row-select {
+    min-width: 140px;
+}
+
+/* Campos bloqueados legibles */
+
+.row-input:disabled,
+.row-select:disabled {
+    opacity: 1;
+    color: #19314c;
+    background: #f5f7fa;
+    cursor: default;
+}
+
+/* Edición activa */
+
+tr.editing {
+    background: #f8fbff;
+}
+
+tr.editing .row-input:not(:disabled),
+tr.editing .row-select:not(:disabled) {
+    border-color: #3178b9;
+}
+
+/* Cambios pendientes de guardar */
+
+.row-input.changed,
+.row-select.changed {
+    background: #fff1c7 !important;
+    border-color: #d49b1b !important;
+}
+
+/* Cambios manuales guardados */
+
+.row-input.saved,
+.row-select.saved {
+    background: #fff4d9 !important;
+    border-color: #e0b44b !important;
+}
+
+.amount-input {
+    text-align: right;
+}
+
+.softguard {
+    color: #237854;
+    background: #e1f5e9;
+    border-radius: 20px;
+    padding: 4px 8px;
+    white-space: nowrap;
+}
+
+.hint {
+    color: #718399;
+    font-size: 11px;
+}
+
+.edited-mark {
+    font-size: 10px;
+    color: #996a0a;
+    display: block;
+    margin-top: 4px;
+}
+
+.error-row {
+    color: #b23a34;
+    font-size: 11px;
+    display: block;
+    margin-top: 5px;
+}
+
+/* =====================================================
+   BOTONES DE ACCIONES
+   ===================================================== */
+
+.row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-width: 165px;
+    align-items: center;
+}
+
+.row-actions button {
+    padding: 8px 10px;
+    font-size: 11px;
+}
+
+/* Mantener Guardar y Cancelar ocultos
+   hasta presionar Editar */
+
+button[hidden],
+.btn[hidden] {
+    display: none !important;
+}
+
+/* =====================================================
+   MENSAJES Y PAGINACIÓN
+   ===================================================== */
+
+.message {
+    padding: 12px;
+    background: #e8f4ec;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.message.error {
+    background: #ffe9e5;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+}
+
+footer {
+    text-align: center;
+    color: #7a8da0;
+    padding: 15px;
+}
+
+/* =====================================================
+   VENTANAS MODALES
+   ===================================================== */
+
+dialog {
+    border: 1px solid #d5e0ed;
+    border-radius: 12px;
+    padding: 22px;
+    max-width: 510px;
+    width: calc(100% - 30px);
+    box-shadow: 0 18px 55px #0003;
+}
+
+dialog::backdrop {
+    background: #15283d88;
+}
+
+.dialog-line {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0;
+    gap: 15px;
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 18px;
+}
+
+/* =====================================================
+   HISTORIAL DE ODT
+   ===================================================== */
+
+.historial-modal {
+    width: min(850px, 95vw);
+    max-width: 850px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.historial-encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #dce5ef;
+}
+
+.historial-encabezado h2 {
+    margin-bottom: 6px;
+}
+
+.historial-encabezado p {
+    margin: 0;
+}
+
+.historial-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.historial-evento {
+    border: 1px solid #dce5ef;
+    border-left: 4px solid #3178b9;
+    border-radius: 8px;
+    padding: 15px;
+    background: #ffffff;
+}
+
+.historial-evento:first-child {
+    border-left-color: #249d6b;
+}
+
+.historial-evento-cabecera {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.historial-fecha {
+    font-weight: 700;
+    color: #19314c;
+}
+
+.historial-usuario {
+    color: #61778e;
+    font-size: 12px;
+}
+
+.historial-estados {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.historial-estado {
+    background: #eaf1f8;
+    color: #294963;
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.historial-estado.aprobada {
+    background: #e1f5e9;
+    color: #237854;
+}
+
+.historial-estado.en-revision {
+    background: #e9efff;
+    color: #365eb3;
+}
+
+.historial-estado.rechazada {
+    background: #ffe9e5;
+    color: #b23a34;
+}
+
+.historial-cambios {
+    background: #f6f9fc;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.historial-cambio {
+    padding: 5px 0;
+    overflow-wrap: anywhere;
+}
+
+.historial-cambio+.historial-cambio {
+    border-top: 1px solid #e1e9f1;
+}
+
+.historial-vacio {
+    padding: 35px 20px;
+    text-align: center;
+    color: #718399;
+    background: #f6f9fc;
+    border-radius: 8px;
+}
+
+.historial-total {
+    color: #61778e;
+    font-size: 12px;
+    margin-bottom: 14px;
+}
+
+.history-row {
+    white-space: nowrap;
+}
+
+/* Firmas e imágenes del historial */
+
+.historial-firma {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 250px;
+    object-fit: contain;
+    margin-top: 12px;
+    padding: 10px;
+    background: #ffffff;
+    border: 1px solid #dbe3ed;
+    border-radius: 8px;
+}
+
+/* =====================================================
+   ENCABEZADO Y AUTENTICACIÓN
+   ===================================================== */
+
+.header-sstt {
+    background: #17395e;
+    color: #ffffff;
+    padding: 18px 2%;
+}
+
+.header-contenido {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.header-titulo h1 {
+    font-size: 23px;
+    font-weight: 700;
+    margin: 0 0 5px;
+}
+
+.header-titulo p {
+    margin: 0;
+    font-size: 12px;
+    color: #cbd8e8;
+}
+
+.header-usuario {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.usuario-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.usuario-avatar {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #32638f;
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.usuario-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.usuario-datos span {
+    color: #cbd8e8;
+    font-size: 10px;
+}
+
+.usuario-datos strong {
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.header-usuario form {
+    margin: 0;
+}
+
+.btn-cerrar-sesion {
+    background: #e9eff6;
+    color: #294963;
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.btn-cerrar-sesion:hover {
+    background: #ffffff;
+}
+
+/* =====================================================
+   FECHAS DE CREACIÓN Y FINALIZACIÓN
+   ALINEACIÓN CORREGIDA
+   ===================================================== */
+
+.fecha-odt {
+    min-width: 115px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.fecha-contenedor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: 100%;
+    text-align: center;
+}
+
+.fecha-principal {
+    font-size: 12px;
+    font-weight: 700;
+    color: #193b61;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.fecha-hora {
+    font-size: 11px;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* =====================================================
+   ÚLTIMO MANTENIMIENTO PREVENTIVO
+   ===================================================== */
+
+.table-scroll th:nth-child(10),
+.table-scroll td:nth-child(10) {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.table-scroll td:nth-child(10) .hint {
+    display: block;
+    text-align: center;
+}
+
+/* =====================================================
+   CONTADOR DE INCIDENCIAS
+   ===================================================== */
+
+.incidencias-celda {
+    min-width: 110px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.incidencia-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    vertical-align: middle;
+    margin: 0 auto;
+}
+
+/* Una incidencia: verde */
+
+.incidencia-baja {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+
+/* Dos incidencias: amarillo */
+
+.incidencia-media {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: #fcd34d;
+}
+
+/* Tres o más: rojo */
+
+.incidencia-alta {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
+/* Sin incidencias */
+
+.incidencia-sin-datos {
+    background: #f1f5f9;
+    color: #64748b;
+    border-color: #cbd5e1;
+}
+
+/* =====================================================
+   SLA 48 HORAS
+   ===================================================== */
+
+.sla {
+    min-width: 120px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.sla-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.sla-cumple {
+    color: #166534 !important;
+    background: #dcfce7 !important;
+    border: 1px solid #86efac;
+}
+
+.sla-no-cumple {
+    color: #991b1b !important;
+    background: #fee2e2 !important;
+    border: 1px solid #fca5a5;
+}
+
+.sla-pendiente {
+    color: #92400e !important;
+    background: #fef3c7 !important;
+}
+
+.sla-sin-datos {
+    color: #64748b !important;
+    background: #f1f5f9 !important;
+}
+
+.sla-tiempo {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #64748b;
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* =====================================================
+   CREADOR DE LA ODT
+   ALINEACIÓN CORREGIDA
+   ===================================================== */
+
+.creador-odt {
+    min-width: 155px;
+    max-width: 220px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.creador-contenedor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    text-align: center;
+}
+
+.creador-nombre {
+    font-size: 12px;
+    font-weight: 600;
+    color: #193b61;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+.creador-correo {
+    font-size: 10px;
+    color: #64748b;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+.creador-sin-datos {
+    font-size: 11px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+/* =====================================================
+   BARRA DE DESPLAZAMIENTO SUPERIOR
+   ===================================================== */
+
+.table-scroll-top {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 17px;
+    margin-bottom: 8px;
+    scrollbar-width: auto;
+}
+
+.table-scroll-top>div {
+    height: 1px;
+}
+
+/* =====================================================
+   ALINEACIÓN FINAL DE COLUMNAS
+   ===================================================== */
+
+/* Asegurar alineación vertical general */
+
+.table-scroll tbody td {
+    vertical-align: middle;
+}
+
+.table-scroll thead th {
+    vertical-align: middle;
+}
+
+/* Encabezados centrados */
+
+.table-scroll thead th:nth-child(5),
+.table-scroll thead th:nth-child(8),
+.table-scroll thead th:nth-child(9),
+.table-scroll thead th:nth-child(10),
+.table-scroll thead th:nth-child(11),
+.table-scroll thead th:nth-child(12) {
+    text-align: center;
+}
+
+/* Fechas */
+
+.table-scroll td.fecha-odt {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Creador */
+
+.table-scroll td.creador-odt {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Incidencias */
+
+.table-scroll td.incidencias-celda {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* SLA */
+
+.table-scroll td.sla {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Estado, pago, revisión e informe */
+
+.table-scroll tbody td:nth-child(13),
+.table-scroll tbody td:nth-child(14),
+.table-scroll tbody td:nth-child(15),
+.table-scroll tbody td:nth-child(16) {
+    vertical-align: middle;
+}
+
+/* =====================================================
+   ADAPTACIÓN A PANTALLAS PEQUEÑAS
+   ===================================================== */
+
+@media (max-width: 1050px) {
+    .kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 650px) {
+
+    .kpis {
+        grid-template-columns: 1fr;
+    }
+
+    main {
+        padding: 12px;
+    }
+
+    .field {
+        flex-basis: 100%;
+    }
+
+    .historial-modal {
+        padding: 15px;
+    }
+
+    .historial-encabezado {
+        flex-direction: column;
+    }
+
+    .header-contenido {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-usuario {
+        width: 100%;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .header-titulo h1 {
+        font-size: 20px;
+    }
+}
+
+
+/* =========================================
+   PRESENTACIÓN DE CECO Y TIPO DE CLIENTE
+   ========================================= */
+
+.ceco-catalogo {
+    min-width: 105px;
+    width: 105px;
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+    font-weight: 600;
+    color: #243b53;
+}
+
+.tipo-cliente-catalogo {
+    min-width: 125px;
+    white-space: nowrap;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.ceco-catalogo .hint {
+    white-space: nowrap;
+}
+
+.tipo-b2b,
+.tipo-b2c,
+.tipo-sin-clasificar {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.tipo-b2b {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.tipo-b2c {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.tipo-sin-clasificar {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+
+
+/* =====================================================
+   SSTT - SEIS COLUMNAS FIJAS
+   ODT | CUENTA | LOCALIDAD | CONTRATISTA
+   SERVICIO | OBSERVACIONES
+   ===================================================== */
+
+#tablaScrollPrincipal {
+    position: relative;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+
+    /* Anchos de las seis columnas */
+    --ancho-odt: 90px;
+    --ancho-cuenta: 230px;
+    --ancho-localidad: 150px;
+    --ancho-contratista: 230px;
+    --ancho-servicio: 230px;
+    --ancho-observaciones: 320px;
+}
+
+/* Configuración general de tabla */
+
+#tablaScrollPrincipal table {
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+}
+
+/* ==========================================
+   CONFIGURACIÓN COMÚN
+   PRIMERAS SEIS COLUMNAS FIJAS
+   ========================================== */
+
+#tablaScrollPrincipal table thead th:nth-child(-n+6),
+#tablaScrollPrincipal table tbody td:nth-child(-n+6) {
+    position: sticky !important;
+    background: #ffffff;
+    z-index: 10;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+
+/* ==========================================
+   1. ODT
+   ========================================== */
+
+#tablaScrollPrincipal table tr> :nth-child(1) {
+    left: 0 !important;
+
+    min-width: var(--ancho-odt);
+    width: var(--ancho-odt);
+    max-width: var(--ancho-odt);
+
+    white-space: nowrap;
+}
+
+/* ==========================================
+   2. CUENTA
+   ========================================== */
+
+#tablaScrollPrincipal table tr> :nth-child(2) {
+    left: var(--ancho-odt) !important;
+
+    min-width: var(--ancho-cuenta);
+    width: var(--ancho-cuenta);
+    max-width: var(--ancho-cuenta);
+
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   3. LOCALIDAD
+   ========================================== */
+
+#tablaScrollPrincipal table tr> :nth-child(3) {
+    left: calc(var(--ancho-odt) + var(--ancho-cuenta)) !important;
+
+    min-width: var(--ancho-localidad);
+    width: var(--ancho-localidad);
+    max-width: var(--ancho-localidad);
+
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   4. TÉCNICO / CONTRATISTA
+   ========================================== */
+
+#tablaScrollPrincipal table tr> :nth-child(4) {
+    left: calc(var(--ancho-odt) + var(--ancho-cuenta) + var(--ancho-localidad)) !important;
+
+    min-width: var(--ancho-contratista);
+    width: var(--ancho-contratista);
+    max-width: var(--ancho-contratista);
+
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   5. SERVICIO
+   ========================================== */
+
+#tablaScrollPrincipal table tr> :nth-child(5) {
+    left: calc(var(--ancho-odt) + var(--ancho-cuenta) + var(--ancho-localidad) + var(--ancho-contratista)) !important;
+
+    min-width: var(--ancho-servicio);
+    width: var(--ancho-servicio);
+    max-width: var(--ancho-servicio);
+
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   6. OBSERVACIONES
+   ========================================== */
+
+#tablaScrollPrincipal table tr> :nth-child(6) {
+    left: calc(var(--ancho-odt) + var(--ancho-cuenta) + var(--ancho-localidad) + var(--ancho-contratista) + var(--ancho-servicio)) !important;
+
+    min-width: var(--ancho-observaciones);
+    width: var(--ancho-observaciones);
+    max-width: var(--ancho-observaciones);
+
+    overflow-wrap: anywhere;
+    white-space: normal;
+
+    /* Sombra que separa columnas fijas */
+    box-shadow: 5px 0 8px -5px rgba(23, 57, 94, .45);
+}
+
+/* ==========================================
+   ENCABEZADOS FIJOS
+   ========================================== */
+
+#tablaScrollPrincipal table thead th:nth-child(-n+6) {
+    background: #eaf1f8 !important;
+    z-index: 20;
+}
+
+/* ==========================================
+   FILAS EN EDICIÓN
+   ========================================== */
+
+#tablaScrollPrincipal table tbody tr.editing td:nth-child(-n+6) {
+    background: #f8fbff;
+}
+
+/* ==========================================
+   EFECTO HOVER
+   ========================================== */
+
+#tablaScrollPrincipal table tbody tr:not(.editing):hover td:nth-child(-n+6) {
+    background: #f5f9fd;
+}
+
+
+/* =====================================================
+   CORRECCIÓN: DESPLEGABLES SOBRE LA TABLA
+   ===================================================== */
+
+/* Panel de filtros por encima de la tabla */
+main>section.panel:has(form.filters) {
+    position: relative;
+    z-index: 100;
+    overflow: visible;
+}
+
+/* Panel de órdenes de trabajo */
+main>section.panel:has(#tablaScrollPrincipal) {
+    position: relative;
+    z-index: 1;
+}
+
+/* Desplegables de contratistas y servicios */
+form.filters .multi {
+    position: relative;
+    z-index: 110;
+}
+
+form.filters .multi[open] {
+    z-index: 120;
+}
+
+form.filters .multi-panel {
+    position: absolute;
+    z-index: 130;
+    background: #ffffff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+}
+
+/* ODT con rechazo definitivo o facturación registrada */
+tr.odt-bloqueada {
+    background-color: #f8fafc;
+}
+
+tr.odt-bloqueada .row-select,
+tr.odt-bloqueada .row-input {
+    opacity: .68;
+    cursor: not-allowed;
+}
+
+.odt-bloqueo-etiqueta {
+    display: block;
+    width: max-content;
+    max-width: 180px;
+    margin-top: 5px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: #f1f5f9;
+    color: #9a3412;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: normal;
+}
+
+
+
+.kpis-operativos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+@media (max-width: 900px) {
+    .kpis-operativos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 550px) {
+    .kpis-operativos {
+        grid-template-columns: 1fr;
+    }
+}

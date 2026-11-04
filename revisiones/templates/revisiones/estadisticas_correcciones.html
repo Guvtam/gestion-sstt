@@ -1,0 +1,159 @@
+{% load humanize static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Estadísticas de correcciones · SSTT</title>
+    <link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261103-2">
+</head>
+<body>
+<header class="stats-header">
+    <div class="stats-container stats-header-inner">
+        <div>
+            <h1>Estadísticas de correcciones</h1>
+            <p>Seguimiento de correcciones de servicio y pago técnico · Sistema SSTT</p>
+        </div>
+        <a class="stats-btn stats-btn-header" href="{% url 'odt_modificadas' %}">Volver a ODT modificadas</a>
+    </div>
+</header>
+<main class="stats-container stats-main">
+    <section class="stats-panel stats-filtros" aria-label="Filtros de estadísticas">
+        <form method="get" class="stats-filter-grid">
+            <div class="stats-field">
+                <label for="coordinador">Coordinador</label>
+                <select id="coordinador" name="coordinador">
+                    <option value="">Todos</option>
+                    {% for c in coordinadores %}
+                    <option value="{{ c.usuario }}" {% if coordinador_filtro == c.usuario %}selected{% endif %}>{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="stats-field">
+                <label for="tipo">Tipo de corrección</label>
+                <select id="tipo" name="tipo">
+                    <option value="">Todos</option>
+                    <option value="MONTO" {% if tipo_filtro == 'MONTO' %}selected{% endif %}>Solo monto</option>
+                    <option value="SERVICIO" {% if tipo_filtro == 'SERVICIO' %}selected{% endif %}>Solo servicio</option>
+                    <option value="AMBOS" {% if tipo_filtro == 'AMBOS' %}selected{% endif %}>Monto y servicio</option>
+                </select>
+            </div>
+            <div class="stats-field">
+                <label for="estado">Estado de corrección</label>
+                <select id="estado" name="estado">
+                    <option value="">Todos</option>
+                    <option value="PENDIENTE" {% if estado_filtro == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
+                    <option value="EN_PROCESO" {% if estado_filtro == 'EN_PROCESO' %}selected{% endif %}>En proceso</option>
+                    <option value="ACTUALIZADA" {% if estado_filtro == 'ACTUALIZADA' %}selected{% endif %}>Actualizada</option>
+                </select>
+            </div>
+            <div class="stats-filter-actions">
+                <button type="submit" class="stats-btn stats-btn-primary">Aplicar filtros</button>
+                <a class="stats-btn" href="{% url 'estadisticas_correcciones' %}">Limpiar</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="stats-kpis" aria-label="Indicadores generales">
+        <article class="stats-kpi"><span>ODT modificadas</span><strong>{{ total.cantidad }}</strong><small>ODT únicas</small></article>
+        <article class="stats-kpi"><span>Correcciones de monto</span><strong>{{ total.monto }}</strong><small>Incluye modificaciones mixtas</small></article>
+        <article class="stats-kpi"><span>Correcciones de servicio</span><strong>{{ total.servicio }}</strong><small>Incluye modificaciones mixtas</small></article>
+        <article class="stats-kpi stats-kpi-money"><span>Diferencia neta</span><strong>$ {{ total.diferencia|floatformat:0|intcomma }}</strong><small>Corregido menos SoftGuard</small></article>
+        <article class="stats-kpi"><span>Pendientes</span><strong>{{ total.pendiente }}</strong><small>Sin gestionar</small></article>
+        <article class="stats-kpi"><span>En proceso</span><strong>{{ total.en_proceso }}</strong><small>En gestión</small></article>
+        <article class="stats-kpi"><span>Actualizadas</span><strong>{{ total.actualizada }}</strong><small>Coinciden con SoftGuard</small></article>
+        <article class="stats-kpi stats-kpi-money"><span>Monto corregido</span><strong>$ {{ total.corregido|floatformat:0|intcomma }}</strong><small>Valor registrado en SSTT</small></article>
+    </section>
+
+    <section class="stats-charts" aria-label="Gráficos de correcciones">
+        <article class="stats-panel stats-chart-main">
+            <div class="stats-section-heading">
+                <div>
+                    <h2>Correcciones por coordinador</h2>
+                    <p>ODT únicas clasificadas según el tipo de modificación</p>
+                </div>
+                <span class="stats-count">{{ total.cantidad }} ODT</span>
+            </div>
+            <div class="stats-legend" aria-label="Leyenda">
+                <span><i class="stats-dot stats-dot-blue"></i>Solo monto</span>
+                <span><i class="stats-dot stats-dot-green"></i>Solo servicio</span>
+                <span><i class="stats-dot stats-dot-amber"></i>Monto y servicio</span>
+            </div>
+            <div class="stats-coordinadores">
+                {% for fila in filas %}
+                <div class="stats-coordinador">
+                    <div class="stats-coordinador-heading">
+                        <strong>{{ fila.nombre }}</strong>
+                        <span>{{ fila.cantidad }} ODT</span>
+                    </div>
+                    <div class="stats-stack" role="img" aria-label="{{ fila.nombre }}: {{ fila.solo_monto }} solo monto, {{ fila.solo_servicio }} solo servicio, {{ fila.ambos }} monto y servicio">
+                        {% if total.cantidad %}
+                        <div class="stats-stack-segment stats-blue" style="width:{% widthratio fila.solo_monto total.cantidad 100 %}%" title="Solo monto: {{ fila.solo_monto }}"></div>
+                        <div class="stats-stack-segment stats-green" style="width:{% widthratio fila.solo_servicio total.cantidad 100 %}%" title="Solo servicio: {{ fila.solo_servicio }}"></div>
+                        <div class="stats-stack-segment stats-amber" style="width:{% widthratio fila.ambos total.cantidad 100 %}%" title="Monto y servicio: {{ fila.ambos }}"></div>
+                        {% endif %}
+                    </div>
+                    <div class="stats-coordinador-details">
+                        <span>Monto <b>{{ fila.solo_monto }}</b></span>
+                        <span>Servicio <b>{{ fila.solo_servicio }}</b></span>
+                        <span>Ambos <b>{{ fila.ambos }}</b></span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="stats-empty">No hay correcciones para los filtros seleccionados.</p>
+                {% endfor %}
+            </div>
+            <p class="stats-footnote">La escala de las barras corresponde al total de ODT filtradas.</p>
+        </article>
+
+        <article class="stats-panel stats-chart-side">
+            <div class="stats-section-heading">
+                <div>
+                    <h2>Tipos de corrección</h2>
+                    <p>Distribución de las ODT modificadas</p>
+                </div>
+            </div>
+            <div class="stats-type-list">
+                <div class="stats-type-row">
+                    <div class="stats-type-label"><span>Solo monto</span><strong>{{ total.solo_monto }}</strong></div>
+                    <div class="stats-track"><div class="stats-fill stats-blue" style="width:{% if total.cantidad %}{% widthratio total.solo_monto total.cantidad 100 %}{% else %}0{% endif %}%"></div></div>
+                </div>
+                <div class="stats-type-row">
+                    <div class="stats-type-label"><span>Solo servicio</span><strong>{{ total.solo_servicio }}</strong></div>
+                    <div class="stats-track"><div class="stats-fill stats-green" style="width:{% if total.cantidad %}{% widthratio total.solo_servicio total.cantidad 100 %}{% else %}0{% endif %}%"></div></div>
+                </div>
+                <div class="stats-type-row">
+                    <div class="stats-type-label"><span>Monto y servicio</span><strong>{{ total.ambos }}</strong></div>
+                    <div class="stats-track"><div class="stats-fill stats-amber" style="width:{% if total.cantidad %}{% widthratio total.ambos total.cantidad 100 %}{% else %}0{% endif %}%"></div></div>
+                </div>
+            </div>
+            <div class="stats-type-note">Una ODT con monto y servicio corregidos se contabiliza una sola vez en la categoría «Monto y servicio».</div>
+        </article>
+    </section>
+
+    <section class="stats-panel stats-summary">
+        <div class="stats-section-heading">
+            <div>
+                <h2>Resumen por coordinador</h2>
+                <p>Montos y estados de las ODT según los filtros aplicados</p>
+            </div>
+        </div>
+        <div class="stats-table-wrap">
+            <table>
+                <thead><tr>
+                    <th>Coordinador</th><th class="num">ODT</th><th class="num">Solo monto</th><th class="num">Solo servicio</th><th class="num">Ambos</th><th class="num">Pendiente</th><th class="num">En proceso</th><th class="num">Actualizada</th><th class="num">Monto SoftGuard</th><th class="num">Monto corregido</th><th class="num">Diferencia</th>
+                </tr></thead>
+                <tbody>
+                    {% for f in filas %}
+                    <tr><td><strong>{{ f.nombre }}</strong></td><td class="num">{{ f.cantidad }}</td><td class="num">{{ f.solo_monto }}</td><td class="num">{{ f.solo_servicio }}</td><td class="num">{{ f.ambos }}</td><td class="num">{{ f.pendiente }}</td><td class="num">{{ f.en_proceso }}</td><td class="num">{{ f.actualizada }}</td><td class="num">$ {{ f.original|floatformat:0|intcomma }}</td><td class="num">$ {{ f.corregido|floatformat:0|intcomma }}</td><td class="num">$ {{ f.diferencia|floatformat:0|intcomma }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="11" class="stats-empty">Sin registros para los filtros seleccionados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="stats-footnote">Cada ODT se cuenta una vez. Las estadísticas reflejan el seguimiento actual, no el total de eventos históricos.</p>
+    </section>
+</main>
+</body>
+</html>

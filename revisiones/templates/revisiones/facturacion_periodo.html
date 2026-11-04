@@ -1,0 +1,381 @@
+
+{% load static formato_sstt %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
+
+    <title>Facturar período · SSTT</title>
+
+    <link rel="stylesheet"
+          href="{% static 'revisiones/bandeja.css' %}">
+
+    <link rel="stylesheet"
+          href="{% static 'revisiones/facturacion_periodo.css' %}">
+</head>
+
+<body>
+
+<header class="header-sstt">
+    <div class="header-contenido">
+
+        <div class="header-titulo">
+            <h1>Gestión de pagos SSTT</h1>
+            <p>
+                Facturación y requisiciones
+                de contratistas
+            </p>
+        </div>
+
+        <a class="btn alt"
+           href="{% url 'bandeja' %}">
+            Volver a bandeja
+        </a>
+
+    </div>
+</header>
+
+<main class="fact-main">
+
+    <!-- ENCABEZADO -->
+
+    <div class="fact-top">
+
+        <div>
+            <h2>Facturar período</h2>
+
+            <p class="fact-sub">
+                Previsualización de órdenes y registro
+                de requisiciones por contratista
+            </p>
+        </div>
+
+        <nav class="fact-nav"
+             aria-label="Secciones de facturación">
+
+            <span class="fact-tab active"
+                  aria-current="page">
+                Facturar período
+            </span>
+
+            <a class="fact-tab"
+               href="{% url 'historial_facturacion' %}">
+                Historial
+            </a>
+
+            <span class="fact-tab future"
+                  title="Disponible en una próxima etapa">
+                Vista por contratista · Próximamente
+            </span>
+
+        </nav>
+    </div>
+
+    <!-- MENSAJES -->
+
+    <div class="fact-messages">
+        {% for msg in messages %}
+
+            <div
+                class="message {% if 'error' in msg.tags %}error{% endif %}"
+                role="alert"
+            >
+                {{ msg }}
+            </div>
+
+        {% endfor %}
+    </div>
+
+    <!-- PERÍODO -->
+
+    <section class="fact-panel"
+             aria-label="Período seleccionado">
+
+        <div class="fact-periodo">
+
+            <div class="fact-periodo-title">
+                Período
+                {{ desde|date:"d/m/Y" }}
+                al
+                {{ hasta|date:"d/m/Y" }}
+            </div>
+
+            <span class="fact-pill">
+                Según fecha de finalización
+            </span>
+
+        </div>
+
+        <p class="fact-info">
+            Se consideran ODT finalizadas en SoftGuard,
+            dentro del período seleccionado, que cumplen
+            las reglas de aprobación y los filtros aplicados.
+            Las ODT ya facturadas se excluyen automáticamente.
+        </p>
+
+    </section>
+
+    <!-- INDICADORES -->
+
+    <section class="fact-cards"
+             aria-label="Indicadores del período">
+
+        <div class="fact-card">
+
+            <div class="fact-card-label">
+                ODT a facturar
+            </div>
+
+            <div class="fact-card-value">
+                {{ cantidad_odt }}
+            </div>
+
+            <div class="fact-card-desc">
+                Órdenes pendientes de facturación
+            </div>
+
+        </div>
+
+        <div class="fact-card green">
+
+            <div class="fact-card-label">
+                Monto total a facturar
+            </div>
+
+            <div class="fact-card-value money">
+                ${{ monto_total|clp }}
+            </div>
+
+            <div class="fact-card-desc">
+                Monto de las ODT pendientes · CLP
+            </div>
+
+        </div>
+
+        <div class="fact-card gray">
+
+            <div class="fact-card-label">
+                Contratistas
+            </div>
+
+            <div class="fact-card-value">
+                {{ resumen|length }}
+            </div>
+
+            <div class="fact-card-desc">
+                Con ODT pendientes de facturación
+            </div>
+
+        </div>
+
+        <div class="fact-card orange">
+
+            <div class="fact-card-label">
+                ODT ya facturadas
+            </div>
+
+            <div class="fact-card-value">
+                {{ ya_facturadas }}
+            </div>
+
+            <div class="fact-card-desc">
+                Excluidas para evitar duplicados
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- REQUISICIONES POR CONTRATISTA -->
+
+    <section class="fact-panel">
+
+        <div class="fact-panel-heading">
+
+            <div>
+                <h3>
+                    Requisiciones por contratista
+                </h3>
+
+                <p class="fact-sub">
+                    Revisa los montos e ingresa un
+                    número de requisición por contratista.
+                </p>
+            </div>
+
+            <span class="fact-pill">
+                {{ resumen|length }} contratistas
+            </span>
+
+        </div>
+
+        <!-- FORMULARIO DE CONFIRMACIÓN -->
+
+        <form method="post"
+              id="formConfirmarFacturacion">
+
+            {% csrf_token %}
+
+            <!-- CONSERVAR FILTROS -->
+
+            {% for nombre, valor in parametros %}
+
+                <input
+                    type="hidden"
+                    name="{{ nombre }}"
+                    value="{{ valor }}"
+                >
+
+            {% endfor %}
+
+            <!-- TABLA -->
+
+            <div class="fact-table-wrap">
+
+                <table class="fact-table">
+
+                    <thead>
+                        <tr>
+                            <th scope="col">
+                                Contratista / técnico SoftGuard
+                            </th>
+
+                            <th scope="col" class="num">
+                                ODT
+                            </th>
+
+                            <th scope="col" class="num">
+                                Monto CLP
+                            </th>
+
+                            <th scope="col">
+                                Número de requisición
+                            </th>
+
+                            <th scope="col">
+                                Estado
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for grupo in resumen %}
+
+                        <tr>
+
+                            <td class="contratista">
+                                {{ grupo.contratista }}
+                            </td>
+
+                            <td class="num">
+                                {{ grupo.cantidad }}
+                            </td>
+
+                            <td class="num">
+                                <strong>
+                                    ${{ grupo.monto|clp }}
+                                </strong>
+                            </td>
+
+                            <td>
+
+                                {% if grupo.requisicion_existente %}
+
+                                    <strong>
+                                        {{ grupo.requisicion_existente }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <input
+                                        class="fact-input"
+                                        type="text"
+                                        name="requisicion_{{ forloop.counter0 }}"
+                                        maxlength="100"
+                                        placeholder="Opcional: ingresar requisición"
+                                        aria-label="Número de requisición para {{ grupo.contratista }}"
+                                    >
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+
+                                {% if grupo.requisicion_existente %}
+
+                                    <span class="fact-status ok">
+                                        Registrada
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="fact-status pending">
+                                        Pendiente
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% empty %}
+
+                        <tr>
+                            <td colspan="5"
+                                class="fact-empty">
+                                No hay ODT pendientes
+                                de facturación con los
+                                filtros seleccionados.
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <!-- ACCIONES -->
+
+            <div class="fact-actions">
+
+                <button
+                    class="fact-primary"
+                    type="submit"
+                    {% if not resumen %}disabled{% endif %}
+                >
+                    Confirmar y guardar facturación
+                </button>
+
+                <a class="fact-secondary"
+                   href="{% url 'bandeja' %}">
+                    Cancelar
+                </a>
+
+            </div>
+
+        </form>
+
+        <!-- INFORMACIÓN -->
+
+        <p class="fact-note">
+            Al confirmar, se registran únicamente las ODT
+            pendientes de facturación y sus montos y servicios
+            vigentes. Las ODT previamente facturadas no se
+            duplican. Los números de requisición pueden
+            completarse posteriormente desde el historial.
+        </p>
+
+    </section>
+
+</main>
+
+</body>
+</html>

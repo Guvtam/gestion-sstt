@@ -1,0 +1,527 @@
+/* Estilos originales de facturación, extraídos del HTML. */
+:root {
+      --sstt-azul: #19395e;
+      --sstt-borde: #d7e2ef;
+      --sstt-fondo: #f1f5fb;
+      --sstt-texto: #173252;
+      --sstt-muted: #657d9b;
+    }
+
+    body {
+      background: var(--sstt-fondo);
+      color: var(--sstt-texto);
+    }
+
+    .fact-main {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 22px 24px 48px;
+    }
+
+    .fact-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .fact-top h2 {
+      margin: 0 0 5px;
+      font-size: 19px;
+      color: var(--sstt-texto);
+    }
+
+    .fact-sub {
+      color: var(--sstt-muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .fact-nav {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .fact-tab {
+      padding: 9px 13px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--sstt-borde);
+      background: #e9eff7;
+      color: var(--sstt-texto);
+    }
+
+    .fact-tab.active {
+      background: #1b66af;
+      color: white;
+      border-color: #1b66af;
+    }
+
+    .fact-tab.future {
+      color: #7b8da3;
+      background: #f5f7fa;
+      font-weight: 500;
+    }
+
+    .fact-panel {
+      background: #fff;
+      border: 1px solid var(--sstt-borde);
+      border-radius: 9px;
+      padding: 19px;
+      box-shadow: 0 2px 7px rgba(19, 48, 82, .035);
+      margin-bottom: 16px;
+    }
+
+    .fact-panel h3 {
+      font-size: 15px;
+      margin: 0 0 7px;
+      color: var(--sstt-texto);
+    }
+
+    .fact-periodo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .fact-periodo-title {
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .fact-pill {
+      font-size: 11px;
+      border-radius: 20px;
+      padding: 5px 10px;
+      background: #eaf1fa;
+      color: #1c568d;
+      font-weight: 600;
+    }
+
+    .fact-info {
+      color: var(--sstt-muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 10px 0 0;
+    }
+
+    .fact-cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .fact-card {
+      background: white;
+      border: 1px solid var(--sstt-borde);
+      border-top: 2px solid #3478c8;
+      border-radius: 8px;
+      padding: 17px 15px;
+      min-width: 0;
+    }
+
+    .fact-card.green {
+      border-top-color: #20a467;
+    }
+
+    .fact-card.gray {
+      border-top-color: #7e94b1;
+    }
+
+    .fact-card.orange {
+      border-top-color: #e58a48;
+    }
+
+    .fact-card-label {
+      font-size: 12px;
+      color: var(--sstt-muted);
+      margin-bottom: 10px;
+    }
+
+    .fact-card-value {
+      font-size: 25px;
+      font-weight: 750;
+      color: var(--sstt-texto);
+      overflow-wrap: anywhere;
+      line-height: 1.25;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .fact-card-value.money {
+      font-size: 22px;
+    }
+
+    .fact-card-desc {
+      font-size: 11px;
+      color: var(--sstt-muted);
+      margin-top: 7px;
+    }
+
+    .fact-panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .fact-panel-heading h3 {
+      margin: 0 0 5px;
+    }
+
+    .fact-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .fact-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .fact-table th {
+      text-align: left;
+      background: #e8f0f8;
+      color: #193452;
+      padding: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .fact-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid #dbe5f0;
+      vertical-align: middle;
+    }
+
+    .fact-table tbody tr:hover {
+      background: #f8fbff;
+    }
+
+    .fact-table .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .fact-table .contratista {
+      min-width: 220px;
+      font-weight: 600;
+    }
+
+    .fact-input {
+      display: block;
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 185px;
+      max-width: 310px;
+      border: 1px solid #c8d8eb;
+      border-radius: 5px;
+      background: white;
+      padding: 10px;
+      font-size: 12px;
+      color: #173252;
+    }
+
+    .fact-input:focus {
+      outline: 2px solid #a5c9f2;
+      outline-offset: 1px;
+    }
+
+    .fact-status {
+      display: inline-block;
+      font-size: 11px;
+      border-radius: 20px;
+      padding: 5px 9px;
+      font-weight: 600;
+    }
+
+    .fact-status.ok {
+      background: #e3f5ec;
+      color: #137444;
+    }
+
+    .fact-status.pending {
+      background: #fff2d8;
+      color: #8a6109;
+    }
+
+    .fact-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 19px;
+    }
+
+    .fact-primary {
+      border: 0;
+      border-radius: 5px;
+      background: #1967b3;
+      color: white;
+      padding: 11px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .fact-primary:hover:not(:disabled) {
+      background: #12528f;
+    }
+
+    .fact-primary:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .fact-secondary {
+      text-decoration: none;
+      border-radius: 5px;
+      background: #e9eff7;
+      color: #173252;
+      padding: 11px 16px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .fact-note {
+      margin: 15px 0 0;
+      padding: 12px 14px;
+      background: #edf4fc;
+      border-left: 3px solid #3478c8;
+      border-radius: 4px;
+      color: #426080;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .fact-empty {
+      text-align: center;
+      color: var(--sstt-muted);
+      padding: 25px !important;
+    }
+
+    .fact-messages .message {
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 1050px) {
+      .fact-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 580px) {
+      .fact-main {
+        padding: 15px 12px 30px;
+      }
+
+      .fact-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .fact-panel {
+        padding: 14px;
+      }
+
+      .fact-card-value {
+        font-size: 23px;
+      }
+    }
+
+    
+/* TABLA COMPACTA DE FACTURACIÓN SSTT */
+
+.fact-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.fact-table th {
+    padding: 8px 10px;
+    font-size: 11px;
+}
+
+.fact-table td {
+    padding: 6px 10px;
+    height: 30px;
+    font-size: 11px;
+}
+
+.fact-table th:nth-child(1),
+.fact-table td:nth-child(1) {
+    width: 37%;
+}
+
+.fact-table th:nth-child(2),
+.fact-table td:nth-child(2) {
+    width: 7%;
+    text-align: center;
+}
+
+.fact-table th:nth-child(3),
+.fact-table td:nth-child(3) {
+    width: 16%;
+    text-align: right;
+}
+
+.fact-table th:nth-child(4),
+.fact-table td:nth-child(4) {
+    width: 25%;
+}
+
+.fact-table th:nth-child(5),
+.fact-table td:nth-child(5) {
+    width: 15%;
+    text-align: center;
+}
+
+.fact-table .contratista {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.fact-input {
+    width: 100%;
+    min-width: 0;
+    max-width: 230px;
+    padding: 6px 9px;
+    height: 30px;
+    font-size: 11px;
+}
+
+.fact-status {
+    padding: 4px 8px;
+    font-size: 10px;
+}
+
+.fact-table-wrap {
+    overflow-x: auto;
+}
+
+
+/* TABLA DE REQUISICIONES SIN DESPLAZAMIENTO HORIZONTAL */
+
+.fact-panel {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.fact-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.fact-table {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.fact-table th,
+.fact-table td {
+    box-sizing: border-box;
+    padding: 7px 8px;
+    height: 34px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Distribución de las cinco columnas */
+
+.fact-table th:nth-child(1),
+.fact-table td:nth-child(1) {
+    width: 38%;
+    text-align: left;
+}
+
+.fact-table th:nth-child(2),
+.fact-table td:nth-child(2) {
+    width: 7%;
+    text-align: center;
+}
+
+.fact-table th:nth-child(3),
+.fact-table td:nth-child(3) {
+    width: 16%;
+    text-align: right;
+}
+
+.fact-table th:nth-child(4),
+.fact-table td:nth-child(4) {
+    width: 25%;
+    text-align: left;
+}
+
+.fact-table th:nth-child(5),
+.fact-table td:nth-child(5) {
+    width: 14%;
+    text-align: center;
+}
+
+/* Eliminar anchos mínimos heredados */
+
+.fact-table .contratista {
+    min-width: 0;
+    white-space: normal;
+}
+
+.fact-table .num {
+    white-space: nowrap;
+}
+
+.fact-input {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 29px;
+    padding: 5px 8px;
+    font-size: 11px;
+}
+
+.fact-status {
+    display: inline-block;
+    max-width: 100%;
+    padding: 4px 7px;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* Ajustes para pantallas pequeñas */
+
+@media (max-width: 700px) {
+    .fact-table th,
+    .fact-table td {
+        padding: 6px 4px;
+        font-size: 10px;
+    }
+
+    .fact-input {
+        padding: 4px;
+        font-size: 10px;
+    }
+
+    .fact-status {
+        padding: 3px 4px;
+        font-size: 9px;
+    }
+}
