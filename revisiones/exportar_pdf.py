@@ -443,6 +443,20 @@ def nombre_archivo_seguro(nombre):
 # GENERAR PDF INDIVIDUAL
 # ============================================================
 
+def datos_contratista_pdf(nombre):
+    from contratistas.models import Contratista, EquivalenciaSoftGuard
+    from contratistas.utils import normalizar_nombre
+    clave = normalizar_nombre(nombre)
+    equivalencia = EquivalenciaSoftGuard.objects.select_related("contratista").filter(
+        clave_normalizada=clave
+    ).first()
+    if equivalencia:
+        return equivalencia.contratista
+    candidatos = [c for c in Contratista.objects.all()
+                  if clave and clave in {normalizar_nombre(c.nombre), normalizar_nombre(c.nombre_softguard)}]
+    return candidatos[0] if len(candidatos) == 1 else None
+
+
 def generar_pdf_contratista(
     nombre_contratista,
     registros_contratista,
@@ -450,6 +464,8 @@ def generar_pdf_contratista(
     hasta,
     requisicion="",
     historico=False,
+    datos_contratista=None,
+    incluir_bancarios=False,
 ):
     """
     Genera y devuelve los bytes de UN PDF.
@@ -504,6 +520,33 @@ def generar_pdf_contratista(
     )
 
     story.append(Spacer(1, 3 * mm))
+
+    if datos_contratista is None:
+        story.append(P("Datos del contratista: sin vínculo validado con el catálogo SSTT.", "bold"))
+    else:
+        c = datos_contratista
+        story.append(P("Datos del contratista", "bold"))
+        story.append(Spacer(1, 2 * mm))
+        correos = "; ".join(v for v in (c.correo, c.correo_alternativo) if v)
+        campos = [
+            ("Nombre", c.nombre),
+            ("Nombre / razón social", c.nombre_empresa),
+            ("RUT", c.rut),
+            ("Teléfono", c.fono),
+            ("Correo", correos),
+            ("Ciudad", c.ciudad),
+            ("Banco", c.banco if incluir_bancarios else "Acceso restringido"),
+            ("Tipo de cuenta", c.tipo_cuenta if incluir_bancarios else "Acceso restringido"),
+            ("Número de cuenta", c.numero_cuenta if incluir_bancarios else "Acceso restringido"),
+            ("Categoría", c.categoria),
+        ]
+        filas = []
+        for i in range(0, len(campos), 2):
+            izquierda, derecha = campos[i:i+2]
+            filas.append([P(izquierda[0], "bold"), P(izquierda[1] or "No registrado"),
+                          P(derecha[0], "bold"), P(derecha[1] or "No registrado")])
+        story.append(tabla(filas, [ancho * .14, ancho * .36, ancho * .14, ancho * .36]))
+    story.append(Spacer(1, 4 * mm))
 
     subtotal = sum(
         (
@@ -857,6 +900,8 @@ def exportar_aprobados_pdf(request):
                             "",
                         ),
                         historico=True,
+                        datos_contratista=datos_contratista_pdf(nombre_contratista),
+                        incluir_bancarios=request.user.has_perm("contratistas.ver_bancos_contratistas_sstt"),
                     )
 
                     nombre_seguro = nombre_archivo_seguro(
@@ -1081,6 +1126,8 @@ def exportar_aprobados_pdf(request):
             hasta=hasta,
             requisicion="",
             historico=False,
+            datos_contratista=datos_contratista_pdf(contratista),
+            incluir_bancarios=request.user.has_perm("contratistas.ver_bancos_contratistas_sstt"),
         )
 
     except Exception as error:
