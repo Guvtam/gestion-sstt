@@ -5,7 +5,7 @@ from .models import Contratista
 class ContratistaForm(forms.ModelForm):
     class Meta:
         model = Contratista
-        fields = ["nombre", "nombre_empresa", "rut", "fono", "correo", "ciudad", "banco", "tipo_cuenta", "numero_cuenta", "categoria", "nombre_softguard", "activo"]
+        fields = ["nombre", "nombre_empresa", "rut", "fono", "correo", "correo_alternativo", "ciudad", "banco", "tipo_cuenta", "numero_cuenta", "categoria", "nombre_softguard", "activo"]
         widgets = {"numero_cuenta": forms.PasswordInput(render_value=True, attrs={"autocomplete": "off"})}
 
     def clean_rut(self):
