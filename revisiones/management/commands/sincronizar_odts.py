@@ -256,6 +256,11 @@ class Command(BaseCommand):
         )
 
 
+        if not simular:
+            from contratistas.vinculacion import aplicar_exactas
+            vinculadas = aplicar_exactas()
+            self.stdout.write(f"Equivalencias vinculadas automáticamente: {vinculadas}")
+
         if simular:
             self.stdout.write(self.style.WARNING("SIMULACIÓN: no se guardaron cambios."))
         self.stdout.write(

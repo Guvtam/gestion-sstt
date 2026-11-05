@@ -71,7 +71,7 @@ class VinculacionTests(TestCase):
         self.client.force_login(self.admin)
         respuesta = self.client.get("/contratistas/vinculacion-softguard/")
         self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, "Vincular todas las exactas")
+        self.assertContains(respuesta, "se vinculan automáticamente")
         self.assertEqual(EquivalenciaSoftGuard.objects.count(), 0)
         usuario = get_user_model().objects.create_user("lectura")
         self.client.force_login(usuario)
@@ -86,4 +86,37 @@ class VinculacionTests(TestCase):
         request.session = {}
         request._messages = FallbackStorage(request)
         self.assertEqual(vinculacion_softguard(request).status_code, 302)
+        self.assertEqual(EquivalenciaSoftGuard.objects.count(), 1)
+
+    def test_importacion_aplica_vinculos_sin_boton_y_simulacion_no_escribe(self):
+        from unittest.mock import patch
+        from django.core.management import call_command
+        from io import StringIO
+        datos = [(2, {"nombre": "José Álvarez", "nombre_empresa": "Empresa Prueba", "rut": "11111111-1"})]
+        with patch("contratistas.management.commands.importar_tecnicos_sstt.leer_archivo", return_value=datos):
+            call_command("importar_tecnicos_sstt", "prueba.xlsx", stdout=StringIO())
+            self.assertEqual(EquivalenciaSoftGuard.objects.count(), 0)
+            call_command("importar_tecnicos_sstt", "prueba.xlsx", aplicar=True, stdout=StringIO())
+        self.assertEqual(EquivalenciaSoftGuard.objects.count(), 1)
+
+    def test_sincronizacion_vincula_nuevos_tecnicos_sin_accion_manual(self):
+        from unittest.mock import patch
+        from collections import defaultdict
+        from django.core.management import call_command
+        from io import StringIO
+        self.odt.delete()
+        datos = defaultdict(lambda: None, {"Numero": 2, "Tecnico": "T. EXTERNO - Jose Alvarez"})
+        with patch("revisiones.management.commands.sincronizar_odts.consultar_odts_completas", return_value=[datos]):
+            call_command("sincronizar_odts", simular=True, stdout=StringIO())
+            self.assertEqual(EquivalenciaSoftGuard.objects.count(), 0)
+            call_command("sincronizar_odts", stdout=StringIO())
+        self.assertEqual(EquivalenciaSoftGuard.objects.count(), 1)
+
+    def test_comando_inicial_idempotente(self):
+        from django.core.management import call_command
+        from io import StringIO
+        call_command("vincular_contratistas_softguard", simular=True, stdout=StringIO())
+        self.assertEqual(EquivalenciaSoftGuard.objects.count(), 0)
+        for _ in range(2):
+            call_command("vincular_contratistas_softguard", stdout=StringIO())
         self.assertEqual(EquivalenciaSoftGuard.objects.count(), 1)

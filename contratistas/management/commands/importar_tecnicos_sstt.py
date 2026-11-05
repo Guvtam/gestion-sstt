@@ -156,5 +156,9 @@ class Command(BaseCommand):
                         obj.save()
                     elif cambios:
                         obj.save(update_fields=cambios + ["actualizado_en"])
+        if options["aplicar"]:
+            from contratistas.vinculacion import aplicar_exactas
+            vinculadas = aplicar_exactas()
+            self.stdout.write(f"Equivalencias vinculadas automáticamente: {vinculadas}")
         self.stdout.write("APLICADO" if options["aplicar"] else "SIMULACIÓN: no se guardaron cambios")
         self.stdout.write(f"Crear: {resumen['crear']} | Actualizar: {resumen['actualizar']} | Sin cambios: {resumen['sin cambios']}")
