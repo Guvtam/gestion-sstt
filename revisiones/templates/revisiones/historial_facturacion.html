@@ -13,7 +13,7 @@
           href="{% static 'revisiones/bandeja.css' %}">
 
     <link rel="stylesheet"
-          href="{% static 'revisiones/historial_facturacion.css' %}?v=20261103-ejecutivo">
+          href="{% static 'revisiones/historial_facturacion.css' %}?v=20261105-seleccion">
 </head>
 
 <body>
@@ -579,10 +579,15 @@
             <div class="hist-acciones-periodo">
 
                 {% if perms.revisiones.exportar_pagos_sstt %}
-                <a href="{% url 'exportar_aprobados_pdf' %}?periodo={{ periodo_seleccionado.id }}"
-                   class="hist-btn-pdf">
-                    Exportar PDF
-                </a>
+                <form id="exportarSeleccion" method="get" action="{% url 'exportar_aprobados_pdf' %}">
+                    <input type="hidden" name="periodo" value="{{ periodo_seleccionado.id }}">
+                    <input type="hidden" name="seleccion" value="1">
+                    <button type="submit" class="hist-btn-pdf" id="exportarSeleccionBoton">
+                        Exportar PDF seleccionados
+                    </button>
+                    <span id="seleccionContador" role="status" aria-live="polite"></span>
+                    <small style="display:block;margin-top:6px">Descarga un ZIP con un PDF por contratista.</small>
+                </form>
                 {% endif %}
 
                 <a href="{% url 'historial_facturacion' %}"
@@ -595,10 +600,13 @@
 
         <div class="hist-table-wrap">
 
-            <table class="hist-table tabla-contratistas">
+            <table class="hist-table tabla-contratistas{% if perms.revisiones.exportar_pagos_sstt %} con-seleccion{% endif %}">
 
                 <thead>
                     <tr>
+                        {% if perms.revisiones.exportar_pagos_sstt %}
+                        <th><label><input type="checkbox" id="seleccionarContratistas" checked> Todos</label></th>
+                        {% endif %}
                         <th>Contratista</th>
                         <th>Requisición</th>
                         <th>ODT</th>
@@ -613,6 +621,11 @@
                 {% for f in facturaciones %}
 
                     <tr>
+                        {% if perms.revisiones.exportar_pagos_sstt %}
+                        <td><input type="checkbox" class="seleccion-contratista" name="facturacion"
+                                   value="{{ f.id }}" form="exportarSeleccion" checked
+                                   aria-label="Seleccionar {{ f.contratista }}"></td>
+                        {% endif %}
                         <td>
                             <strong>
                                 {{ f.contratista }}
@@ -666,7 +679,7 @@
                 {% empty %}
 
                     <tr>
-                        <td colspan="6" class="hist-empty">
+                        <td colspan="{% if perms.revisiones.exportar_pagos_sstt %}7{% else %}6{% endif %}" class="hist-empty">
                             Sin contratistas registrados
                             para este período.
                         </td>
@@ -930,5 +943,34 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<script>
+(() => {
+    const form = document.getElementById("exportarSeleccion");
+    if (!form) return;
+    const todos = document.getElementById("seleccionarContratistas");
+    const opciones = [...document.querySelectorAll(".seleccion-contratista")];
+    const boton = document.getElementById("exportarSeleccionBoton");
+    const contador = document.getElementById("seleccionContador");
+    function actualizar() {
+        const cantidad = opciones.filter(opcion => opcion.checked).length;
+        todos.checked = opciones.length > 0 && cantidad === opciones.length;
+        todos.indeterminate = cantidad > 0 && cantidad < opciones.length;
+        boton.disabled = cantidad === 0;
+        contador.textContent = cantidad + " de " + opciones.length + " seleccionados";
+    }
+    todos.addEventListener("change", () => {
+        opciones.forEach(opcion => opcion.checked = todos.checked);
+        actualizar();
+    });
+    opciones.forEach(opcion => opcion.addEventListener("change", actualizar));
+    form.addEventListener("submit", evento => {
+        if (!opciones.some(opcion => opcion.checked)) {
+            evento.preventDefault();
+            actualizar();
+        }
+    });
+    actualizar();
+})();
+</script>
 </body>
 </html>
