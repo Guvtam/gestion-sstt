@@ -58,10 +58,11 @@ from reportlab.platypus import (
 )
 
 from .models import ODT
-from .cuentas_utils import cargar_catalogo_cuentas, tipo_cliente_cuenta
+from .cuentas_utils import cargar_catalogo_cuentas, tipo_cliente_cuenta, normalizar_codigo_cuenta
 from .facturacion_models import (
     PeriodoFacturacion,
     FacturacionODT,
+    FacturacionContratista,
 )
 from .servicios_sql import consultar_historial_odt
 from .views import condicion_aprobada
@@ -468,6 +469,10 @@ def generar_pdf_contratista(
         tipo = tipo_cliente_cuenta(odt.cuenta_completa, catalogo_clientes)
         return "Sin clasificar" if tipo == "SIN_CLASIFICAR" else tipo
 
+    def ceco_pdf(odt):
+        cuenta = catalogo_clientes.get(normalizar_codigo_cuenta(odt.cuenta_completa))
+        return (cuenta.ceco or "").strip() or "Revisar CECO" if cuenta else "Revisar CECO"
+
     buffer = BytesIO()
 
     doc = SimpleDocTemplate(
@@ -550,16 +555,16 @@ def generar_pdf_contratista(
     story.append(P(titulo, "bold"))
     story.append(Spacer(1, 2 * mm))
     listado = [[P(columna, "white") for columna in (
-        "ODT", "Fecha finalización", "Cuenta", "Servicio", "Tipo cliente", "Monto"
+        "ODT", "Fecha finalización", "Cuenta", "Servicio", "Tipo cliente", "CECO", "Monto"
     )]]
     for odt, servicio, monto, _ in registros_contratista:
         listado.append([
             P(odt.numero), P(fecha(odt.fecha_finalizacion)), P(odt.cuenta_completa),
-            P(servicio), P(tipo_cliente_pdf(odt)), P(dinero(monto), "bold"),
+            P(servicio), P(tipo_cliente_pdf(odt)), P(ceco_pdf(odt)), P(dinero(monto), "bold"),
         ])
     story.append(tabla(listado, [
-        ancho * 0.07, ancho * 0.15, ancho * 0.27,
-        ancho * 0.26, ancho * 0.10, ancho * 0.15,
+        ancho * 0.06, ancho * 0.13, ancho * 0.25,
+        ancho * 0.24, ancho * 0.09, ancho * 0.09, ancho * 0.14,
     ], header=True))
     story.append(PageBreak())
 
@@ -573,16 +578,8 @@ def generar_pdf_contratista(
 
     story.append(Spacer(1, 3 * mm))
 
-    detalle_widths = [
-        ancho * 0.085,
-        ancho * 0.13,
-        ancho * 0.15,
-        ancho * 0.10,
-        ancho * 0.12,
-        ancho * 0.23,
-        ancho * 0.095,
-        ancho * 0.09,
-    ]
+    detalle_widths = [ancho * v for v in
+                      (0.06, 0.11, 0.15, 0.08, 0.12, 0.22, 0.08, 0.08, 0.10)]
 
     detalle_heads = [
         "Número",
@@ -592,6 +589,7 @@ def generar_pdf_contratista(
         "Servicio",
         "Observaciones (insumos)",
         "Tipo cliente",
+        "CECO",
         (
             "Monto facturado"
             if historico
@@ -632,6 +630,7 @@ def generar_pdf_contratista(
                     P(servicio),
                     P(odt.observaciones_insumos),
                     P(tipo_cliente_pdf(odt)),
+                    P(ceco_pdf(odt)),
                     P(dinero(monto), "bold"),
                 ],
             ],
@@ -766,14 +765,25 @@ def exportar_aprobados_pdf(request):
         desde = periodo.fecha_desde
         hasta = periodo.fecha_hasta
 
+        seleccion = None
+        if request.GET.get("seleccion") == "1":
+            valores = request.GET.getlist("facturacion")
+            if not valores or any(not v.isdigit() for v in valores):
+                return HttpResponseBadRequest("Selecciona al menos un contratista válido.")
+            seleccion = {int(v) for v in valores}
+            permitidos = set(FacturacionContratista.objects.filter(
+                periodo=periodo, pk__in=seleccion
+            ).values_list("pk", flat=True))
+            if seleccion != permitidos:
+                return HttpResponseBadRequest("La selección no corresponde al período.")
+        consulta_items = FacturacionODT.objects.filter(facturacion__periodo=periodo)
+        if seleccion is not None:
+            consulta_items = consulta_items.filter(facturacion_id__in=seleccion)
+
         # Obtener exclusivamente las ODT guardadas
         # en este período de facturación.
         items = list(
-            FacturacionODT.objects
-            .filter(
-                facturacion__periodo=periodo
-            )
-            .select_related(
+            consulta_items.select_related(
                 "odt",
                 "facturacion",
             )

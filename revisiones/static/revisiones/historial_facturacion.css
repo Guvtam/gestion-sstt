@@ -1259,3 +1259,59 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* Selección de contratistas para exportación. */
+.tabla-contratistas input[type="checkbox"] {
+    appearance: auto;
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: #1765ad;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.tabla-contratistas th label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    white-space: nowrap;
+}
+#exportarSeleccion .hist-btn-pdf {
+    border: 0;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+#exportarSeleccion .hist-btn-pdf:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+#seleccionContador {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 12px;
+    color: #42688d;
+}
+
+.tabla-contratistas.con-seleccion th:nth-child(1),
+.tabla-contratistas.con-seleccion td:nth-child(1) { width: 6%; text-align: center; }
+
+.tabla-contratistas.con-seleccion th:nth-child(2),
+.tabla-contratistas.con-seleccion td:nth-child(2) { width: 23%; text-align: left; }
+
+.tabla-contratistas.con-seleccion th:nth-child(3),
+.tabla-contratistas.con-seleccion td:nth-child(3) { width: 29%; text-align: left; }
+
+.tabla-contratistas.con-seleccion th:nth-child(4),
+.tabla-contratistas.con-seleccion td:nth-child(4) { width: 6%; text-align: center; }
+
+.tabla-contratistas.con-seleccion th:nth-child(5),
+.tabla-contratistas.con-seleccion td:nth-child(5) { width: 13%; text-align: right; }
+
+.tabla-contratistas.con-seleccion th:nth-child(6),
+.tabla-contratistas.con-seleccion td:nth-child(6) { width: 13%; text-align: center; }
+
+.tabla-contratistas.con-seleccion th:nth-child(7),
+.tabla-contratistas.con-seleccion td:nth-child(7) { width: 10%; text-align: center; }
