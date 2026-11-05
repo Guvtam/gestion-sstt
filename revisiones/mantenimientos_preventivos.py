@@ -9,7 +9,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import ODT, CatalogoCuenta
-from .cuentas_utils import normalizar_codigo_cuenta, normalizar_tipo_cliente
+from .cuentas_utils import normalizar_codigo_cuenta, tipo_cliente_cuenta
 
 
 def sumar_meses(fecha, meses):
@@ -62,7 +62,7 @@ def mantenimientos_preventivos(request):
             continue
         cuentas[codigo] = {
             "codigo": codigo, "nombre": cuenta.nombre_cuenta,
-            "tipo_cliente": normalizar_tipo_cliente(cuenta.tipo_cliente), "ceco": cuenta.ceco,
+            "tipo_cliente": tipo_cliente_cuenta(codigo, {codigo: cuenta}), "ceco": cuenta.ceco,
             "cantidad": 0, "pendientes": 0, "ultimo": None,
         }
     # Incorporar cuentas que aún no estén registradas en el catálogo.
@@ -71,7 +71,7 @@ def mantenimientos_preventivos(request):
         if codigo in cuentas and not cuentas[codigo]["nombre"]:
             cuentas[codigo]["nombre"] = texto
         if codigo and codigo not in cuentas:
-            cuentas[codigo] = {"codigo": codigo, "nombre": texto, "tipo_cliente": "SIN_CLASIFICAR",
+            cuentas[codigo] = {"codigo": codigo, "nombre": texto, "tipo_cliente": tipo_cliente_cuenta(codigo, {}),
                               "ceco": "", "cantidad": 0, "pendientes": 0, "ultimo": None}
 
     condiciones = Q()
