@@ -27,6 +27,8 @@ def editar(request, pk=None):
             registro = form.save(commit=False)
             registro.actualizado_por = request.user
             registro.save()
+            from .vinculacion import aplicar_exactas
+            aplicar_exactas()
             messages.success(request, "Contratista guardado correctamente")
             return redirect("contratistas:listado")
     else:
