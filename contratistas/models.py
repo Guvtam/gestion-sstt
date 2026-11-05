@@ -7,6 +7,7 @@ class Contratista(models.Model):
     rut = models.CharField(max_length=24, unique=True, null=True, blank=True)
     fono = models.CharField(max_length=50, blank=True)
     correo = models.EmailField(blank=True)
+    correo_alternativo = models.EmailField(blank=True)
     ciudad = models.CharField(max_length=100, blank=True)
     banco = models.CharField(max_length=120, blank=True)
     tipo_cuenta = models.CharField(max_length=100, blank=True)
