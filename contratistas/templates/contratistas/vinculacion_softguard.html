@@ -1,0 +1,40 @@
+{% extends 'contratistas/base.html' %}
+{% block title %}Vincular contratistas con SoftGuard | SSTT{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h2>Vincular contratistas con SoftGuard</h2><p>Compara el catálogo importado con los técnicos de las ODT sincronizadas.</p></div>
+  <a class="btn btn-light" href="{% url 'contratistas:listado' %}">Volver a contratistas</a>
+</div>
+<section class="panel">
+  <h3>{{ exactas }} coincidencias exactas · {{ pendientes }} nombres pendientes</h3>
+  <p>Se ignoran tildes, mayúsculas, espacios y el prefijo T. EXTERNO. Los nombres parecidos requieren confirmación. Las equivalencias existentes se conservan.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="accion" value="exactas">
+    <button class="btn" type="submit" {% if not exactas %}disabled{% endif %}>Vincular todas las exactas</button>
+  </form>
+</section>
+<section class="panel"><div class="table-wrap">
+<table><thead><tr><th>Técnico SoftGuard</th><th>Coincidencia</th><th>Contratista del catálogo</th><th>Acción</th></tr></thead><tbody>
+{% for p in pagina %}
+<tr>
+  <td class="primary">{{ p.nombre }}</td><td>{{ p.estado }}</td>
+  <td colspan="2">
+    {% if p.candidatos and not p.reservado %}
+    <form method="post" class="filters">
+      {% csrf_token %}<input type="hidden" name="accion" value="confirmar"><input type="hidden" name="nombre" value="{{ p.nombre }}">
+      <div class="field field-grow"><label for="c-{{ forloop.counter }}">Contratista</label>
+      <select id="c-{{ forloop.counter }}" name="contratista" required>
+        {% if not p.automatico %}<option value="">Selecciona y confirma la identidad</option>{% endif %}
+        {% for c in p.candidatos %}<option value="{{ c.pk }}">{{ c.nombre }}{% if c.nombre_empresa %} · {{ c.nombre_empresa }}{% endif %}</option>{% endfor %}
+      </select></div><button class="btn btn-sm" type="submit">{% if p.automatico %}Vincular{% else %}Confirmar vínculo{% endif %}</button>
+    </form>
+    {% elif p.reservado %}Tiene una asociación manual previa. Revísala desde el catálogo.
+    {% else %}<span class="muted">Sin sugerencias. Usa “Vincular técnicos” en el contratista correspondiente.</span>{% endif %}
+  </td>
+</tr>
+{% empty %}<tr><td colspan="4">No hay técnicos externos pendientes de vincular.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="pagination"><span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span><div class="actions">
+{% if pagina.has_previous %}<a class="btn btn-light" href="?page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+{% if pagina.has_next %}<a class="btn btn-light" href="?page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}
+</div></div></section>
+{% endblock %}

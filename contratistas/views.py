@@ -90,3 +90,36 @@ def eliminar_equivalencia(request, pk, equivalencia_id):
     get_object_or_404(EquivalenciaSoftGuard, pk=equivalencia_id, contratista=contratista).delete()
     messages.success(request, "Equivalencia eliminada")
     return redirect("contratistas:equivalencias", pk=pk)
+
+
+@login_required
+@permission_required("contratistas.gestionar_contratistas_sstt", raise_exception=True)
+def vinculacion_softguard(request):
+    from django.db import IntegrityError
+    from .vinculacion import propuestas_vinculacion, guardar_propuesta, aplicar_exactas
+
+    if request.method not in ("GET", "POST"):
+        from django.http import HttpResponseNotAllowed
+        return HttpResponseNotAllowed(["GET", "POST"])
+    if request.method == "POST":
+        try:
+            accion = request.POST.get("accion")
+            if accion == "exactas":
+                cantidad = aplicar_exactas()
+                messages.success(request, f"Se crearon {cantidad} equivalencias exactas.")
+            elif accion == "confirmar":
+                pk = int(request.POST.get("contratista", ""))
+                creada = guardar_propuesta(request.POST.get("nombre", ""), pk)
+                messages.success(request, "Equivalencia guardada." if creada else "El técnico ya estaba vinculado; se conservó su asociación.")
+            else:
+                raise ValueError("Acción inválida.")
+        except (ValueError, IntegrityError) as exc:
+            messages.error(request, str(exc) if isinstance(exc, ValueError) else "La equivalencia ya existe. Actualiza la página.")
+        return redirect("contratistas:vinculacion_softguard")
+    propuestas = propuestas_vinculacion()
+    pagina = Paginator(propuestas, 50).get_page(request.GET.get("page"))
+    return render(request, "contratistas/vinculacion_softguard.html", {
+        "pagina": pagina,
+        "exactas": sum(p["automatico"] for p in propuestas),
+        "pendientes": len(propuestas),
+    })
