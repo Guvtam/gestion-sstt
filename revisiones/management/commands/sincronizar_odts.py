@@ -239,7 +239,7 @@ class Command(BaseCommand):
         cuentas_para_crear = [
             CatalogoCuenta(
                 codigo_cuenta=codigo,
-                tipo_cliente="SIN_CLASIFICAR",
+                tipo_cliente="B2C",
                 requiere_revision_ceco=True,
             )
             for codigo in cuentas_nuevas

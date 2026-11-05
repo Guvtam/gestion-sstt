@@ -56,5 +56,10 @@ def cargar_catalogo_cuentas(cuentas):
 
 
 def tipo_cliente_cuenta(cuenta_completa, catalogo):
-    cuenta = catalogo.get(normalizar_codigo_cuenta(cuenta_completa))
-    return normalizar_tipo_cliente(cuenta.tipo_cliente if cuenta else None)
+    """B2C por defecto para cuentas válidas sin clasificación en catálogo."""
+    codigo = normalizar_codigo_cuenta(cuenta_completa)
+    if not codigo:
+        return "SIN_CLASIFICAR"
+    cuenta = catalogo.get(codigo)
+    tipo = normalizar_tipo_cliente(cuenta.tipo_cliente if cuenta else None)
+    return tipo if tipo in ("B2B", "B2C") else "B2C"

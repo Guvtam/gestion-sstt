@@ -28,7 +28,7 @@ class TipoClientePDFTests(TestCase):
                 self.assertIn(tipo, paginas[0])
                 self.assertIn(tipo, "\n".join(paginas[1:]))
 
-    def test_sin_catalogo_o_catalogo_sin_clasificar_no_inventa_tipo(self):
+    def test_sin_catalogo_o_marcador_automatico_aplica_b2c(self):
         CatalogoCuenta.objects.create(codigo_cuenta="FIR-100", tipo_cliente="SIN_CLASIFICAR")
         odts = [
             ODT.objects.create(numero=1, cuenta_completa="FIR-100 - Cuenta", tipo_cliente="B2B"),
@@ -36,8 +36,8 @@ class TipoClientePDFTests(TestCase):
         ]
         texto = "\n".join(self.pdf(odts))
         self.assertNotIn("B2B", texto)
-        self.assertNotIn("B2C", texto)
-        self.assertIn("Sin clasificar", texto)
+        self.assertIn("B2C", texto)
+        self.assertNotIn("Sin clasificar", texto)
 
     def test_una_consulta_al_catalogo_por_pdf_y_sin_cambiar_odt(self):
         CatalogoCuenta.objects.create(codigo_cuenta="FIR-100", tipo_cliente="B2B")
@@ -46,3 +46,4 @@ class TipoClientePDFTests(TestCase):
             self.pdf([odt])
         odt.refresh_from_db()
         self.assertEqual(odt.tipo_cliente, "SIN_CLASIFICAR")
+

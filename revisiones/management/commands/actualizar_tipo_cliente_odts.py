@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from revisiones.models import ODT, CatalogoCuenta
-from revisiones.cuentas_utils import normalizar_codigo_cuenta
+from revisiones.cuentas_utils import normalizar_codigo_cuenta, tipo_cliente_cuenta
 
 
 class Command(BaseCommand):
@@ -25,19 +25,7 @@ class Command(BaseCommand):
 
         simular = options["simular"]
 
-        catalogo = {
-            codigo.strip().upper(): tipo
-            for codigo, tipo in CatalogoCuenta.objects.values_list(
-                "codigo_cuenta",
-                "tipo_cliente",
-            )
-        }
-
-        tipos_validos = {
-            "B2B",
-            "B2C",
-            "SIN_CLASIFICAR",
-        }
+        catalogo = {cuenta.codigo_cuenta: cuenta for cuenta in CatalogoCuenta.objects.all()}
 
         estadisticas = Counter()
         lote = []
@@ -69,17 +57,9 @@ class Command(BaseCommand):
 
             if not codigo:
                 estadisticas["sin_codigo"] += 1
-                tipo_nuevo = "SIN_CLASIFICAR"
-
             elif codigo not in catalogo:
                 estadisticas["sin_catalogo"] += 1
-                tipo_nuevo = "SIN_CLASIFICAR"
-
-            else:
-                tipo_nuevo = catalogo[codigo]
-
-                if tipo_nuevo not in tipos_validos:
-                    tipo_nuevo = "SIN_CLASIFICAR"
+            tipo_nuevo = tipo_cliente_cuenta(odt.cuenta_completa, catalogo)
 
             estadisticas[tipo_nuevo] += 1
 
