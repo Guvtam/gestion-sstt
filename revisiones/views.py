@@ -1,85 +1,49 @@
-
 from datetime import date, timedelta
+from decimal import Decimal
 import time as tiempo
-from decimal import Decimal, InvalidOperation
-from .facturacion_models import FacturacionODT
-
-from django.utils import timezone
-
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import (
-    Q, Sum, Count, DecimalField, OuterRef, Subquery
-)
-from django.db.models.functions import Coalesce
-from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse
-from .acceso_coordinadores import es_coordinador_sstt, datos_coordinador, limitar_odts_coordinador, coordinador_visible
+from django.db.models import Count, Q, Sum
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import ODT, Revision, EventoRevision, CatalogoCuenta, CorreccionODT, EventoCorreccionODT
-from .correcciones import registrar_cambio_manual
-from .cuentas_utils import normalizar_codigo_cuenta, cargar_catalogo_cuentas, tipo_cliente_cuenta
-from .servicios_sql import consultar_historial_odt
-from .coordinadores_softguard import (identificar_coordinador_odt, puede_asignar_coordinador,
-    identificar_coordinador_softguard, COORDINADORES_SOFTGUARD)
-from .models import AsignacionCoordinadorODT
-
-from django.db.models import (
-   
-    F,
-    ExpressionWrapper,
-    DurationField,
-    Case,
-    When,
-    Value,
-    CharField,
-    DateTimeField,
-    IntegerField,
+from .acceso_coordinadores import (
+    coordinador_visible, datos_coordinador, es_coordinador_sstt, limitar_odts_coordinador,
 )
-
-# Estados anteriores que ahora se consideran aprobados por defecto.
-from .dominio.servicios import SERVICIOS_PRINCIPALES, nombres_canonicos
-from .consultas.servicios import servicio_normalizado
+from .casos_uso.edicion_odt import editar_odt, revisar_odt, revisar_odts
+from .consultas.pagos import (
+    condicion_aprobada, error_odt_bloqueada, importe_efectivo,
+    odt_facturada, odt_rechazada,  # Imports compatibles para consumidores existentes.
+)
 from .consultas.preventivos import asignar_ultimos_preventivos
-
-
+from .consultas.servicios import servicio_normalizado
+from .coordinadores_softguard import (
+    COORDINADORES_SOFTGUARD, identificar_coordinador_odt,
+    identificar_coordinador_softguard, puede_asignar_coordinador,
+)
+from .correcciones import registrar_cambio_manual
+from .cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta, tipo_cliente_cuenta
+from .dominio.errores import ErrorOperacionODT, ODTBloqueada, ODTNoEncontrada
 from .dominio.pagos import ESTADOS_APROBADOS, OPCIONES_BANDEJA
-from .consultas.pagos import importe_efectivo, condicion_aprobada
+from .dominio.servicios import SERVICIOS_PRINCIPALES, nombres_canonicos
+from .facturacion_models import FacturacionODT
+from .models import (
+    AsignacionCoordinadorODT, CatalogoCuenta, CorreccionODT, EventoCorreccionODT,
+    EventoRevision, ODT, Revision,
+)
+from .servicios_sql import consultar_historial_odt
 
 
-def odt_facturada(odt):
-    """Comprueba si la ODT ya tiene facturación registrada."""
-    return FacturacionODT.objects.filter(odt=odt).exists()
-
-
-def odt_rechazada(odt):
-    """Comprueba si la ODT tiene un rechazo definitivo."""
-    return Revision.objects.filter(
-        odt=odt,
-        estado="RECHAZADA",
-    ).exists()
-
-
-def error_odt_bloqueada(odt):
-    """Devuelve el motivo del bloqueo, si corresponde."""
-    if odt_facturada(odt):
-        return (
-            "La ODT ya está facturada y no permite "
-            "modificaciones."
-        )
-
-    if odt_rechazada(odt):
-        return (
-            "La ODT está rechazada definitivamente "
-            "y no permite modificaciones."
-        )
-
-    return None
+def _respuesta_error_odt(error):
+    if isinstance(error, ODTNoEncontrada):
+        raise Http404("ODT no encontrada.") from None
+    return JsonResponse({"error": str(error)}, status=409 if isinstance(error, ODTBloqueada) else 400)
 
 
 def indicador(qs):
@@ -965,131 +929,20 @@ def detalle(request, numero):
 
 
 @login_required
-@permission_required(
-    "revisiones.revisar_pago_sstt",
-    raise_exception=True,
-)
-
-
-
+@permission_required("revisiones.revisar_pago_sstt", raise_exception=True)
 @require_POST
 def acciones(request):
-    """
-    Revisión múltiple conservada para compatibilidad.
-    Impide modificar ODT facturadas o rechazadas.
-    """
-
-    ids = request.POST.getlist("odts")
-    nuevo = request.POST.get("nuevo_estado", "").strip()
-    comentario = request.POST.get("comentario", "").strip()
-
-    validos = {
-        "APROBADA": "Aprobado",
-        "EN_REVISION": "En revisión",
-        "RECHAZADA": "Rechazado",
-    }
-
-    if nuevo not in validos:
-        messages.error(request, "Estado de revisión inválido.")
-        return redirect("bandeja")
-
-    if nuevo in ("EN_REVISION", "RECHAZADA") and not comentario:
-        messages.error(
-            request,
-            "Debes indicar el motivo del cambio de estado.",
+    """Adaptador HTML para revisión múltiple; toda escritura vive en el caso de uso."""
+    try:
+        cantidad = revisar_odts(
+            request.user, numeros=request.POST.getlist("odts"),
+            estado=request.POST.get("nuevo_estado", ""), comentario=request.POST.get("comentario", ""),
         )
-        return redirect("bandeja")
-
-    numeros = list({
-        int(x) for x in ids if x.isdigit() and int(x) > 0
-    })
-
-    if not numeros or len(numeros) > 300:
-        messages.error(
-            request,
-            "Selecciona entre 1 y 300 ODT.",
-        )
-        return redirect("bandeja")
-
-    with transaction.atomic():
-
-        odts = list(
-            ODT.objects
-            .select_for_update()
-            .filter(numero__in=numeros)
-            .order_by("numero")
-        )
-
-        if len(odts) != len(numeros):
-            messages.error(
-                request,
-                "Algunas ODT seleccionadas no existen.",
-            )
-            return redirect("bandeja")
-
-        # Validar todas antes de guardar cambios.
-        for odt in odts:
-            bloqueo = error_odt_bloqueada(odt)
-
-            if bloqueo:
-                messages.error(
-                    request,
-                    f"ODT {odt.numero}: {bloqueo}",
-                )
-                return redirect("bandeja")
-
-        actualizadas = 0
-
-        for odt in odts:
-
-            revision = (
-                Revision.objects
-                .select_for_update()
-                .filter(odt=odt)
-                .first()
-            )
-
-            anterior = (
-                revision.estado
-                if revision
-                else "APROBADA"
-            )
-
-            if anterior == "POR_REVISAR":
-                anterior = "APROBADA"
-
-            if anterior == nuevo:
-                continue
-
-            if revision is None:
-                revision = Revision(odt=odt)
-
-            revision.estado = nuevo
-            revision.observacion = comentario
-            revision.actualizado_por = request.user
-            revision.save()
-
-            EventoRevision.objects.create(
-                odt=odt,
-                estado_anterior=anterior,
-                estado_nuevo=nuevo,
-                comentario=(
-                    f"Revisión: {anterior} → {nuevo}"
-                    + (
-                        f" | Motivo: {comentario}"
-                        if comentario else ""
-                    )
-                ),
-                usuario=request.user,
-            )
-
-            actualizadas += 1
-
-    messages.success(
-        request,
-        f"{actualizadas} ODT actualizadas a {validos[nuevo]}.",
-    )
-
+    except ErrorOperacionODT as error:
+        messages.error(request, str(error))
+    else:
+        nombre = dict(OPCIONES_BANDEJA)[request.POST.get("nuevo_estado", "").strip()]
+        messages.success(request, f"{cantidad} ODT actualizadas a {nombre}.")
     return redirect("bandeja")
 
 
@@ -1097,239 +950,23 @@ def acciones(request):
 @permission_required("revisiones.editar_odt_sstt", raise_exception=True)
 @require_POST
 def guardar_fila(request):
-    """
-    Guarda cambios manuales sin modificar los datos
-    originales importados desde SoftGuard.
-
-    La revisión se modifica por su endpoint independiente.
-    """
-
+    """Editar no cambia el estado de pago: se conserva el endpoint independiente."""
+    if request.POST.get("estado", "APROBADA").strip() not in dict(OPCIONES_BANDEJA):
+        return JsonResponse({"error": "Estado de revisión inválido."}, status=400)
     try:
-        numero = int(request.POST.get("numero", ""))
-        if numero <= 0:
-            raise ValueError
-    except (ValueError, TypeError):
-        return JsonResponse(
-            {"error": "Número de ODT inválido."},
-            status=400,
+        resultado = editar_odt(
+            request.user, numero=request.POST.get("numero", ""),
+            servicio=request.POST.get("servicio", ""), monto=request.POST.get("monto", ""),
+            confirmar_monto=request.POST.get("confirmar_monto") == "SI",
+            comentario=request.POST.get("comentario", ""),
         )
-
-    servicio = request.POST.get("servicio", "").strip()
-    monto_texto = request.POST.get("monto", "").strip()
-    estado = request.POST.get("estado", "APROBADA").strip()
-    comentario = request.POST.get("comentario", "").strip()
-
-    estados_validos = (
-        "APROBADA",
-        "EN_REVISION",
-        "RECHAZADA",
-    )
-
-    if estado not in estados_validos:
-        return JsonResponse(
-            {"error": "Estado de revisión inválido."},
-            status=400,
-        )
-
-    if not servicio or len(servicio) > 150:
-        return JsonResponse(
-            {
-                "error": (
-                    "El servicio es obligatorio "
-                    "y admite máximo 150 caracteres."
-                )
-            },
-            status=400,
-        )
-
-    try:
-        monto = Decimal(monto_texto)
-
-        if (
-            not monto.is_finite()
-            or monto < 0
-            or monto > Decimal("999999999999.99")
-            or monto.as_tuple().exponent < -2
-        ):
-            raise InvalidOperation
-
-    except (InvalidOperation, ValueError):
-        return JsonResponse(
-            {
-                "error": (
-                    "Monto inválido. Utiliza un valor "
-                    "no negativo con máximo 2 decimales."
-                )
-            },
-            status=400,
-        )
-
-    with transaction.atomic():
-        odt = get_object_or_404(
-            ODT.objects.select_for_update(),
-            numero=numero,
-        )
-
-        bloqueo = error_odt_bloqueada(odt)
-
-        if bloqueo:
-            return JsonResponse(
-                {"error": bloqueo},
-                status=409,
-            )
-
-        # Valor efectivo antes de la modificación.
-        monto_anterior = (
-            odt.valor_pago_editado
-            if odt.valor_pago_editado is not None
-            else odt.valor_pago_tecnico
-        )
-
-        servicio_anterior = (
-            odt.servicio_editado
-            if odt.servicio_editado is not None
-            else odt.servicio
-        )
-
-        if servicio != servicio_anterior and servicio not in SERVICIOS_PRINCIPALES:
-            return JsonResponse({"error": "Selecciona uno de los cuatro servicios principales."}, status=400)
-
-        cambio_monto = monto != monto_anterior
-        cambio_servicio = servicio != servicio_anterior
-
-        # Confirmación obligatoria en servidor.
-        if (
-            cambio_monto
-            and request.POST.get("confirmar_monto") != "SI"
-        ):
-            return JsonResponse(
-                {
-                    "error": (
-                        "Debes confirmar expresamente "
-                        "el cambio de monto."
-                    )
-                },
-                status=400,
-            )
-
-        revision_existente = (
-            Revision.objects
-            .select_for_update()
-            .filter(odt=odt)
-            .first()
-        )
-
-        estado_guardado = (
-            revision_existente.estado
-            if revision_existente
-            else None
-        )
-
-        # Estado efectivo de la nueva lógica.
-        estado_anterior = (
-            "APROBADA"
-            if estado_guardado in (
-                None,
-                "POR_REVISAR",
-            )
-            else estado_guardado
-        )
-
-        cambio_estado = False
-        estado = estado_anterior
-
-        if not (
-            cambio_monto
-            or cambio_servicio
-            or cambio_estado
-        ):
-            return JsonResponse(
-                {
-                    "ok": True,
-                    "mensaje": "No hay cambios para guardar.",
-                    "monto": str(monto),
-                    "estado": estado_anterior,
-                }
-            )
-
-        # Guardar solo diferencias respecto de SoftGuard.
-        odt.servicio_editado = (
-            servicio
-            if servicio != odt.servicio
-            else None
-        )
-
-        odt.valor_pago_editado = (
-            monto
-            if monto != odt.valor_pago_tecnico
-            else None
-        )
-
-        odt.modificado_manualmente = bool(
-            odt.servicio_editado is not None
-            or odt.valor_pago_editado is not None
-        )
-
-        odt.save(
-            update_fields=[
-                "servicio_editado",
-                "valor_pago_editado",
-                "modificado_manualmente",
-            ]
-        )
-
-        registrar_cambio_manual(odt, request.user)
-
-        # Solo crear/actualizar revisión cuando cambia
-        # expresamente el estado.
-        if cambio_estado:
-            revision, _ = (
-                Revision.objects
-                .select_for_update()
-                .get_or_create(odt=odt)
-            )
-
-            revision.estado = estado
-            revision.observacion = comentario
-            revision.actualizado_por = request.user
-            revision.save()
-
-        cambios = []
-
-        if cambio_servicio:
-            cambios.append(
-                f"Servicio: {servicio_anterior} → {servicio}"
-            )
-
-        if cambio_monto:
-            cambios.append(
-                f"Pago técnico: ${monto_anterior} → ${monto}"
-            )
-
-        if cambio_estado:
-            cambios.append(
-                f"Revisión: {estado_anterior} → {estado}"
-            )
-
-        if comentario:
-            cambios.append(f"Motivo: {comentario}")
-
-        EventoRevision.objects.create(
-            odt=odt,
-            estado_anterior=estado_anterior,
-            estado_nuevo=estado,
-            comentario=" | ".join(cambios),
-            usuario=request.user,
-        )
-
-    return JsonResponse(
-        {
-            "ok": True,
-            "mensaje": "Cambios guardados correctamente.",
-            "monto": str(monto),
-            "estado": estado,
-        }
-    )
+    except ErrorOperacionODT as error:
+        return _respuesta_error_odt(error)
+    return JsonResponse({
+        "ok": True,
+        "mensaje": "Cambios guardados correctamente." if resultado.cambio else "No hay cambios para guardar.",
+        "monto": str(resultado.monto), "estado": resultado.estado,
+    })
 
 
 
@@ -1410,143 +1047,18 @@ def historial_odt(request, numero):
 @login_required
 @permission_required("revisiones.revisar_pago_sstt", raise_exception=True)
 @require_POST
-
-
-@login_required
-@permission_required(
-    "revisiones.revisar_pago_sstt",
-    raise_exception=True,
-)
-@require_POST
 def actualizar_revision(request):
-
-    
-    # ==================================================
-    # VALIDAR NÚMERO DE ODT
-    # Acepta 77527, 77 527 y 77.527
-    # ==================================================
-
-    numero_texto = str(
-        request.POST.get("numero", "")
-    ).strip()
-
-    # Conservar únicamente números.
-    numero_limpio = "".join(
-        caracter
-        for caracter in numero_texto
-        if caracter in "0123456789"
-    )
-
-    if not numero_limpio:
-        return JsonResponse(
-            {
-                "error": (
-                    "Número de ODT inválido. "
-                    f"Valor recibido: {numero_texto!r}"
-                )
-            },
-            status=400,
+    try:
+        resultado = revisar_odt(
+            request.user, numero=request.POST.get("numero", ""),
+            estado=request.POST.get("estado", ""), comentario=request.POST.get("comentario", ""),
         )
-
-    numero = int(numero_limpio)
-
-    if numero <= 0:
-        return JsonResponse(
-            {"error": "Número de ODT inválido."},
-            status=400,
-        )
-
-
-    estado = request.POST.get("estado", "").strip()
-    comentario = request.POST.get("comentario", "").strip()
-
-    validos = (
-        "APROBADA",
-        "EN_REVISION",
-        "RECHAZADA",
-    )
-
-    if estado not in validos:
-        return JsonResponse(
-            {"error": "Estado de revisión inválido."},
-            status=400,
-        )
-
-    if estado in ("EN_REVISION", "RECHAZADA") and not comentario:
-        return JsonResponse(
-            {
-                "error": (
-                    "Debes indicar el motivo para "
-                    "cambiar a En revisión o Rechazada."
-                )
-            },
-            status=400,
-        )
-
-    with transaction.atomic():
-
-        odt = get_object_or_404(
-            ODT.objects.select_for_update(),
-            numero=numero,
-        )
-
-        bloqueo = error_odt_bloqueada(odt)
-
-        if bloqueo:
-            return JsonResponse(
-                {"error": bloqueo},
-                status=409,
-            )
-
-        revision = (
-            Revision.objects
-            .select_for_update()
-            .filter(odt=odt)
-            .first()
-        )
-
-        anterior = (
-            revision.estado
-            if revision
-            else "APROBADA"
-        )
-
-        if anterior == "POR_REVISAR":
-            anterior = "APROBADA"
-
-        if anterior == estado:
-            return JsonResponse({
-                "ok": True,
-                "mensaje": "El estado no ha cambiado.",
-                "estado": estado,
-            })
-
-        if revision is None:
-            revision = Revision(odt=odt)
-
-        revision.estado = estado
-        revision.observacion = comentario
-        revision.actualizado_por = request.user
-        revision.save()
-
-        EventoRevision.objects.create(
-            odt=odt,
-            estado_anterior=anterior,
-            estado_nuevo=estado,
-            comentario=(
-                f"Revisión: {anterior} → {estado}"
-                + (
-                    f" | Motivo: {comentario}"
-                    if comentario else ""
-                )
-            ),
-            usuario=request.user,
-        )
-
+    except ErrorOperacionODT as error:
+        return _respuesta_error_odt(error)
     return JsonResponse({
         "ok": True,
-        "mensaje": "Estado de revisión actualizado.",
-        "estado": estado,
+        "mensaje": "Estado de revisión actualizado." if resultado.cambio else "El estado no ha cambiado.",
+        "estado": resultado.estado,
     })
 
 
