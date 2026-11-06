@@ -125,7 +125,8 @@ def indicador(qs):
 
 @login_required
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
-def bandeja(request):
+def bandeja(request, por_creacion=False):
+    campo_fecha = "fecha_creacion" if por_creacion else "fecha_finalizacion"
     inicio_bandeja = tiempo.perf_counter()
     es_coordinador = es_coordinador_sstt(request.user)
     coordinador_sesion = datos_coordinador(request.user) if es_coordinador else None
@@ -241,7 +242,7 @@ def bandeja(request):
 
             contratistas_disponibles = contratistas_disponibles.filter(
                 **{
-                    f"fecha_finalizacion__date__{operador}":
+                    f"{campo_fecha}__date__{operador}":
                         fecha_valida
                 }
             )
@@ -455,7 +456,7 @@ def bandeja(request):
             else:
                 registros = registros.filter(
                     **{
-                        f"fecha_finalizacion__date__{operador}":
+                        f"{campo_fecha}__date__{operador}":
                             valor
                     }
                 )
@@ -1014,6 +1015,8 @@ def bandeja(request):
         request,
         "revisiones/bandeja.html",
         {
+            "por_creacion": por_creacion,
+            "bandeja_url": "bandeja_creacion" if por_creacion else "bandeja",
             "registros": pagina.object_list,
             "pagina": pagina,
             "page_obj": pagina,
@@ -1068,7 +1071,14 @@ def bandeja(request):
 
 
 @login_required
+@permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
+def bandeja_creacion(request):
+    return bandeja(request, por_creacion=True)
+
+
+@login_required
 def contratistas_disponibles_ajax(request):
+    campo_fecha = "fecha_creacion" if request.GET.get("campo_fecha") == "creacion" else "fecha_finalizacion"
 
     fecha_desde = request.GET.get("fecha_desde", "")
     fecha_hasta = request.GET.get("fecha_hasta", "")
@@ -1080,12 +1090,12 @@ def contratistas_disponibles_ajax(request):
     # Fecha de finalización
     if fecha_desde:
         registros = registros.filter(
-            fecha_finalizacion__date__gte=fecha_desde
+            **{f"{campo_fecha}__date__gte": fecha_desde}
         )
 
     if fecha_hasta:
         registros = registros.filter(
-            fecha_finalizacion__date__lte=fecha_hasta
+            **{f"{campo_fecha}__date__lte": fecha_hasta}
         )
 
     # Estado SoftGuard

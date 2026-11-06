@@ -6,7 +6,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gestión de pagos SSTT</title>
+  <title>{% if por_creacion %}ODT por creación | SSTT{% else %}Gestión de pagos SSTT{% endif %}</title>
 
   <link
     rel="stylesheet"
@@ -30,7 +30,7 @@
     <div class="header-contenido">
 
       <div class="header-titulo">
-        <h1>Gestión de pagos SSTT</h1>
+        <h1>{% if por_creacion %}ODT por fecha de creación{% else %}Gestión de pagos SSTT{% endif %}</h1>
         <p>
           Bandeja de revisión y aprobación
           de órdenes de trabajo
@@ -145,6 +145,7 @@
 
     
 
+{% if not por_creacion %}
 <!-- INDICADORES OPERATIVOS -->
 <section class="kpis kpis-operativos">
 
@@ -184,6 +185,7 @@
 
 
 
+{% endif %}
     <!-- FILTROS -->
 
     <section class="panel">
@@ -192,6 +194,11 @@
       <div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
 
         {% if perms.revisiones.ver_bandeja_sstt %}
+          {% if por_creacion %}
+          <a class="btn alt" href="{% url 'bandeja' %}">Bandeja de pagos</a>
+          {% else %}
+          <a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a>
+          {% endif %}
           <a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a>
           <a class="btn alt"
             href="{% url 'estadisticas_correcciones' %}">
@@ -228,7 +235,7 @@
 
       <form
         method="get"
-        action="{% url 'bandeja' %}"
+        action="{% url bandeja_url %}"
         class="filters"
       >
 
@@ -236,7 +243,7 @@
         <!-- FECHAS -->
 
         <div class="field">
-          <label class="field-label">Finalización desde</label>
+          <label class="field-label">{% if por_creacion %}Creación desde{% else %}Finalización desde{% endif %}</label>
           <input
             type="date"
             name="fecha_desde"
@@ -245,7 +252,7 @@
         </div>
 
         <div class="field">
-          <label class="field-label">Finalización hasta</label>
+          <label class="field-label">{% if por_creacion %}Creación hasta{% else %}Finalización hasta{% endif %}</label>
           <input
             type="date"
             name="fecha_hasta"
@@ -452,14 +459,14 @@
             Aplicar filtros
           </button>
 
-          <a class="btn alt" href="{% url 'bandeja' %}">
+          <a class="btn alt" href="{% url bandeja_url %}">
             Limpiar
           </a>
         </div>
 
       </form>
 
-      {% if perms.revisiones.exportar_pagos_sstt %}
+      {% if perms.revisiones.exportar_pagos_sstt and not por_creacion %}
         <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
 
           <form
@@ -1642,6 +1649,7 @@
         const solicitudActual = ++numeroSolicitud;
 
         const parametros = new URLSearchParams();
+        {% if por_creacion %}parametros.set("campo_fecha", "creacion");{% endif %}
 
         const fechaDesde = formulario.querySelector(
             '[name="fecha_desde"]'
