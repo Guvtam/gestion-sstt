@@ -237,3 +237,5 @@ class AsignacionCoordinadorODT(models.Model):
 # Se conserva su módulo original, tablas y migraciones existentes.
 from .facturacion_models import EventoRequisicion, FacturacionContratista, FacturacionODT, PeriodoFacturacion
 from .sincronizacion_models import EjecucionSincronizacion
+
+from .coordinadores_models import VinculoCoordinador
