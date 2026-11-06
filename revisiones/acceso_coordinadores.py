@@ -7,6 +7,7 @@ from .coordinadores_softguard import (
     COORDINADORES_SOFTGUARD, CoordinadoresNoDisponibles, identificar_coordinadores_odt,
 )
 from .dominio.validacion_odt import numero_odt
+from .dominio.errores import DatosODTInvalidos
 
 
 def coordinadores_en_peticion(request, numeros):
@@ -101,8 +102,8 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
         # Operaciones internas de la bandeja, no páginas adicionales.
         if nombre in ("historial_odt", "actualizar_informe", "cambiar_estado_correccion"):
             try:
-                numero = int(view_kwargs.get("numero") or request.POST.get("numero", ""))
-            except (TypeError, ValueError):
+                numero = numero_odt(view_kwargs.get("numero") or request.POST.get("numero", ""))
+            except (DatosODTInvalidos, TypeError, ValueError):
                 return JsonResponse({"error": "Número de ODT inválido."}, status=400)
             try:
                 permitido = coordinador_visible(request, numero)
