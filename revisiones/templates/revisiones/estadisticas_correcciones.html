@@ -1,13 +1,11 @@
+{% extends "revisiones/base_documento.html" %}
 {% load humanize static %}
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Análisis por coordinador · SSTT</title>
-    <link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261103-2">
-</head>
-<body>
+{% block titulo %}Análisis por coordinador · SSTT{% endblock %}
+{% block estilos_base %}{% endblock %}
+{% block estilos %}
+<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261103-2">
+{% endblock %}
+{% block cuerpo %}
 <header class="stats-header">
     <div class="stats-container stats-header-inner">
         <div>
@@ -201,5 +199,4 @@
         {% endif %}
     </section>
 </main>
-</body>
-</html>
+{% endblock %}

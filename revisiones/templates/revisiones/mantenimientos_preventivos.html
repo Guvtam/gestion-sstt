@@ -1,13 +1,19 @@
+{% extends "revisiones/base_operativa.html" %}
 {% load static formato_sstt %}
-<!doctype html><html lang="es"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mantenimientos preventivos por cuenta · SSTT</title>
+{% block titulo %}Mantenimientos preventivos por cuenta · SSTT{% endblock %}
+{% block estilos_base %}{% endblock %}
+{% block estilos %}
 <link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
-</head><body class="preventivos-page">
-<header class="header-sstt"><div class="header-contenido">
-<div class="header-titulo"><h1>Mantenimientos preventivos por cuenta</h1><p>Último mantenimiento realizado y seguimiento de órdenes preventivas</p></div>
+{% endblock %}
+{% block atributos_body %} class="preventivos-page"{% endblock %}
+{% block titulo_encabezado %}Mantenimientos preventivos por cuenta{% endblock %}
+{% block subtitulo %}Último mantenimiento realizado y seguimiento de órdenes preventivas{% endblock %}
+{% block acciones_encabezado %}
 <div class="filtro-acciones"><a class="btn" href="{% url 'calendario_servicios' %}">Calendario de visitas</a><a class="btn alt" href="{% url 'bandeja' %}">Volver a la bandeja</a></div>
-</div></header>
+{% endblock %}
+{% block antes_encabezado %}
+{% endblock %}
+{% block contenido %}
 <main class="hist-main">
 <section class="hist-panel">
 <form method="get" class="preventivos-filtros">
@@ -79,4 +85,4 @@
 </nav>{% endif %}
 </section>
 {% endif %}
-</main></body></html>
+</main>{% endblock %}

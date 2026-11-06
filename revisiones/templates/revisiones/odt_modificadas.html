@@ -1,13 +1,11 @@
+{% extends "revisiones/base_operativa.html" %}
 {% load static %}
 {% load l10n %}
 {% load humanize %}
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ODT modificadas | SSTT</title>
-  <link rel="stylesheet" href="{% static 'revisiones/bandeja.css' %}">
+{% block titulo %}ODT modificadas | SSTT{% endblock %}
+{% block estilos_base %}{% endblock %}
+{% block estilos %}
+<link rel="stylesheet" href="{% static 'revisiones/bandeja.css' %}">
   <style>
     .modificadas-resumen{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
     .modificadas-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px}
@@ -72,11 +70,13 @@
 }
 
     </style>
-</head>
-<body>
-  <header class="header-sstt"><div class="header-contenido"><div class="header-titulo">
-    <h1>ODT modificadas</h1><p>Control de modificaciones manuales de servicio y pago técnico</p>
-  </div></div></header>
+{% endblock %}
+{% block titulo_encabezado %}ODT modificadas{% endblock %}
+{% block subtitulo %}Control de modificaciones manuales de servicio y pago técnico{% endblock %}
+{% block acciones_encabezado %}{% endblock %}
+{% block antes_encabezado %}
+  {% endblock %}
+{% block contenido %}
   <main>
     <div class="modificadas-acciones">
       <a class="btn alt" href="{% url 'bandeja' %}">Volver a la bandeja</a>
@@ -200,5 +200,4 @@
     });
   });
 </script>
-</body>
-</html>
+{% endblock %}
