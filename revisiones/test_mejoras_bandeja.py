@@ -26,7 +26,7 @@ class MejorasBandejaTests(TestCase):
         request = self.factory.get("/", {"estado": "Finalizado", "fecha_desde": "2026-10-21",
                                         "fecha_hasta": "2026-11-20", **datos})
         request.user = self.user
-        with patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado": False}), \
+        with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}), \
              patch("revisiones.views.render", side_effect=lambda r, t, c: c):
             return views.bandeja(request)
 

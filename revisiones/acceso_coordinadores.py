@@ -3,7 +3,43 @@ from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.utils.deprecation import MiddlewareMixin
-from .coordinadores_softguard import COORDINADORES_SOFTGUARD, identificar_coordinador_odt
+from .coordinadores_softguard import (
+    COORDINADORES_SOFTGUARD, CoordinadoresNoDisponibles, identificar_coordinadores_odt,
+)
+from .dominio.validacion_odt import numero_odt
+
+
+def coordinadores_en_peticion(request, numeros):
+    """Datos, nunca decisiones de permiso, reutilizados solo en esta petición."""
+    numeros = list(dict.fromkeys(numero_odt(n) for n in numeros))
+    cache = getattr(request, "_coordinadores_sstt", None)
+    if cache is None:
+        cache = request._coordinadores_sstt = {}
+    pendientes = [n for n in numeros if n not in cache]
+    for inicio in range(0, len(pendientes), 250):
+        lote = pendientes[inicio:inicio+250]
+        try:
+            resultados = identificar_coordinadores_odt(lote)
+        except CoordinadoresNoDisponibles as error:
+            cache.update(error.confirmados)
+            raise
+        if set(resultados) != set(lote):
+            raise CoordinadoresNoDisponibles()
+        cache.update(resultados)
+    return {n: cache[n] for n in numeros}
+
+
+def coordinadores_para_mostrar(request, numeros):
+    """Solo presentación; nunca usar este fallback para autorizar o filtrar."""
+    numeros = list(numeros)
+    try:
+        return coordinadores_en_peticion(request, numeros)
+    except CoordinadoresNoDisponibles:
+        cache = getattr(request, "_coordinadores_sstt", {})
+        return {n: cache.get(n, {
+            "nombre": "No disponible", "usuario": None,
+            "identificado": False, "disponible": False,
+        }) for n in numeros}
 
 
 def datos_coordinador(user):
@@ -25,12 +61,8 @@ def coordinador_visible(request, numero):
     datos = datos_coordinador(request.user)
     if datos is None:
         raise PermissionDenied("El usuario del coordinador no está vinculado a SoftGuard.")
-    cache = getattr(request, "_coordinadores_sstt", None)
-    if cache is None:
-        cache = request._coordinadores_sstt = {}
-    if numero not in cache:
-        cache[numero] = identificar_coordinador_odt(numero)
-    info = cache[numero]
+    numero = numero_odt(numero)
+    info = coordinadores_en_peticion(request, [numero])[numero]
     return (bool(info.get("identificado", False))
             and info.get("usuario") == datos["usuario"])
 
@@ -38,12 +70,23 @@ def coordinador_visible(request, numero):
 def limitar_odts_coordinador(request, registros):
     if not es_coordinador_sstt(request.user):
         return registros
-    numeros = [n for n in registros.order_by().values_list("numero", flat=True).iterator()
-               if coordinador_visible(request, n)]
+    datos = datos_coordinador(request.user)
+    if datos is None:
+        raise PermissionDenied("El usuario del coordinador no está vinculado a SoftGuard.")
+    responsables = coordinadores_en_peticion(
+        request, registros.order_by().values_list("numero", flat=True).iterator(),
+    )
+    numeros = [n for n, info in responsables.items()
+               if info.get("identificado", False) and info.get("usuario") == datos["usuario"]]
     return registros.filter(numero__in=numeros)
 
 
 class AccesoCoordinadorMiddleware(MiddlewareMixin):
+    def process_exception(self, request, exception):
+        if isinstance(exception, CoordinadoresNoDisponibles):
+            return JsonResponse({"error": str(exception)}, status=503)
+        return None
+
     def process_view(self, request, view_func, view_args, view_kwargs):
         if not es_coordinador_sstt(request.user):
             return None

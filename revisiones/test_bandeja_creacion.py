@@ -28,7 +28,7 @@ class BandejaCreacionTests(TestCase):
 
     def contexto(self, creacion):
         with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
-             patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado":False}):
+             patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             return (views.bandeja_creacion if creacion else views.bandeja)(self.request())
 
     def test_fecha_correcta_en_filas_tarjetas_y_contratistas(self):
@@ -69,13 +69,13 @@ class BandejaCreacionTests(TestCase):
             estado_softguard="Pendiente", fecha_creacion=timezone.make_aware(datetime(2026,10,25)))
         request = self.request(estado="")
         with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
-             patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado":False}):
+             patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             c = views.bandeja_creacion(request)
         self.assertEqual({o.numero for o in c["registros"]}, {1,3})
         self.assertIn(views.SIN_TECNICO_FILTRO,c["contratistas_seleccionados"])
         request = self.request(estado="", contratista=[views.SIN_TECNICO_FILTRO], contratistas_filtrados="1")
         with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
-             patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado":False}):
+             patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             c = views.bandeja_creacion(request)
         self.assertEqual([o.numero for o in c["registros"]],[3])
         ajax = views.contratistas_disponibles_ajax(self.request(estado="",campo_fecha="creacion"))
@@ -86,7 +86,7 @@ class BandejaCreacionTests(TestCase):
         request = self.factory.get("/")
         request.user = self.user
         with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
-             patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado":False}):
+             patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             c = views.bandeja_creacion(request)
         self.assertEqual(c["filtros"]["estado"],"")
         self.assertEqual(c["servicios_seleccionados"],[])

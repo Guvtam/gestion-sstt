@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 
 from .acceso_coordinadores import (
     coordinador_visible, datos_coordinador, es_coordinador_sstt, limitar_odts_coordinador,
+    coordinadores_en_peticion, coordinadores_para_mostrar,
 )
 from .casos_uso.edicion_odt import editar_odt, revisar_odt, revisar_odts
 from .consultas.pagos import (
@@ -341,36 +342,15 @@ def bandeja(request, por_creacion=False):
             registros = registros.none()
 
         else:
-            numeros_filtrados = []
-
-            numeros_candidatos = registros.order_by().values_list(
-                "numero",
-                flat=True
-            ).iterator(chunk_size=500)
-
-            for numero in numeros_candidatos:
-
-                try:
-                    info = identificar_coordinador_odt(numero)
-
-                except Exception:
-                    # No atribuir un coordinador cuando
-                    # falla la consulta del historial.
-                    raise
-
-                if coordinador_seleccionado == "SIN_IDENTIFICAR":
-                    coincide = not info.get("identificado", False)
-                else:
-                    coincide = (
-                        info.get("usuario") == coordinador_seleccionado
-                    )
-
-                if coincide:
-                    numeros_filtrados.append(numero)
-
-            registros = registros.filter(
-                numero__in=numeros_filtrados
+            responsables = coordinadores_en_peticion(
+                request, registros.order_by().values_list("numero", flat=True).iterator(chunk_size=500),
             )
+            numeros_filtrados = [
+                numero for numero, info in responsables.items()
+                if (not info.get("identificado", False) if coordinador_seleccionado == "SIN_IDENTIFICAR"
+                    else info.get("usuario") == coordinador_seleccionado)
+            ]
+            registros = registros.filter(numero__in=numeros_filtrados)
 
 
 
@@ -633,6 +613,8 @@ def bandeja(request, por_creacion=False):
     # COORDINADOR DE LAS ODT VISIBLES
     # ==================================================
 
+    coordinadores_pagina = coordinadores_para_mostrar(request, [o.numero for o in pagina.object_list])
+
     for odt in pagina.object_list:
         seguimiento = getattr(odt, "seguimiento_correccion", None)
         odt.estado_modificacion = (
@@ -644,25 +626,14 @@ def bandeja(request, por_creacion=False):
             and (es_coordinador or request.user.has_perm("revisiones.editar_odt_sstt"))
         )
         odt.permite_asignar_coordinador = False
-        try:
-            info = identificar_coordinador_odt(odt.numero)
+        info = coordinadores_pagina[odt.numero]
+        odt.coordinador_nombre = info.get("nombre") or "Sin identificar"
+        odt.coordinador_identificado = bool(info.get("identificado", False))
+        odt.permite_asignar_coordinador = (
+            info.get("disponible", True) and not odt.coordinador_identificado
+            and puede_asignar_coordinador(request.user)
+        )
 
-            odt.coordinador_nombre = (
-                info.get("nombre") or "Sin identificar"
-            )
-            odt.coordinador_identificado = bool(
-                info.get("identificado", False)
-            )
-            odt.permite_asignar_coordinador = (
-                not odt.coordinador_identificado and puede_asignar_coordinador(request.user)
-            )
-
-        except Exception:
-            odt.coordinador_nombre = "No disponible"
-            odt.coordinador_identificado = False
-
-
-    
     # ==================================================
     # IDENTIFICAR ODT FACTURADAS Y RECHAZADAS
     # Solo las 50 ODT visibles en la página.
@@ -863,7 +834,7 @@ def contratistas_disponibles_ajax(request):
     estado = request.GET.get("estado", "")
     servicios = request.GET.getlist("servicios")
 
-    registros = limitar_odts_coordinador(request, ODT.objects.all())
+    registros = ODT.objects.all()
 
     # Fecha de finalización
     if fecha_desde:
@@ -894,6 +865,8 @@ def contratistas_disponibles_ajax(request):
                 servicio_editado__in=servicios
             )
         )
+
+    registros = limitar_odts_coordinador(request, registros)
 
     contratistas = opciones_contratistas(
         registros, incluir_sin_tecnico=(campo_fecha == "fecha_creacion")
@@ -1324,12 +1297,6 @@ def guardar_cuenta(request, cuenta_id):
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
 def odt_modificadas(request):
     """Listado de cambios y comparación con la última sincronización SoftGuard."""
-    from .coordinadores_softguard import (
-        COORDINADORES_SOFTGUARD,
-        identificar_coordinador_odt,
-    )
-    from django.db.models import F
-
     registros = (
         ODT.objects.select_related("revision", "seguimiento_correccion")
         .filter(
@@ -1371,35 +1338,15 @@ def odt_modificadas(request):
     if correccion in ("PENDIENTE", "EN_PROCESO", "ACTUALIZADA"):
         registros = registros.filter(seguimiento_correccion__estado=correccion)
 
-    # Guardar resultados solo durante esta solicitud, para no repetir
-    # la consulta SQL de historial por cada ODT.
-    cache_coordinadores = {}
-
-    def obtener_coordinador(numero):
-        if numero not in cache_coordinadores:
-            try:
-                cache_coordinadores[numero] = identificar_coordinador_odt(numero)
-            except Exception:
-                cache_coordinadores[numero] = {
-                    "nombre": "No disponible",
-                    "usuario": None,
-                    "identificado": False,
-                }
-        return cache_coordinadores[numero]
-
-    # El coordinador no está guardado aún en ODT, por lo que el
-    # filtro requiere identificarlo antes de calcular la paginación.
     if coordinador_seleccionado:
-        numeros = registros.values_list("numero", flat=True).iterator()
-        numeros_filtrados = []
-        for numero in numeros:
-            info = obtener_coordinador(numero)
-            if coordinador_seleccionado == "SIN_IDENTIFICAR":
-                coincide = not info.get("identificado", False)
-            else:
-                coincide = info.get("usuario") == coordinador_seleccionado
-            if coincide:
-                numeros_filtrados.append(numero)
+        responsables = coordinadores_en_peticion(
+            request, registros.order_by().values_list("numero", flat=True).iterator(),
+        )
+        numeros_filtrados = [
+            numero for numero, info in responsables.items()
+            if (not info.get("identificado", False) if coordinador_seleccionado == "SIN_IDENTIFICAR"
+                else info.get("usuario") == coordinador_seleccionado)
+        ]
         registros = registros.filter(numero__in=numeros_filtrados)
 
     resumen = registros.aggregate(
@@ -1413,8 +1360,10 @@ def odt_modificadas(request):
     pagina = Paginator(registros, 50).get_page(request.GET.get("page"))
     filas = []
 
+    coordinadores_pagina = coordinadores_para_mostrar(request, [o.numero for o in pagina.object_list])
+
     for odt in pagina.object_list:
-        coordinador = obtener_coordinador(odt.numero)
+        coordinador = coordinadores_pagina[odt.numero]
         monto_original_fila = odt.valor_pago_tecnico or Decimal("0")
         cambio_monto = odt.valor_pago_editado is not None
         cambio_servicio = odt.servicio_editado is not None

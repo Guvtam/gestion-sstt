@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from .models import CorreccionODT
-from .coordinadores_softguard import identificar_coordinador_odt
+from .acceso_coordinadores import coordinadores_en_peticion
 
 
 @login_required
@@ -34,12 +34,10 @@ def estadisticas_correcciones(request):
     grupos = defaultdict(nuevo)
     nombres = {}
     detalle = []
+    responsables = coordinadores_en_peticion(request, qs.values_list("odt__numero", flat=True).iterator())
     for seguimiento in qs.iterator(chunk_size=200):
         odt = seguimiento.odt
-        try:
-            info = identificar_coordinador_odt(odt.numero) or {}
-        except Exception:
-            info = {}
+        info = responsables[odt.numero]
         usuario = str(info.get('usuario') or 'SIN_IDENTIFICAR')
         nombre = info.get('nombre') or 'Sin identificar'
         nombres[usuario] = nombre

@@ -21,7 +21,7 @@ class DetalleCorreccionesTests(TestCase):
         request.user = self.user
         def coordinador(n):
             return {"usuario": "rsilva" if n != 3 else None, "nombre": "Romina Silva" if n != 3 else "Sin identificar"}
-        with patch("revisiones.estadisticas_correcciones.identificar_coordinador_odt", side_effect=coordinador), \
+        with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: coordinador(n) for n in numeros}), \
              patch("revisiones.estadisticas_correcciones.render", side_effect=lambda r, t, c: c):
             return estadisticas_correcciones(request)
 

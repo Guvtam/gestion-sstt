@@ -49,8 +49,7 @@ class AccesoCoordinadoresTests(TestCase):
         for parametro in ("", "jtapia", "SIN_IDENTIFICAR"):
             req = self.request(data={"coordinador": parametro, "estado": "",
                                      "fecha_desde": "", "fecha_hasta": ""})
-            with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=self.info), \
-                 patch("revisiones.views.identificar_coordinador_odt", side_effect=self.info), \
+            with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: self.info(n) for n in numeros}), \
                  patch("revisiones.views.render", side_effect=lambda r, t, c: c):
                 context = views.bandeja(req)
             self.assertEqual({o.numero for o in context["registros"]}, {1})
@@ -66,7 +65,7 @@ class AccesoCoordinadoresTests(TestCase):
             self.middleware(self.request("guardar_fila", "post"))
 
     def test_historial_informe_y_correccion_excluyen_sin_identificar(self):
-        with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=self.info):
+        with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: self.info(n) for n in numeros}):
             for n in (1,):
                 self.assertIsNone(self.middleware(self.request("historial_odt"), {"numero": n}))
             with self.assertRaises(PermissionDenied):
@@ -79,7 +78,7 @@ class AccesoCoordinadoresTests(TestCase):
                         self.middleware(self.request(route, "post", {"numero": n}))
 
     def test_fallo_sql_no_da_acceso(self):
-        with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=RuntimeError):
+        with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=RuntimeError):
             self.assertEqual(self.middleware(self.request("historial_odt"), {"numero": 1}).status_code, 503)
 
     def test_usuario_sin_vinculo_denegado(self):
@@ -94,7 +93,7 @@ class AccesoCoordinadoresTests(TestCase):
         self.assertIsNone(self.middleware(self.request("historial_facturacion")))
 
     def test_ajax_solo_contratistas_visibles(self):
-        with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=self.info):
+        with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: self.info(n) for n in numeros}):
             response = views.contratistas_disponibles_ajax(self.request("contratistas_disponibles_ajax"))
         import json
         self.assertEqual(set(json.loads(response.content)["contratistas"]), {"1"})
@@ -107,8 +106,7 @@ class AccesoCoordinadoresTests(TestCase):
         for numero, expected in (("1", {1}), ("2", set()), ("3", set()), ("invalido", set())):
             req = self.request(data={"numero_odt": numero, "estado": "",
                                      "fecha_desde": "", "fecha_hasta": ""})
-            with patch("revisiones.acceso_coordinadores.identificar_coordinador_odt", side_effect=self.info), \
-                 patch("revisiones.views.identificar_coordinador_odt", side_effect=self.info), \
+            with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: self.info(n) for n in numeros}), \
                  patch("revisiones.views.render", side_effect=lambda r, t, c: c):
                 context = views.bandeja(req)
             self.assertEqual({o.numero for o in context["registros"]}, expected)
