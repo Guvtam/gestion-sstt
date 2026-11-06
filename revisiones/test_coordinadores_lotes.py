@@ -101,7 +101,7 @@ class CoordinadoresPorLotesTests(TestCase):
 
     def test_lote_250_usa_una_consulta_local_y_una_de_origen(self):
         with patch("revisiones.coordinadores_softguard.consultar_eventos_coordinadores", side_effect=self.eventos) as origen:
-            with self.assertNumQueries(1):
+            with self.assertNumQueries(2):
                 r = identificar_coordinadores_odt(range(1, 251))
         origen.assert_called_once()
         self.assertEqual(len(r), 250)
@@ -111,7 +111,7 @@ class CoordinadoresPorLotesTests(TestCase):
     def test_mas_de_un_lote_y_cache_solo_en_misma_peticion(self):
         req = self.request()
         with patch("revisiones.coordinadores_softguard.consultar_eventos_coordinadores", side_effect=self.eventos) as origen:
-            with self.assertNumQueries(3):
+            with self.assertNumQueries(6):
                 primero = coordinadores_en_peticion(req, range(1, 502))
             with self.assertNumQueries(0):
                 segundo = coordinadores_en_peticion(req, [1, 2])

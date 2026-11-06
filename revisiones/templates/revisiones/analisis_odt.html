@@ -58,12 +58,12 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 <div class="field servicios-field"><label>Servicios</label>
 <details class="servicios-selector"><summary id="serviciosResumen">{{ servicios_seleccionados|length }} servicios seleccionados</summary>
 <div class="servicios-panel"><div class="servicios-acciones"><button type="button" id="serviciosTodos">Seleccionar todos</button><button type="button" id="serviciosNinguno">Desmarcar todos</button></div>
-{% for s in servicios_disponibles %}<label><input type="checkbox" name="servicios" value="{{ s }}" {% if s in servicios_seleccionados %}checked{% endif %}><span>{{ s }}</span></label>{% endfor %}
+{% include "revisiones/componentes/opciones_servicios.html" with opciones=servicios_disponibles seleccionados=servicios_seleccionados only %}
 </div></details></div>
 <div class="field"><label for="q">Cuenta, técnico o contratista</label><input id="q" name="q" value="{{ q }}"></div>
 <div class="field"><label for="vista">Detalle</label><select id="vista" name="vista"><option value="todas">Todas las ODT</option><option value="incidencias" {% if vista == 'incidencias' %}selected{% endif %}>Con atenciones repetidas</option><option value="sla" {% if vista == 'sla' %}selected{% endif %}>SLA no cumple</option><option value="sin_preventivo" {% if vista == 'sin_preventivo' %}selected{% endif %}>Sin preventivo registrado</option></select></div>
 <div class="filtro-acciones"><button class="btn">Aplicar filtros</button><a class="btn alt" href="{% url 'analisis_odt' %}">Limpiar</a></div></form>
-{% for error in errores %}<p class="error-fecha" role="alert">{{ error }}</p>{% endfor %}
+{% include "revisiones/componentes/errores_filtro.html" %}
 <p class="hist-sub">Solo ODT finalizadas, por fecha de finalización. Datos de la última sincronización local. Los gráficos y KPI se filtran entre sí. “Detalle” solo limita la tabla inferior.</p>
 </section>
 <div class="filtros-activos" aria-label="Selecciones de gráficos">

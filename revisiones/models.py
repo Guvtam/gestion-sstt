@@ -239,3 +239,5 @@ from .facturacion_models import EventoRequisicion, FacturacionContratista, Factu
 from .sincronizacion_models import EjecucionSincronizacion
 
 from .coordinadores_models import VinculoCoordinador
+from .coordinadores_models import ResponsableSoftGuard
+from .coordinadores_models import ProyeccionCoordinadorODT

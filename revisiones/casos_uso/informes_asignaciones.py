@@ -6,7 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..coordinadores_softguard import (
-    COORDINADORES_SOFTGUARD, identificar_coordinador_softguard, puede_asignar_coordinador,
+    COORDINADORES_SOFTGUARD, catalogo_coordinadores, identificar_coordinador_softguard, puede_asignar_coordinador,
 )
 from ..dominio.errores import (
     DatosODTInvalidos, ODTBloqueada, ODTNoEncontrada, VerificacionCoordinadorFallida,
@@ -61,7 +61,7 @@ def asignar_responsable(usuario, *, numero, coordinador, verificar_origen=None):
     if not puede_asignar_coordinador(usuario):
         raise PermissionDenied("Solo admin y jiturriaga pueden asignar coordinadores.")
     numero, coordinador = numero_odt(numero), texto(coordinador)
-    datos = next((d for d in COORDINADORES_SOFTGUARD.values() if d["usuario"] == coordinador), None)
+    datos = next((d for d in catalogo_coordinadores().values() if d["usuario"] == coordinador), None)
     if datos is None:
         raise DatosODTInvalidos("Coordinador inválido.")
     odt_id = ODT.objects.filter(numero=numero).values_list("pk", flat=True).first()

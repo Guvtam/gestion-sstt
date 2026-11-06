@@ -3,12 +3,12 @@ import calendar
 from datetime import date
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
-from django.db.models.functions import Coalesce, Lower, Trim
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
-from .models import ODT
+from .models import EjecucionSincronizacion
+from .consultas.calendario import visitas_del_mes
 from .cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta
 from .dominio.fechas import sumar_meses
 
@@ -26,14 +26,10 @@ def calendario_servicios(request):
     except ValueError:
         mes = hoy.replace(day=1)
         errores.append("El mes no es válido.")
-    ultimo = mes.replace(day=calendar.monthrange(mes.year, mes.month)[1])
     q = request.GET.get("q", "").strip()
     servicio = request.GET.get("servicio", "").strip()
-    base = ODT.objects.annotate(
-        estado_normalizado=Lower(Trim("estado_softguard")),
-        servicio_efectivo=Coalesce("servicio_editado", "servicio"),
-    ).filter(estado_normalizado__in=("asignado","pendiente","en proceso","finalizado"), fecha_visita__isnull=False)
-    periodo = base.filter(fecha_visita__range=(mes, ultimo))
+    periodo = visitas_del_mes(mes)
+    disponibles_mes = periodo.count()
     valores = list(periodo.order_by("servicio_efectivo").values_list("servicio_efectivo",flat=True).distinct())
     servicios = sorted({v or "__SIN_SERVICIO__" for v in valores})
     if request.GET.get("formato") == "servicios":
@@ -95,6 +91,8 @@ def calendario_servicios(request):
     anterior = "?" + parametros.urlencode()
     parametros["mes"] = sumar_meses(mes, 1).strftime("%Y-%m")
     return render(request, "revisiones/calendario_servicios.html", {
+        "disponibles_mes": disponibles_mes,
+        "ultima_sincronizacion": EjecucionSincronizacion.objects.first(),
         "totales":totales,
         "mes": mes.strftime("%Y-%m"), "mes_titulo": mes, "semanas": semanas, "errores": errores,
         "q": q, "servicio": servicio, "servicios": servicios, "servicios_seleccionados":seleccionados, "cantidad": len(odts),

@@ -7,16 +7,19 @@ la fotografía técnica de cada entrega.
 |---|---|
 | Reglas compartidas de servicios, cuentas, SLA y preventivos | Implementadas y con regresiones |
 | Sincronización por lotes, bloqueo y registro de ejecuciones | Implementados |
-| Resolución de coordinadores por lotes durante peticiones | Implementada; proyección local permanente pendiente |
+| Resolución de coordinadores por lotes durante peticiones | Implementada con proyección local renovable (0015); requiere carga y programación en despliegue |
 | Casos de uso de edición, revisión, facturación, informes y asignaciones | Separados de HTTP y con pruebas transaccionales |
 | Historial de requisiciones | Implementado; requiere migración 0012 |
 | Alta automática de cuentas B2C consistente | Unificada entre lectura, sincronización y completar catálogo |
 | Anulación financiera auditable y permiso dedicado | Pendiente de definir reglas antes de sustituir el borrado actual |
-| Componentes visuales compartidos | Documento común en pantallas operativas y administración; encabezado compartido donde compatible. Filtros, tablas y mensajes pendientes |
+| Componentes visuales compartidos | Base común, opciones de servicios y errores de filtro compartidos; resto de filtros, tablas y mensajes pendiente |
 | Rendimiento de índices, exportaciones y concurrencia | Pendiente de medir en entorno representativo |
-| Usuarios y responsables configurables | Vínculo de login a responsables existentes administrable (migración 0013); catálogo de nuevos responsables pendiente |
+| Usuarios y responsables configurables | Vínculos de login (0013) y catálogo de nuevos responsables (0014) administrables |
+| División de módulos | Consulta de calendario y primitivas PDF extraídas; reorganización restante pendiente |
 | Configuración de despliegue y traslado corporativo | Pendiente de validar en el servidor real |
 | Protección de datos y verificación de respaldos | Etapa final aplazada por decisión de la usuaria |
 
 Las pruebas aisladas no certifican la capacidad de la Raspberry ni la recuperación
 de sus datos. Los cambios del repositorio no se instalan automáticamente allí.
+
+Ver [detalle de la evolución operativa](EVOLUCION_OPERATIVA.md) para los límites de vigencia y la conciliación del calendario.
