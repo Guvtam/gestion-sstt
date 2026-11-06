@@ -3,6 +3,9 @@
 import re
 
 
+TIPO_CLIENTE_PREDETERMINADO = "B2C"
+
+
 def normalizar_codigo_cuenta(cuenta_completa):
     """
     Extrae y normaliza códigos de cuenta SoftGuard.
@@ -45,4 +48,4 @@ def tipo_cliente_cuenta(cuenta_completa, catalogo):
         return "SIN_CLASIFICAR"
     cuenta = catalogo.get(codigo)
     tipo = normalizar_tipo_cliente(cuenta.tipo_cliente if cuenta else None)
-    return tipo if tipo in ("B2B", "B2C") else "B2C"
+    return tipo if tipo in ("B2B", "B2C") else TIPO_CLIENTE_PREDETERMINADO

@@ -5,6 +5,7 @@ from django.db import DatabaseError, transaction
 from django.utils import timezone
 
 from ..correcciones import verificar_sincronizacion
+from ..dominio.cuentas import TIPO_CLIENTE_PREDETERMINADO
 from ..cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta, tipo_cliente_cuenta
 from ..integraciones.bloqueo_sync import bloquear_sincronizacion
 from ..integraciones.transformacion_odt import RegistroOrigenInvalido, fecha_hora, transformar_registro
@@ -86,7 +87,7 @@ def _aplicar_lote(lote, simular):
         ODT.objects.bulk_update(cambios, campos, batch_size=250)
     for codigo in sorted(codigos_nuevos):
         _, creada = CatalogoCuenta.objects.get_or_create(codigo_cuenta=codigo, defaults={
-            "tipo_cliente": "B2C", "requiere_revision_ceco": True,
+            "tipo_cliente": TIPO_CLIENTE_PREDETERMINADO, "requiere_revision_ceco": True,
         })
         conteos.cuentas_incorporadas += int(creada)
 

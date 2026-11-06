@@ -2,6 +2,7 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from revisiones.dominio.cuentas import TIPO_CLIENTE_PREDETERMINADO
 from revisiones.models import ODT, CatalogoCuenta
 from revisiones.cuentas_utils import normalizar_codigo_cuenta
 
@@ -48,11 +49,11 @@ class Command(BaseCommand):
                 codigo_cuenta=codigo,
                 nombre_cuenta=nombre[:250],
                 ceco="",
-                tipo_cliente="SIN_CLASIFICAR",
+                tipo_cliente=TIPO_CLIENTE_PREDETERMINADO,
                 requiere_revision_ceco=True,
                 observaciones=(
                     "Cuenta incorporada desde ODT SoftGuard. "
-                    "Pendiente de verificar CECO y clasificación B2B/B2C."
+                    "Clasificación B2C por defecto. Pendiente de verificar CECO."
                 ),
             )
 
