@@ -43,8 +43,26 @@ def coordinadores_para_mostrar(request, numeros):
         }) for n in numeros}
 
 
+def _vinculo_coordinador(user):
+    """Cache de datos en la instancia de usuario de esta petición, no global."""
+    if not user.is_authenticated or user.pk is None:
+        return None
+    if not hasattr(user, "_vinculo_coordinador_sstt"):
+        from .models import VinculoCoordinador
+        user._vinculo_coordinador_sstt = VinculoCoordinador.objects.filter(
+            usuario_id=user.pk).first()
+    return user._vinculo_coordinador_sstt
+
+
 def datos_coordinador(user):
-    usuario = user.get_username().strip().casefold()
+    vinculo = _vinculo_coordinador(user)
+    if vinculo is not None:
+        if not vinculo.activo:
+            return None
+        usuario = vinculo.usuario_softguard
+    else:
+        # Compatibilidad con las cuentas actuales hasta configurar su vínculo.
+        usuario = user.get_username().strip().casefold()
     return next((d for d in COORDINADORES_SOFTGUARD.values()
                  if d["usuario"].casefold() == usuario), None)
 
@@ -54,7 +72,7 @@ def es_coordinador_sstt(user):
         return False
     if user.get_username().strip().casefold() in ("admin", "jiturriaga"):
         return False
-    return (datos_coordinador(user) is not None or user.groups.filter(
+    return (_vinculo_coordinador(user) is not None or datos_coordinador(user) is not None or user.groups.filter(
         name__in=("Coordinador", "Coordinadores SSTT")).exists())
 
 
@@ -96,7 +114,7 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
             return None
         if datos_coordinador(request.user) is None:
             raise PermissionDenied(
-                "Configura el nombre de usuario como jtapia, jbicz, yramirez o rsilva.")
+                "El vínculo de coordinador no está activo o no está configurado. Contacta a administración.")
         if nombre in ("bandeja", "contratistas_disponibles_ajax"):
             return None
         # Operaciones internas de la bandeja, no páginas adicionales.
