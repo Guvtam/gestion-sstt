@@ -355,7 +355,7 @@
                       value="{{ c }}"
                       {% if c in contratistas_seleccionados %}checked{% endif %}
                     >
-                    <span>{{ c }}</span>
+                    <span>{% if c == "__SIN_TECNICO__" %}Sin técnico / contratista{% else %}{{ c }}{% endif %}</span>
                   </label>
                 {% endfor %}
               </div>
@@ -1732,7 +1732,7 @@
                 checkbox.checked = seleccionados.has(nombre) || !disponiblesAnteriores.has(nombre);
 
                 const texto = document.createElement("span");
-                texto.textContent = nombre;
+                texto.textContent = nombre === "__SIN_TECNICO__" ? "Sin técnico / contratista" : nombre;
 
                 etiqueta.appendChild(checkbox);
                 etiqueta.appendChild(texto);

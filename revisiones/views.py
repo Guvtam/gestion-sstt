@@ -123,6 +123,17 @@ def indicador(qs):
 
 
 
+SIN_TECNICO_FILTRO = "__SIN_TECNICO__"
+
+
+def opciones_contratistas(queryset, incluir_sin_tecnico=False):
+    valores = list(queryset.order_by("contratista").values_list("contratista", flat=True).distinct())
+    nombres = [v for v in valores if v]
+    if incluir_sin_tecnico and any(not v for v in valores):
+        nombres.append(SIN_TECNICO_FILTRO)
+    return nombres
+
+
 @login_required
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
 def bandeja(request, por_creacion=False):
@@ -155,7 +166,7 @@ def bandeja(request, por_creacion=False):
 
     # Estado SoftGuard predeterminado
     if "estado" not in request.GET:
-        filtros["estado"] = "Finalizado"
+        filtros["estado"] = "" if por_creacion else "Finalizado"
 
     
     
@@ -196,7 +207,7 @@ def bandeja(request, por_creacion=False):
         "servicios"
     )
 
-    if not request.GET:
+    if not request.GET and not por_creacion:
         servicios_seleccionados = (
             servicios_predeterminados.copy()
         )
@@ -249,17 +260,10 @@ def bandeja(request, por_creacion=False):
 
     contratistas_disponibles = limitar_odts_coordinador(request, contratistas_disponibles)
 
-    # Obtener únicamente contratistas con ODT coincidentes.
-    contratistas_disponibles = list(
-        contratistas_disponibles
-        .exclude(contratista__isnull=True)
-        .exclude(contratista="")
-        .order_by("contratista")
-        .values_list("contratista", flat=True)
-        .distinct()
+    contratistas_disponibles = opciones_contratistas(
+        contratistas_disponibles, incluir_sin_tecnico=por_creacion
     )
 
-    
     seleccion_contratistas_explicita = (
         "contratistas_filtrados" in request.GET or "contratista" in request.GET
     )
@@ -400,7 +404,12 @@ def bandeja(request, por_creacion=False):
 
     # Contratista.
     if contratistas_seleccionados:
-        registros = registros.filter(contratista__in=contratistas_seleccionados)
+        condicion_contratistas = Q(contratista__in=[
+            nombre for nombre in contratistas_seleccionados if nombre != SIN_TECNICO_FILTRO
+        ])
+        if por_creacion and SIN_TECNICO_FILTRO in contratistas_seleccionados:
+            condicion_contratistas |= Q(contratista="") | Q(contratista__isnull=True)
+        registros = registros.filter(condicion_contratistas)
     else:
         registros = registros.none()
 
@@ -1117,13 +1126,8 @@ def contratistas_disponibles_ajax(request):
             )
         )
 
-    contratistas = list(
-        registros
-        .exclude(contratista__isnull=True)
-        .exclude(contratista="")
-        .order_by("contratista")
-        .values_list("contratista", flat=True)
-        .distinct()
+    contratistas = opciones_contratistas(
+        registros, incluir_sin_tecnico=(campo_fecha == "fecha_creacion")
     )
 
     return JsonResponse({
