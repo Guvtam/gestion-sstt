@@ -86,27 +86,12 @@ class PreventivosCuentasTests(TestCase):
         self.assertEqual(self.consultar(fecha_desde="2026-10-06")["total_cuentas"],0)
         self.assertEqual(self.consultar(campo_fecha="proximo", fecha_desde="2027-04-05",fecha_hasta="2027-04-05")["total_cuentas"],1)
 
-    def test_calendario_distingue_programado_y_estimado(self):
-        from datetime import date
-        ODT.objects.filter(numero=3).update(fecha_visita=date(2027,4,7))
-        context=self.consultar(mes="2027-04")
-        eventos=[evento for semana in context["semanas"] for dia in semana for evento in dia["eventos"]]
-        self.assertEqual(context["cantidad_programados"],1)
-        self.assertEqual(context["cantidad_estimados"],1)
-        self.assertEqual({e["tipo"] for e in eventos},{"Programado","Estimado"})
-        self.assertEqual(next(e for e in eventos if e["tipo"]=="Programado")["numero"],3)
-
-    def test_finalizados_cancelados_sin_visita_no_se_programan(self):
-        from datetime import date
-        ODT.objects.filter(numero=1).update(fecha_visita=date(2027,4,1))
-        ODT.objects.filter(numero=3).update(estado_softguard="Cancelado",fecha_visita=date(2027,4,7))
-        self.assertEqual(self.consultar(mes="2027-04")["cantidad_programados"],0)
-
-    def test_calendario_respeta_filtros_y_conserva_rango(self):
-        context=self.consultar(q="Sin preventivos", mes="2027-04",fecha_desde="2027-01-01",campo_fecha="proximo")
-        self.assertEqual(context["cantidad_estimados"],0)
-        self.assertIn("campo_fecha=proximo",context["url_mes_siguiente"])
-        self.assertIn("fecha_desde=2027-01-01",context["url_mes_siguiente"])
+    def test_calendario_separado_del_listado(self):
+        with patch("django.urls.reverse", return_value="/calendario/"):
+            html = engines["django"].get_template("revisiones/mantenimientos_preventivos.html").render(self.consultar())
+        self.assertIn("Calendario de visitas", html)
+        self.assertNotIn('class="calendario-grid"', html)
+        self.assertNotIn("mesCalendario", html)
 
     def test_fechas_invalidas_se_informan(self):
         context=self.consultar(fecha_desde="2026-11-01",fecha_hasta="2026-10-01")

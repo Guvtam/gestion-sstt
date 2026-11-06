@@ -3,6 +3,7 @@ from django.urls import path
 
 from . import views
 from .mantenimientos_preventivos import mantenimientos_preventivos
+from .calendario_servicios import calendario_servicios
 from .estadisticas_correcciones import estadisticas_correcciones
 from .exportar_pdf import exportar_aprobados_pdf
 from .facturacion import previsualizar_facturacion, actualizar_requisicion
@@ -12,6 +13,7 @@ from .historial_facturacion import eliminar_periodo_facturacion
 
 
 urlpatterns = [
+    path("calendario-servicios/", calendario_servicios, name="calendario_servicios"),
     path("odt-por-creacion/", views.bandeja_creacion, name="bandeja_creacion"),
     path("mantenimientos-preventivos/", mantenimientos_preventivos, name="mantenimientos_preventivos"),
     path("asignar-coordinador/", views.asignar_coordinador, name="asignar_coordinador"),
