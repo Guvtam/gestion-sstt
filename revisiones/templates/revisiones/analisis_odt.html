@@ -42,7 +42,7 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 <div class="filtro-acciones"><a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a><a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a></div></div></header>
 <main class="hist-main" id="dashboard"><div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
-<input type="hidden" name="servicios_filtrados" value="1"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
+<input type="hidden" name="incidencias_cuenta" value="{{ incidencias_cuenta }}"><input type="hidden" name="servicios_filtrados" value="1"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
 <div class="field"><label for="desde">Finalización desde</label><input type="date" id="desde" name="desde" value="{{ desde }}"></div>
 <div class="field"><label for="hasta">Finalización hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
 <div class="field servicios-field"><label>Servicios</label>
@@ -78,14 +78,23 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 <h2 style="margin-top:25px">Atenciones repetidas en 90 días</h2><p class="chart-nota">Cuenta las ODT del período cuya cuenta y contratista tienen al menos dos ODT finalizadas en los últimos 90 días. Por ejemplo, dos atenciones de la misma cuenta con el mismo contratista marcan ambas como repetidas. No equivale a una falla confirmada.</p>
 {% for p in recurrencias_grafico %}<a class="grafico-barra" href="{{ p.url }}"><div class="barra-titulo"><span>{{ p.nombre }}</span><b>{{ p.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ p.ancho }}%;background:#ee9271"></div></div></a>{% endfor %}
 </section>
+<section class="chart-panel"><h2>Cuentas por cantidad de incidencias</h2>
+<p class="chart-nota">{{ cuentas_repetidas }} cuentas con dos o más incidencias. Cada cuenta se cuenta una sola vez.</p>
+{% for g in incidencias_grafico %}
+<a class="grafico-barra {% if g.activo %}activo{% endif %}" href="{{ g.url }}" aria-label="{{ g.nombre }}: {{ g.cantidad }} cuentas. Filtrar">
+<div class="barra-titulo"><span>{{ g.nombre }}</span><b>{{ g.cantidad }} cuentas</b></div>
+<div class="barra-fondo"><div class="barra-relleno" style="width:{{ g.ancho }}%;background:#9b7ccc"></div></div></a>
+{% endfor %}
+<p class="chart-nota">Cuentas presentes en las ODT filtradas. Para cada cuenta se cuentan todas sus ODT finalizadas en los últimos 90 días, con cualquier contratista o servicio, incluyendo la atención actual. Las cuentas con cero o una incidencia quedan fuera de estas categorías.</p>
+</section>
 <section class="chart-panel tendencia-panel"><h2>Evolución de ODT por {% if tendencia_mensual %}mes{% else %}día{% endif %}</h2><p class="chart-nota">Según fecha de finalización. Selecciona una barra para explorar ese período. Días o meses sin registros no tienen barra.</p>
 <div class="tendencia-scroll"><div class="tendencia">
 {% for t in tendencia %}<a class="tendencia-col" href="{{ t.url }}" title="{{ t.etiqueta }}: {{ t.cantidad }} ODT"><b>{{ t.cantidad }}</b><em style="height:{{ t.alto }}%"></em><span>{{ t.etiqueta }}</span></a>{% empty %}<p class="vacio-grafico">Sin registros con fecha disponible.</p>{% endfor %}
 </div></div></section>
 </div>
-<section class="hist-panel"><details class="dashboard-detalle" {% if vista != "todas" %}open{% endif %}><summary>Detalle de ODT · {{ pagina.paginator.count }} — abrir / cerrar</summary><div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>ODT</th><th>Cuenta</th><th>Técnico / contratista</th><th>Estado</th><th>Incidencias 90 días</th><th>SLA</th><th>Último preventivo</th></tr></thead><tbody>
-{% for o in pagina %}<tr><td><a href="{% url 'bandeja' %}?numero_odt={{ o.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ o.numero|stringformat:'d' }}</a></td><td>{{ o.cuenta_completa|default:"Sin cuenta" }}</td><td>{{ o.tecnico|default:o.contratista|default:"Sin técnico / contratista" }}</td><td>{{ o.estado_softguard }}</td><td>{{ o.cantidad_incidencias }}</td><td>{% if o.estado_sla == 'CUMPLE' %}Cumple{% elif o.estado_sla == 'NO_CUMPLE' %}No cumple{% elif o.estado_sla == 'PENDIENTE' %}Pendiente{% else %}Revisar fechas{% endif %}</td><td>{{ o.fecha_ultimo_preventivo|date:"d/m/Y H:i"|default:"Sin preventivo" }}</td></tr>
-{% empty %}<tr><td colspan="7">No hay ODT para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
+<section class="hist-panel"><details class="dashboard-detalle" {% if vista != "todas" %}open{% endif %}><summary>Detalle de ODT · {{ pagina.paginator.count }} — abrir / cerrar</summary><div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>ODT</th><th>Cuenta</th><th>Técnico / contratista</th><th>Estado</th><th>Incidencias cuenta / contratista · 90 días</th><th>Incidencias cuenta · 90 días</th><th>SLA</th><th>Último preventivo</th></tr></thead><tbody>
+{% for o in pagina %}<tr><td><a href="{% url 'bandeja' %}?numero_odt={{ o.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ o.numero|stringformat:'d' }}</a></td><td>{{ o.cuenta_completa|default:"Sin cuenta" }}</td><td>{{ o.tecnico|default:o.contratista|default:"Sin técnico / contratista" }}</td><td>{{ o.estado_softguard }}</td><td>{{ o.cantidad_incidencias }}</td><td>{{ o.incidencias_cuenta_90 }}</td><td>{% if o.estado_sla == 'CUMPLE' %}Cumple{% elif o.estado_sla == 'NO_CUMPLE' %}No cumple{% elif o.estado_sla == 'PENDIENTE' %}Pendiente{% else %}Revisar fechas{% endif %}</td><td>{{ o.fecha_ultimo_preventivo|date:"d/m/Y H:i"|default:"Sin preventivo" }}</td></tr>
+{% empty %}<tr><td colspan="8">No hay ODT para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
 {% if pagina.has_other_pages %}<nav class="pagination">{% if pagina.has_previous %}<a href="?{{ querystring }}&amp;page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>{% if pagina.has_next %}<a href="?{{ querystring }}&amp;page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}</nav>{% endif %}
 </details></section></main><script>
 (() => {
