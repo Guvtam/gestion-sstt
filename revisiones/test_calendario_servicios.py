@@ -31,12 +31,12 @@ class CalendarioServiciosTests(TestCase):
     def eventos(self, contexto):
         return [e for semana in contexto["semanas"] for dia in semana for e in dia["eventos"]]
 
-    def test_solo_asignados_con_visita_del_mes_todos_servicios(self):
+    def test_visitas_abiertas_y_finalizadas_con_fecha_del_mes(self):
         c = self.consultar()
-        self.assertEqual({e["numero"] for e in self.eventos(c)}, {1,2})
-        self.assertEqual(c["cantidad"],2)
+        self.assertEqual({e["numero"] for e in self.eventos(c)}, {1,2,3,5})
+        self.assertEqual(c["cantidad"],4)
         dia = next(d for s in c["semanas"] for d in s if d["fecha"]==date(2026,11,10))
-        self.assertEqual(len(dia["eventos"]),2)
+        self.assertEqual(len(dia["eventos"]),4)
 
     def test_no_genera_estimaciones(self):
         self.assertTrue(all(e["numero"] for e in self.eventos(self.consultar())))
@@ -64,3 +64,27 @@ class CalendarioServiciosTests(TestCase):
         self.user=get_user_model().objects.create_user("sin_permiso")
         with self.assertRaises(PermissionDenied):
             self.consultar()
+
+    def test_colores_fecha_hoy_y_prioridad_finalizada(self):
+        with patch("revisiones.calendario_servicios.timezone.localdate", return_value=date(2026,11,10)):
+            ODT.objects.filter(numero=1).update(fecha_visita=date(2026,11,9))
+            ODT.objects.filter(numero=2).update(fecha_visita=date(2026,11,10))
+            ODT.objects.filter(numero=3).update(fecha_visita=date(2026,11,1))
+            ODT.objects.create(numero=8,cuenta_completa="FIR-8",estado_softguard="En proceso",fecha_visita=date(2026,11,8))
+            c=self.consultar()
+        eventos={e["numero"]:e for e in self.eventos(c)}
+        self.assertEqual(eventos[1]["categoria"],"atrasadas")
+        self.assertEqual(eventos[2]["categoria"],"abiertas")
+        self.assertEqual(eventos[3]["categoria"],"realizadas")
+        self.assertEqual(eventos[8]["categoria"],"atrasadas")
+        self.assertEqual(c["totales"],{"realizadas":1,"abiertas":2,"atrasadas":2})
+        self.assertEqual(sum(c["totales"].values()),c["cantidad"])
+        self.assertNotIn(4,eventos)
+        self.assertNotIn(6,eventos)
+
+    def test_leyenda_y_etiquetas_no_dependen_solo_del_color(self):
+        with patch("django.urls.reverse",return_value="/test/"):
+            html=engines["django"].get_template("revisiones/calendario_servicios.html").render(self.consultar())
+        for etiqueta in ("Azul · Realizadas","Verde · Abiertas","Amarillo · Atrasadas","Realizada · Finalizado"):
+            self.assertIn(etiqueta,html)
+        self.assertIn("visita-realizadas",html)
