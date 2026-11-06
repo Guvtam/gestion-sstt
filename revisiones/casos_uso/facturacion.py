@@ -12,7 +12,7 @@ from django.db import IntegrityError, transaction
 from ..consultas.facturacion import odts_facturables
 from ..dominio.facturacion import FacturacionInvalida, FacturacionNoEncontrada
 from ..dominio.servicios import servicio_efectivo
-from ..facturacion_models import FacturacionContratista, FacturacionODT, PeriodoFacturacion
+from ..facturacion_models import EventoRequisicion, FacturacionContratista, FacturacionODT, PeriodoFacturacion
 from .autorizacion import exigir_permiso_operativo
 
 PERMISO = "revisiones.exportar_pagos_sstt"
@@ -120,10 +120,12 @@ def confirmar(usuario, seleccion, *, requisiciones, confirmacion):
             PeriodoFacturacion.objects.select_for_update().get(pk=periodo.pk)
             facturaciones = {}
             for nombre in sorted(requisiciones):
-                factura, _ = FacturacionContratista.objects.get_or_create(
+                factura, creada = FacturacionContratista.objects.get_or_create(
                     periodo=periodo, contratista=nombre,
                     defaults={"numero_requisicion": requisiciones[nombre], "creado_por": usuario},
                 )
+                if creada and factura.numero_requisicion:
+                    _registrar_requisicion(factura, usuario, "", factura.numero_requisicion)
                 facturaciones[nombre] = factura
             if FacturacionODT.objects.filter(odt__in=odts).exists():
                 raise FacturacionInvalida("Se detectaron ODT ya facturadas. Actualiza la previsualización.")
@@ -150,6 +152,18 @@ def actualizar_requisicion(usuario, *, facturacion_id, numero):
         except FacturacionContratista.DoesNotExist:
             raise FacturacionNoEncontrada("Facturación no encontrada.") from None
         if factura.numero_requisicion != numero:
+            anterior = factura.numero_requisicion
             factura.numero_requisicion = numero
             factura.save(update_fields=["numero_requisicion"])
+            _registrar_requisicion(factura, usuario, anterior, numero)
         return RequisicionActualizada(factura.pk, factura.periodo_id, factura.contratista, numero)
+
+
+def _registrar_requisicion(factura, usuario, anterior, nuevo):
+    """Llamar en la misma transacción que la cabecera; preservar contexto histórico."""
+    EventoRequisicion.objects.create(
+        facturacion=factura, facturacion_identificador=factura.pk, contratista=factura.contratista,
+        fecha_desde=factura.periodo.fecha_desde, fecha_hasta=factura.periodo.fecha_hasta,
+        numero_anterior=anterior, numero_nuevo=nuevo, usuario=usuario,
+        usuario_nombre=str(usuario.get_username())[:254],
+    )

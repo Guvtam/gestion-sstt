@@ -1,6 +1,24 @@
 from django.contrib import admin
 from .models import ODT, Revision, EventoRevision, CatalogoCuenta
 from .models import EjecucionSincronizacion
+from .models import EventoRequisicion
+
+
+@admin.register(EventoRequisicion)
+class EventoRequisicionAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "facturacion_identificador", "contratista", "numero_anterior", "numero_nuevo", "usuario_nombre")
+    search_fields = ("contratista", "numero_anterior", "numero_nuevo", "usuario_nombre")
+    readonly_fields = tuple(campo.name for campo in EventoRequisicion._meta.fields)
+    actions = None
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(EjecucionSincronizacion)

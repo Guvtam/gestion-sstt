@@ -235,5 +235,5 @@ class AsignacionCoordinadorODT(models.Model):
 
 # Registrar estos modelos durante django.setup(), sin depender de importar vistas.
 # Se conserva su módulo original, tablas y migraciones existentes.
-from .facturacion_models import FacturacionContratista, FacturacionODT, PeriodoFacturacion
+from .facturacion_models import EventoRequisicion, FacturacionContratista, FacturacionODT, PeriodoFacturacion
 from .sincronizacion_models import EjecucionSincronizacion
