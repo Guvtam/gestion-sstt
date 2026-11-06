@@ -194,8 +194,9 @@
       <div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
 
         {% if perms.revisiones.ver_bandeja_sstt %}
+          {% if perms.revisiones.revisar_pago_sstt %}<a class="btn alt" href="{% url 'analisis_odt' %}">Análisis de ODT</a>{% endif %}
           {% if por_creacion %}
-          <a class="btn alt" href="{% url 'bandeja' %}">Bandeja de pagos</a>
+          <a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a>
           {% else %}
           <a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a>
           {% endif %}
@@ -331,7 +332,7 @@
          <!-- CONTRATISTAS -->
 
         <div class="field">
-          <label class="field-label">Contratista</label>
+          <label class="field-label">{% if por_creacion %}Técnico / contratista (incluye sin asignar){% else %}Contratista{% endif %}</label>
 
           <details class="multi" id="contratistasDropdown">
             <summary id="contratistasResumen">
@@ -361,6 +362,7 @@
               </div>
 
               <div class="multi-footer">
+                <button type="button" id="todosContratistas">Seleccionar todos</button>
                 <span id="cantidadContratistas">
                   0 seleccionados
                 </span>
@@ -1856,6 +1858,13 @@ document.addEventListener("change", async function(event) {
     selector.disabled = false;
     selector.value = "";
   }
+});
+</script>
+<script>
+document.getElementById("todosContratistas")?.addEventListener("click", () => {
+    const lista = document.getElementById("listaContratistas");
+    lista.querySelectorAll('input[name="contratista"]').forEach(c => c.checked = true);
+    lista.dispatchEvent(new Event("change", {bubbles: true}));
 });
 </script>
 </body>

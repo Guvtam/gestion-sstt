@@ -36,13 +36,13 @@ class BandejaCreacionTests(TestCase):
             c = self.contexto(creacion)
             self.assertEqual([o.numero for o in c["registros"]], [numero])
             self.assertEqual(c["total"]["cantidad"], 1)
-            self.assertEqual(c["contratistas_seleccionados"], [contratista])
+            self.assertEqual(c["contratistas_seleccionados"], [contratista, views.SIN_TECNICO_FILTRO] if creacion else [contratista])
             self.assertEqual(c["bandeja_url"], "bandeja_creacion" if creacion else "bandeja")
 
     def test_ajax_respeta_fecha_creacion_y_mantiene_finalizacion_por_defecto(self):
         for extra, esperado in (({"campo_fecha":"creacion"}, "Por creación"),({}, "Por finalización")):
             r = views.contratistas_disponibles_ajax(self.request(**extra))
-            self.assertEqual(json.loads(r.content)["contratistas"], [esperado])
+            self.assertEqual(json.loads(r.content)["contratistas"], [esperado, views.SIN_TECNICO_FILTRO] if extra else [esperado])
 
     def test_tarjetas_boton_y_formulario_en_ambas_paginas(self):
         for creacion in (True,False):

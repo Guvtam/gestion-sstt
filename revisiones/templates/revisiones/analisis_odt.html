@@ -1,0 +1,46 @@
+{% load static %}
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Análisis de ODT · SSTT</title><link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
+<style>
+.analisis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.analisis-grid .hist-panel{margin:0} .sla-bar{width:100%;height:24px;accent-color:#1765ad}
+</style></head><body class="preventivos-page">
+<header class="header-sstt"><div class="header-contenido"><div class="header-titulo"><h1>Análisis de ODT</h1><p>Incidencias, cumplimiento SLA y antecedentes preventivos</p></div>
+<div class="filtro-acciones"><a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a><a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a></div></div></header>
+<main class="hist-main">
+<section class="hist-panel"><form class="preventivos-filtros" method="get">
+<div class="field"><label for="campo">Fecha de</label><select id="campo" name="campo"><option value="creacion" {% if campo == 'creacion' %}selected{% endif %}>Creación</option><option value="finalizacion" {% if campo == 'finalizacion' %}selected{% endif %}>Finalización</option></select></div>
+<div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ desde }}"></div>
+<div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
+<div class="field"><label for="estado">Estado SoftGuard</label><select id="estado" name="estado"><option value="">Todos</option>{% for e in estados %}<option value="{{ e }}" {% if estado == e %}selected{% endif %}>{{ e }}</option>{% endfor %}</select></div>
+<div class="field"><label for="q">Cuenta, técnico o contratista</label><input id="q" name="q" value="{{ q }}"></div>
+<div class="field"><label for="vista">Detalle</label><select id="vista" name="vista"><option value="todas">Todas las ODT</option><option value="incidencias" {% if vista == 'incidencias' %}selected{% endif %}>Con recurrencia</option><option value="sla" {% if vista == 'sla' %}selected{% endif %}>SLA no cumple</option><option value="sin_preventivo" {% if vista == 'sin_preventivo' %}selected{% endif %}>Sin preventivo registrado</option></select></div>
+<div class="filtro-acciones"><button class="btn">Aplicar filtros</button><a class="btn alt" href="{% url 'analisis_odt' %}">Limpiar</a></div></form>
+{% for error in errores %}<p class="error-fecha" role="alert">{{ error }}</p>{% endfor %}
+<p class="hist-sub">Datos de la última sincronización local. Los indicadores usan los filtros superiores; “Detalle” solo filtra la tabla inferior.</p>
+</section>
+<section class="hist-panel"><div class="hist-resumen-odt">
+<div class="hist-tarjeta-resumen"><small>ODT analizadas</small><strong>{{ resumen.total }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>ODT con recurrencia</small><strong>{{ resumen.recurrentes }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>SLA cumple</small><strong>{{ resumen.cumple }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>SLA no cumple</small><strong>{{ resumen.no_cumple }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>SLA pendiente</small><strong>{{ resumen.pendiente }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>SLA revisar fechas</small><strong>{{ resumen.revisar_fechas }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>ODT con preventivo registrado</small><strong>{{ resumen.con_preventivo }}</strong></div>
+<div class="hist-tarjeta-resumen"><small>ODT sin preventivo registrado</small><strong>{{ resumen.sin_preventivo }}</strong></div>
+</div></section>
+<div class="analisis-grid">
+<section class="hist-panel"><h2>Cumplimiento SLA · 48 horas</h2>
+{% if resumen.porcentaje_sla != None %}<strong>{{ resumen.porcentaje_sla }} %</strong><progress class="sla-bar" max="{{ resumen.cumple|add:resumen.no_cumple }}" value="{{ resumen.cumple }}">{{ resumen.porcentaje_sla }} %</progress>{% else %}<p>Sin ODT evaluables.</p>{% endif %}
+<p class="hist-sub">Creación a finalización, en horas corridas. El porcentaje usa solo Cumple y No cumple; excluye pendientes y fechas inválidas.</p>
+<p class="hist-sub">Recurrencia: al menos dos ODT finalizadas para la misma cuenta y contratista en los últimos 90 días, igual que en la bandeja. Se mide a la fecha actual; puede incluir la ODT analizada.</p>
+<p class="hist-sub">Preventivo registrado: último preventivo finalizado disponible para la cuenta. No implica cumplimiento de una frecuencia contractual.</p>
+</section>
+<section class="hist-panel"><h2>ODT por estado</h2><table class="hist-table"><thead><tr><th>Estado</th><th>ODT</th></tr></thead><tbody>{% for e in por_estado %}<tr><td>{{ e.estado_softguard|default:"Sin estado" }}</td><td>{{ e.cantidad }}</td></tr>{% empty %}<tr><td colspan="2">Sin datos</td></tr>{% endfor %}</tbody></table></section>
+<section class="hist-panel"><h2>ODT por servicio</h2><table class="hist-table"><thead><tr><th>Servicio</th><th>ODT</th></tr></thead><tbody>{% for s in por_servicio %}<tr><td>{{ s.servicio_efectivo|default:"Sin servicio" }}</td><td>{{ s.cantidad }}</td></tr>{% empty %}<tr><td colspan="2">Sin datos</td></tr>{% endfor %}</tbody></table></section>
+</div>
+<section class="hist-panel"><h2>Detalle de ODT · {{ pagina.paginator.count }}</h2><div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>ODT</th><th>Cuenta</th><th>Técnico / contratista</th><th>Estado</th><th>Incidencias 90 días</th><th>SLA</th><th>Último preventivo</th></tr></thead><tbody>
+{% for o in pagina %}<tr><td><a href="{% url 'bandeja' %}?numero_odt={{ o.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ o.numero|stringformat:'d' }}</a></td><td>{{ o.cuenta_completa|default:"Sin cuenta" }}</td><td>{{ o.tecnico|default:o.contratista|default:"Sin técnico / contratista" }}</td><td>{{ o.estado_softguard }}</td><td>{{ o.cantidad_incidencias }}</td><td>{% if o.estado_sla == 'CUMPLE' %}Cumple{% elif o.estado_sla == 'NO_CUMPLE' %}No cumple{% elif o.estado_sla == 'PENDIENTE' %}Pendiente{% else %}Revisar fechas{% endif %}</td><td>{{ o.fecha_ultimo_preventivo|date:"d/m/Y H:i"|default:"Sin preventivo" }}</td></tr>
+{% empty %}<tr><td colspan="7">No hay ODT para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
+{% if pagina.has_other_pages %}<nav class="pagination">{% if pagina.has_previous %}<a href="?{{ querystring }}&amp;page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>{% if pagina.has_next %}<a href="?{{ querystring }}&amp;page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}</nav>{% endif %}
+</section></main></body></html>
