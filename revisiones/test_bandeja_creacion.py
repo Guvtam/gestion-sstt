@@ -63,3 +63,35 @@ class BandejaCreacionTests(TestCase):
         self.user = get_user_model().objects.create_user("sin_permiso")
         with self.assertRaises(PermissionDenied):
             views.bandeja_creacion(self.request())
+
+    def test_cuentas_sin_tecnico_se_incluyen_y_pueden_filtrarse(self):
+        ODT.objects.create(numero=3, contratista="", tecnico="", servicio="MARCHA BLANCA",
+            estado_softguard="Pendiente", fecha_creacion=timezone.make_aware(datetime(2026,10,25)))
+        request = self.request(estado="")
+        with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
+             patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado":False}):
+            c = views.bandeja_creacion(request)
+        self.assertEqual({o.numero for o in c["registros"]}, {1,3})
+        self.assertIn(views.SIN_TECNICO_FILTRO,c["contratistas_seleccionados"])
+        request = self.request(estado="", contratista=[views.SIN_TECNICO_FILTRO], contratistas_filtrados="1")
+        with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
+             patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado":False}):
+            c = views.bandeja_creacion(request)
+        self.assertEqual([o.numero for o in c["registros"]],[3])
+        ajax = views.contratistas_disponibles_ajax(self.request(estado="",campo_fecha="creacion"))
+        self.assertIn(views.SIN_TECNICO_FILTRO,json.loads(ajax.content)["contratistas"])
+
+    def test_creacion_predetermina_todos_estados_y_servicios(self):
+        from unittest.mock import patch
+        request = self.factory.get("/")
+        request.user = self.user
+        with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
+             patch("revisiones.views.identificar_coordinador_odt", return_value={"identificado":False}):
+            c = views.bandeja_creacion(request)
+        self.assertEqual(c["filtros"]["estado"],"")
+        self.assertEqual(c["servicios_seleccionados"],[])
+
+    def test_deseleccionar_todo_sigue_sin_mostrar_filas(self):
+        with patch("revisiones.views.render", side_effect=lambda r,t,c:c):
+            c = views.bandeja_creacion(self.request(contratistas_filtrados="1"))
+        self.assertEqual(list(c["registros"]),[])
