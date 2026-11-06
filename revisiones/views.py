@@ -26,7 +26,7 @@ from .consultas.pagos import (
 from .consultas.preventivos import asignar_ultimos_preventivos
 from .consultas.servicios import servicio_normalizado
 from .coordinadores_softguard import (
-    COORDINADORES_SOFTGUARD, identificar_coordinador_odt,
+    COORDINADORES_SOFTGUARD, catalogo_coordinadores, identificar_coordinador_odt,
     identificar_coordinador_softguard, puede_asignar_coordinador,
 )
 from .correcciones import registrar_cambio_manual
@@ -781,7 +781,7 @@ def bandeja(request, por_creacion=False):
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
             "coordinador_sesion": coordinador_sesion,
-            "coordinadores_asignables": list(COORDINADORES_SOFTGUARD.values()),
+            "coordinadores_asignables": list(catalogo_coordinadores().values()),
             "servicios_principales": SERVICIOS_PRINCIPALES,
             
 
@@ -1333,7 +1333,7 @@ def odt_modificadas(request):
     parametros.pop("page", None)
     coordinadores = [
         {"usuario": datos["usuario"], "nombre": datos["nombre"]}
-        for datos in COORDINADORES_SOFTGUARD.values()
+        for datos in catalogo_coordinadores().values()
     ]
 
     return render(request, "revisiones/odt_modificadas.html", {

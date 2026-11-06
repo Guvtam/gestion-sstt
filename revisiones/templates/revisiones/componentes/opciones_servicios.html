@@ -1,0 +1,3 @@
+{% for s in opciones %}
+<label><input type="checkbox" name="servicios" value="{{ s }}" {% if s in seleccionados %}checked{% endif %}><span>{% if s == "__SIN_SERVICIO__" %}Sin servicio{% else %}{{ s }}{% endif %}</span></label>
+{% empty %}<p>No hay servicios disponibles para este período.</p>{% endfor %}

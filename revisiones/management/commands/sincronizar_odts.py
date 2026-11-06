@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
+from django.core.management import call_command
 
 from revisiones.casos_uso.sincronizacion import ejecutar_sincronizacion
 from revisiones.integraciones.bloqueo_sync import SincronizacionEnCurso
@@ -9,6 +10,7 @@ class Command(BaseCommand):
     help = "Sincroniza ODT desde SQL Server por lotes, con historial y exclusión de procesos"
 
     def add_arguments(self, parser):
+        parser.add_argument("--con-coordinadores", action="store_true", help="Renueva responsables locales después de importar las ODT")
         parser.add_argument("--simular", action="store_true", help="No escribe datos ni historial en la base local")
         parser.add_argument("--tamano-lote", type=int, default=250, help="Filas por lote, entre 1 y 1000")
 
@@ -46,3 +48,6 @@ class Command(BaseCommand):
             f"Cuentas incorporadas: {resultado.cuentas_incorporadas}\n"
             f"Equivalencias vinculadas: {resultado.equivalencias_creadas}"
         )
+        if options["con_coordinadores"] and not options["simular"]:
+            self.stdout.write("ODT sincronizadas. Renovando responsables locales...")
+            call_command("sincronizar_coordinadores", stdout=self.stdout, stderr=self.stderr)

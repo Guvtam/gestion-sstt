@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.contrib.auth import get_user_model
 from .models import VinculoCoordinador
-from .coordinadores_softguard import COORDINADORES_SOFTGUARD
+from .coordinadores_softguard import COORDINADORES_SOFTGUARD, catalogo_coordinadores
 from .models import ODT, Revision, EventoRevision, CatalogoCuenta
 from .models import EjecucionSincronizacion
 from .models import EventoRequisicion
@@ -113,6 +113,11 @@ class VinculoCoordinadorForm(forms.ModelForm):
         model = VinculoCoordinador
         fields = ("usuario", "usuario_softguard", "activo")
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["usuario_softguard"].choices = [
+            (d["usuario"], d["nombre"]) for d in catalogo_coordinadores().values()]
+
     def clean(self):
         datos = super().clean()
         usuario = datos.get("usuario")
@@ -143,4 +148,38 @@ class VinculoCoordinadorAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         # Desactivar conserva la restricción del perfil y evita el fallback histórico.
+        return False
+
+
+from .models import ResponsableSoftGuard
+
+
+class ResponsableSoftGuardForm(forms.ModelForm):
+    class Meta:
+        model = ResponsableSoftGuard
+        fields = "__all__"
+
+    def clean_usuario_softguard(self):
+        return self.cleaned_data["usuario_softguard"].strip().casefold()
+
+    def clean_id_softguard(self):
+        valor = self.cleaned_data["id_softguard"]
+        if valor < 1:
+            raise forms.ValidationError("El identificador debe ser mayor que cero.")
+        return valor
+
+
+@admin.register(ResponsableSoftGuard)
+class ResponsableSoftGuardAdmin(admin.ModelAdmin):
+    form = ResponsableSoftGuardForm
+    list_display = ("nombre", "id_softguard", "usuario_softguard", "activo")
+    search_fields = ("nombre", "usuario_softguard")
+    list_filter = ("activo",)
+    actions = None
+
+    def get_readonly_fields(self, request, obj=None):
+        # Identidades estables: cambiar nombre/estado no reasigna usuarios ni ODT.
+        return ("id_softguard", "usuario_softguard") if obj is not None else ()
+
+    def has_delete_permission(self, request, obj=None):
         return False

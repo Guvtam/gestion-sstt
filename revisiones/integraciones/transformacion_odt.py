@@ -1,5 +1,5 @@
 """Contrato de campos originales del DW; nunca incluye ediciones o facturación."""
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
@@ -26,10 +26,12 @@ def fecha_valida(valor):
     return valor
 
 
-def fecha_hora(valor):
+def fecha_hora(valor, *, aceptar_fecha=False):
     valor = fecha_valida(valor)
     if valor is not None and not isinstance(valor, datetime):
-        raise RegistroOrigenInvalido("Se esperaba fecha con hora")
+        if not aceptar_fecha:
+            raise RegistroOrigenInvalido("Se esperaba fecha con hora")
+        valor = timezone.make_aware(datetime.combine(valor, time.min), timezone.get_default_timezone())
     return valor
 
 
@@ -65,7 +67,7 @@ def transformar_registro(registro):
         ("fecha_creacion", "FechaCreacion"), ("fecha_modificacion", "FechaModificacion"),
         ("fecha_finalizacion", "FechaFinalizacion"), ("fecha_pago", "FechaPago"),
     ):
-        datos[destino] = fecha_hora(registro.get(origen))
+        datos[destino] = fecha_hora(registro.get(origen), aceptar_fecha=destino == "fecha_pago")
     visita = fecha_valida(registro.get("FechaVisita"))
     datos["fecha_visita"] = visita.date() if isinstance(visita, datetime) else visita
     for destino, origen in (

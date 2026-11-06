@@ -33,7 +33,7 @@
 
 <div class="filtro-acciones"><button class="btn">Buscar</button><a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Limpiar</a></div>
 </form>
-{% for error in errores %}<p role="alert" class="error-fecha">{{ error }}</p>{% endfor %}
+{% include "revisiones/componentes/errores_filtro.html" %}
 <p class="hist-sub">Datos de la última sincronización. Solo las ODT finalizadas con fecha de finalización acreditan un preventivo realizado. Se usa el servicio corregido cuando existe.</p>
 </section>
 <section class="hist-panel">

@@ -70,7 +70,7 @@ class VinculosCoordinadoresTests(TestCase):
 
     def test_consulta_reutilizada_solo_en_instancia_de_usuario(self):
         usuario = self.recargar_usuario()
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(2):
             for _ in range(4):
                 self.assertEqual(datos_coordinador(usuario), self.responsable)
                 self.assertTrue(es_coordinador_sstt(usuario))

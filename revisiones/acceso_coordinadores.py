@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.utils.deprecation import MiddlewareMixin
 from .coordinadores_softguard import (
-    COORDINADORES_SOFTGUARD, CoordinadoresNoDisponibles, identificar_coordinadores_odt,
+    COORDINADORES_SOFTGUARD, catalogo_coordinadores, CoordinadoresNoDisponibles, identificar_coordinadores_odt,
 )
 from .dominio.validacion_odt import numero_odt
 from .dominio.errores import DatosODTInvalidos
@@ -55,6 +55,8 @@ def _vinculo_coordinador(user):
 
 
 def datos_coordinador(user):
+    if not user.is_authenticated:
+        return None
     vinculo = _vinculo_coordinador(user)
     if vinculo is not None:
         if not vinculo.activo:
@@ -63,8 +65,18 @@ def datos_coordinador(user):
     else:
         # Compatibilidad con las cuentas actuales hasta configurar su vínculo.
         usuario = user.get_username().strip().casefold()
-    return next((d for d in COORDINADORES_SOFTGUARD.values()
+    if not hasattr(user, "_catalogo_coordinador_sstt"):
+        user._catalogo_coordinador_sstt = catalogo_coordinadores()
+    return next((d for d in user._catalogo_coordinador_sstt.values()
                  if d["usuario"].casefold() == usuario), None)
+
+
+def _identidad_restringida(user):
+    usuario = user.get_username().strip().casefold()
+    if any(d["usuario"] == usuario for d in COORDINADORES_SOFTGUARD.values()):
+        return True
+    from .models import ResponsableSoftGuard
+    return ResponsableSoftGuard.objects.filter(usuario_softguard__iexact=usuario).exists()
 
 
 def es_coordinador_sstt(user):
@@ -72,7 +84,7 @@ def es_coordinador_sstt(user):
         return False
     if user.get_username().strip().casefold() in ("admin", "jiturriaga"):
         return False
-    return (_vinculo_coordinador(user) is not None or datos_coordinador(user) is not None or user.groups.filter(
+    return (_vinculo_coordinador(user) is not None or datos_coordinador(user) is not None or _identidad_restringida(user) or user.groups.filter(
         name__in=("Coordinador", "Coordinadores SSTT")).exists())
 
 
