@@ -40,3 +40,27 @@ class FacturacionODT(models.Model):
 
     def __str__(self):
         return f'ODT {self.odt.numero} - {self.facturacion}'
+
+
+class EventoRequisicion(models.Model):
+    facturacion = models.ForeignKey(
+        FacturacionContratista, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="eventos_requisicion",
+    )
+    facturacion_identificador = models.PositiveBigIntegerField(db_index=True)
+    contratista = models.CharField(max_length=150)
+    fecha_desde = models.DateField()
+    fecha_hasta = models.DateField()
+    numero_anterior = models.CharField(max_length=100, blank=True)
+    numero_nuevo = models.CharField(max_length=100, blank=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    usuario_nombre = models.CharField(max_length=254)
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-fecha", "-pk"]
+        verbose_name = "Cambio de requisición"
+        verbose_name_plural = "Cambios de requisición"
+
+    def __str__(self):
+        return f"Requisición de facturación {self.facturacion_identificador}"

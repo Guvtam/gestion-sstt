@@ -11,9 +11,11 @@ from .facturacion import previsualizar_facturacion, actualizar_requisicion
 from .historial_facturacion import historial_facturacion
 from .detalle_facturacion import detalle_facturacion
 from .historial_facturacion import eliminar_periodo_facturacion
+from .historial_requisiciones import historial_requisiciones
 
 
 urlpatterns = [
+    path("facturacion/<int:facturacion_id>/historial-requisicion/", historial_requisiciones, name="historial_requisiciones"),
     path("analisis-odt/", analisis_odt, name="analisis_odt"),
     path("calendario-servicios/", calendario_servicios, name="calendario_servicios"),
     path("odt-por-creacion/", views.bandeja_creacion, name="bandeja_creacion"),
