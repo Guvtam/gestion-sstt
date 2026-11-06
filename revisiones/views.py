@@ -968,6 +968,7 @@ def bandeja_creacion(request):
 
 
 @login_required
+@permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
 def contratistas_disponibles_ajax(request):
     campo_fecha = "fecha_creacion" if request.GET.get("campo_fecha") == "creacion" else "fecha_finalizacion"
 

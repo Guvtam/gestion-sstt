@@ -1,0 +1,29 @@
+# Secretos locales; los archivos ya versionados requieren limpieza independiente.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+*.sqlite3
+*.sqlite3-*
+*.db
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+*.bak*
+*.py.bak*
+staticfiles/
+media/
+backups/
+# Datos operacionales importados; no compartir catálogos reales por Git.
+*.xlsx
+*.xls
+catalogo_cuentas*.json
+catalogo_inicial_sstt.csv
+config/settings_prueba.py
