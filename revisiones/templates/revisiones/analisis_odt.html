@@ -1,6 +1,9 @@
+{% extends "revisiones/base_operativa.html" %}
 {% load static %}
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Análisis de ODT · SSTT</title><link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
+{% block titulo %}Análisis de ODT · SSTT{% endblock %}
+{% block estilos_base %}{% endblock %}
+{% block estilos %}
+<link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
 <style>
 body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spacing:-.5px}
 .dashboard-intro{display:flex;justify-content:space-between;gap:16px;align-items:center;margin:22px 0}
@@ -37,9 +40,16 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 .servicios-panel label{display:flex;align-items:flex-start;gap:9px;padding:9px 3px;font-size:12px;line-height:1.5;cursor:pointer}
 .servicios-panel input[type=checkbox]{appearance:auto;width:17px;height:17px;min-width:17px;margin:2px 0 0;padding:0;accent-color:#1765ad}.servicios-panel span{overflow-wrap:anywhere}
 .servicios-acciones{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.servicios-acciones button{font-size:11px;padding:7px}
-</style></head><body class="preventivos-page">
-<header class="header-sstt"><div class="header-contenido"><div class="header-titulo"><h1>Análisis de ODT</h1><p>Incidencias, cumplimiento SLA y antecedentes preventivos</p></div>
-<div class="filtro-acciones"><a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a><a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a></div></div></header>
+</style>
+{% endblock %}
+{% block atributos_body %} class="preventivos-page"{% endblock %}
+{% block titulo_encabezado %}Análisis de ODT{% endblock %}
+{% block subtitulo %}Incidencias, cumplimiento SLA y antecedentes preventivos{% endblock %}
+{% block acciones_encabezado %}
+<div class="filtro-acciones"><a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a><a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a></div>{% endblock %}
+{% block antes_encabezado %}
+{% endblock %}
+{% block contenido %}
 <main class="hist-main" id="dashboard"><div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
 <input type="hidden" name="incidencias_cuenta" value="{{ incidencias_cuenta }}"><input type="hidden" name="servicios_filtrados" value="1"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
@@ -108,4 +118,4 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
     opciones.forEach(c => c.addEventListener("change",actualizar));
     actualizar();
 })();
-</script></body></html>
+</script>{% endblock %}

@@ -1,41 +1,26 @@
-
+{% extends "revisiones/base_operativa.html" %}
 {% load static %}
-<!doctype html>
-<html lang="es">
-
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% if por_creacion %}ODT por creación | SSTT{% else %}Gestión de pagos SSTT{% endif %}</title>
-
-  <link
+{% block titulo %}{% if por_creacion %}ODT por creación | SSTT{% else %}Gestión de pagos SSTT{% endif %}{% endblock %}
+{% block estilos_base %}{% endblock %}
+{% block estilos %}
+<link
     rel="stylesheet"
     href="{% static 'revisiones/bandeja.css' %}"
   >
-</head>
-
-<body
+{% endblock %}
+{% block atributos_body %}
   data-puede-editar="{% if perms.revisiones.editar_odt_sstt %}1{% else %}0{% endif %}"
   data-puede-revisar="{% if perms.revisiones.revisar_pago_sstt %}1{% else %}0{% endif %}"
   data-guardar-url="{% if perms.revisiones.editar_odt_sstt %}{% url 'guardar_fila' %}{% endif %}"
   data-revision-url="{% if perms.revisiones.revisar_pago_sstt %}{% url 'actualizar_revision' %}{% endif %}"
   data-informe-url="{% url 'actualizar_informe' %}"
->
-
-  <div id="csrf-container" hidden>
-    {% csrf_token %}
-  </div>
-
-  <header class="header-sstt">
-    <div class="header-contenido">
-
-      <div class="header-titulo">
-        <h1>{% if por_creacion %}ODT por fecha de creación{% else %}Gestión de pagos SSTT{% endif %}</h1>
-        <p>
+{% endblock %}
+{% block titulo_encabezado %}{% if por_creacion %}ODT por fecha de creación{% else %}Gestión de pagos SSTT{% endif %}{% endblock %}
+{% block subtitulo %}
           Bandeja de revisión y aprobación
           de órdenes de trabajo
-        </p>
-      </div>
+        {% endblock %}
+{% block acciones_encabezado %}
 
       <div class="header-usuario">
         <div class="usuario-info">
@@ -61,8 +46,15 @@
         </form>
       </div>
 
-    </div>
-  </header>
+    {% endblock %}
+{% block antes_encabezado %}
+
+  <div id="csrf-container" hidden>
+    {% csrf_token %}
+  </div>
+
+  {% endblock %}
+{% block contenido %}
 
   <main>
 
@@ -1867,5 +1859,4 @@ document.getElementById("todosContratistas")?.addEventListener("click", () => {
     lista.dispatchEvent(new Event("change", {bubbles: true}));
 });
 </script>
-</body>
-</html>
+{% endblock %}

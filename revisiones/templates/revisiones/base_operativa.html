@@ -1,24 +1,18 @@
+{% extends "revisiones/base_documento.html" %}
 {% load static %}
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block titulo %}Gestión de pagos SSTT{% endblock %}</title>
+{% block estilos_base %}
     <link rel="stylesheet" href="{% static 'revisiones/bandeja.css' %}">
-    {% block estilos %}{% endblock %}
-</head>
-<body>
+{% endblock %}
+{% block cuerpo %}
+{% block antes_encabezado %}{% endblock %}
 <header class="header-sstt">
     <div class="header-contenido">
         <div class="header-titulo">
-            <h1>Gestión de pagos SSTT</h1>
+            <h1>{% block titulo_encabezado %}Gestión de pagos SSTT{% endblock %}</h1>
             <p>{% block subtitulo %}{% endblock %}</p>
         </div>
         {% block acciones_encabezado %}{% endblock %}
     </div>
 </header>
 {% block contenido %}{% endblock %}
-{% block scripts %}{% endblock %}
-</body>
-</html>
+{% endblock %}

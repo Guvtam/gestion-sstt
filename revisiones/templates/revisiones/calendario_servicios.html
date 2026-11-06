@@ -1,7 +1,8 @@
+{% extends "revisiones/base_operativa.html" %}
 {% load static %}
-<!doctype html><html lang="es"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Calendario de visitas · SSTT</title>
+{% block titulo %}Calendario de visitas · SSTT{% endblock %}
+{% block estilos_base %}{% endblock %}
+{% block estilos %}
 <link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
 <style>
 .calendario-evento.visita-realizadas{background:#dbeafe;color:#1e40af;border-left:4px solid #3b82f6}
@@ -20,11 +21,17 @@
 .calendario-servicios-panel label{display:flex;align-items:flex-start;gap:9px;padding:8px 3px;font-size:12px;line-height:1.5;cursor:pointer}
 .calendario-servicios-panel input[type=checkbox]{appearance:auto;width:17px;height:17px;min-width:17px;padding:0;margin:2px 0 0;accent-color:#1765ad}
 .acciones-servicios{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.acciones-servicios button{font-size:11px;padding:7px}
-</style></head><body class="preventivos-page">
-<header class="header-sstt"><div class="header-contenido">
-<div class="header-titulo"><h1>Calendario de visitas</h1><p>Visitas realizadas, abiertas y atrasadas por cuenta</p></div>
+</style>
+{% endblock %}
+{% block atributos_body %} class="preventivos-page"{% endblock %}
+{% block titulo_encabezado %}Calendario de visitas{% endblock %}
+{% block subtitulo %}Visitas realizadas, abiertas y atrasadas por cuenta{% endblock %}
+{% block acciones_encabezado %}
 <div class="filtro-acciones"><a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a><a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a></div>
-</div></header>
+{% endblock %}
+{% block antes_encabezado %}
+{% endblock %}
+{% block contenido %}
 <main class="hist-main">
 <section class="hist-panel">
 <form method="get" class="preventivos-filtros" id="filtrosCalendario">
@@ -114,4 +121,4 @@
     });
     actualizar();
 })();
-</script></body></html>
+</script>{% endblock %}

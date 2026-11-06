@@ -1,13 +1,9 @@
-
+{% extends "revisiones/base_documento.html" %}
 {% load static %}
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Administración de cuentas SSTT</title>
-
-    <link rel="stylesheet"
+{% block titulo %}Administración de cuentas SSTT{% endblock %}
+{% block estilos_base %}{% endblock %}
+{% block estilos %}
+<link rel="stylesheet"
           href="{% static 'revisiones/bandeja.css' %}">
 
     <style>
@@ -126,9 +122,8 @@
             }
         }
     </style>
-</head>
-
-<body>
+{% endblock %}
+{% block cuerpo %}
 
 <main class="cuentas-contenedor">
 
@@ -350,5 +345,4 @@
 
 </main>
 
-</body>
-</html>
+{% endblock %}
