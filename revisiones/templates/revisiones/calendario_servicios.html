@@ -3,9 +3,20 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Calendario de visitas · SSTT</title>
 <link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
-</head><body class="preventivos-page">
+<style>
+.calendario-evento.visita-realizadas{background:#dbeafe;color:#1e40af;border-left:4px solid #3b82f6}
+.calendario-evento.visita-abiertas{background:#dcfce7;color:#166534;border-left:4px solid #22a453}
+.calendario-evento.visita-atrasadas{background:#fef9c3;color:#854d0e;border-left:4px solid #eab308}
+.visita-leyenda{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+.visita-leyenda span{padding:8px 12px;border-radius:6px;font-size:12px;border:1px solid transparent}
+.visita-leyenda .realizadas{background:#dbeafe;color:#1e40af;border-color:#3b82f6}
+.visita-leyenda .abiertas{background:#dcfce7;color:#166534;border-color:#22a453}
+.visita-leyenda .atrasadas{background:#fef9c3;color:#854d0e;border-color:#eab308}
+.calendario-evento .visita-etiqueta{font-weight:700;margin:3px 0}
+.calendario-evento:focus-visible{outline:3px solid #17324f;outline-offset:2px}
+</style></head><body class="preventivos-page">
 <header class="header-sstt"><div class="header-contenido">
-<div class="header-titulo"><h1>Calendario de visitas</h1><p>Cuentas con ODT asignadas según fecha de visita</p></div>
+<div class="header-titulo"><h1>Calendario de visitas</h1><p>Visitas realizadas, abiertas y atrasadas por cuenta</p></div>
 <div class="filtro-acciones"><a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a><a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a></div>
 </div></header>
 <main class="hist-main">
@@ -18,20 +29,26 @@
 </select></div><div class="filtro-acciones"><button class="btn">Buscar</button><a class="btn alt" href="{% url 'calendario_servicios' %}">Limpiar</a></div>
 </form>
 {% for error in errores %}<p role="alert" class="error-fecha">{{ error }}</p>{% endfor %}
-<p class="hist-sub">Solo ODT con estado Asignado y fecha de visita. Incluye todos los servicios; se muestra el servicio corregido cuando existe. Datos de la última sincronización.</p>
+<p class="hist-sub">ODT asignadas, pendientes, en proceso y finalizadas con fecha de visita. Las canceladas quedan excluidas. Incluye todos los servicios; se muestra el servicio corregido cuando existe. Datos de la última sincronización.</p>
 </section>
 <section class="hist-panel">
-<div class="calendario-cabecera"><div><h2>{{ mes_titulo|date:"F Y" }}</h2><p>{{ cantidad }} ODT asignadas · {{ cuentas }} cuentas</p></div>
+<div class="calendario-cabecera"><div><h2>{{ mes_titulo|date:"F Y" }}</h2><p>{{ cantidad }} visitas · {{ cuentas }} cuentas</p></div>
 <nav class="filtro-acciones" aria-label="Cambiar mes"><a class="btn alt" href="{{ url_mes_anterior }}">Anterior</a><a class="btn alt" href="{{ url_mes_siguiente }}">Siguiente</a></nav></div>
-{% if not cantidad %}<p class="hist-sub">No hay visitas asignadas para el mes y filtros seleccionados.</p>{% endif %}
+{% if not cantidad %}<p class="hist-sub">No hay visitas para el mes y filtros seleccionados.</p>{% endif %}
+<div class="visita-leyenda" aria-label="Leyenda de visitas">
+<span class="realizadas">Azul · Realizadas: {{ totales.realizadas }}</span>
+<span class="abiertas">Verde · Abiertas: {{ totales.abiertas }}</span>
+<span class="atrasadas">Amarillo · Atrasadas: {{ totales.atrasadas }}</span>
+</div>
+<p class="hist-sub">Realizada: estado Finalizado. Abierta: visita hoy o a futuro. Atrasada: sigue abierta y su fecha de visita ya pasó. Todas se ubican en la fecha de visita registrada, no en la fecha de finalización.</p>
 <div class="calendario-scroll"><div class="calendario-grid">
 {% for dia in "LMXJVSD" %}<div class="calendario-semana">{{ dia }}</div>{% endfor %}
 {% for semana in semanas %}{% for dia in semana %}
 <div class="calendario-dia {% if not dia.del_mes %}fuera-mes{% endif %} {% if dia.hoy %}es-hoy{% endif %}">
 <time datetime="{{ dia.fecha|date:'Y-m-d' }}">{{ dia.fecha|date:"j" }}</time>
 {% for evento in dia.eventos %}
-<a class="calendario-evento evento-programado" href="{% url 'bandeja' %}?numero_odt={{ evento.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">
-<b>{{ evento.codigo }}</b><span>{{ evento.nombre }}</span><span>ODT {{ evento.numero|stringformat:'d' }} · {{ evento.servicio|default:"Sin servicio" }}</span><span>{{ evento.tecnico }}</span></a>
+<a class="calendario-evento visita-{{ evento.categoria }}" href="{% url 'bandeja' %}?numero_odt={{ evento.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">
+<b>{{ evento.codigo }}</b><span class="visita-etiqueta">{{ evento.etiqueta }} · {{ evento.estado }}</span><span>{{ evento.nombre }}</span><span>ODT {{ evento.numero|stringformat:'d' }} · {{ evento.servicio|default:"Sin servicio" }}</span><span>{{ evento.tecnico }}</span></a>
 {% endfor %}</div>
 {% endfor %}{% endfor %}
 </div></div>
