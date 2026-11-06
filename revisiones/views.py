@@ -18,6 +18,7 @@ from .acceso_coordinadores import (
     coordinadores_en_peticion, coordinadores_para_mostrar,
 )
 from .casos_uso.edicion_odt import editar_odt, revisar_odt, revisar_odts
+from .casos_uso.informes_asignaciones import actualizar_estado_informe, asignar_responsable
 from .consultas.pagos import (
     condicion_aprobada, error_odt_bloqueada, importe_efectivo,
     odt_facturada, odt_rechazada,  # Imports compatibles para consumidores existentes.
@@ -30,7 +31,7 @@ from .coordinadores_softguard import (
 )
 from .correcciones import registrar_cambio_manual
 from .cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta, tipo_cliente_cuenta
-from .dominio.errores import ErrorOperacionODT, ODTBloqueada, ODTNoEncontrada
+from .dominio.errores import ErrorOperacionODT, ODTBloqueada, ODTNoEncontrada, VerificacionCoordinadorFallida
 from .dominio.pagos import ESTADOS_APROBADOS, OPCIONES_BANDEJA
 from .dominio.servicios import SERVICIOS_PRINCIPALES, nombres_canonicos
 from .facturacion_models import FacturacionODT
@@ -44,7 +45,13 @@ from .servicios_sql import consultar_historial_odt
 def _respuesta_error_odt(error):
     if isinstance(error, ODTNoEncontrada):
         raise Http404("ODT no encontrada.") from None
-    return JsonResponse({"error": str(error)}, status=409 if isinstance(error, ODTBloqueada) else 400)
+    if isinstance(error, VerificacionCoordinadorFallida):
+        estado = 503
+    elif isinstance(error, ODTBloqueada):
+        estado = 409
+    else:
+        estado = 400
+    return JsonResponse({"error": str(error)}, status=estado)
 
 
 def indicador(qs):
@@ -1039,96 +1046,19 @@ def actualizar_revision(request):
 
 
 @login_required
-@permission_required(
-    "revisiones.cambiar_informe_sstt",
-    raise_exception=True,
-)
+@permission_required("revisiones.cambiar_informe_sstt", raise_exception=True)
 @require_POST
 def actualizar_informe(request):
-
     try:
-        numero = int(request.POST.get("numero", ""))
-
-        if numero <= 0:
-            raise ValueError
-
-    except (ValueError, TypeError):
-        return JsonResponse(
-            {"error": "Número de ODT inválido."},
-            status=400,
+        resultado = actualizar_estado_informe(
+            request.user, numero=request.POST.get("numero", ""), estado=request.POST.get("estado", ""),
+            resolver_responsable=lambda n: coordinadores_en_peticion(request, [n])[n],
         )
-
-    estado = request.POST.get("estado", "").strip()
-    validos = dict(ODT.ESTADOS_INFORME)
-
-    if estado not in validos:
-        return JsonResponse(
-            {"error": "Estado de informe inválido."},
-            status=400,
-        )
-
-    with transaction.atomic():
-
-        odt = get_object_or_404(
-            ODT.objects.select_for_update(),
-            numero=numero,
-        )
-
-        # Bloquear ODT facturadas o rechazadas.
-        bloqueo = error_odt_bloqueada(odt)
-
-        if bloqueo:
-            return JsonResponse(
-                {"error": bloqueo},
-                status=409,
-            )
-
-        anterior = odt.estado_informe
-
-        if anterior == estado:
-            return JsonResponse({
-                "ok": True,
-                "mensaje": "Sin cambios.",
-                "estado": estado,
-            })
-
-        odt.estado_informe = estado
-        odt.informe_actualizado_por = request.user
-        odt.informe_actualizado_en = timezone.now()
-
-        odt.save(
-            update_fields=[
-                "estado_informe",
-                "informe_actualizado_por",
-                "informe_actualizado_en",
-            ]
-        )
-
-        estado_revision = (
-            Revision.objects
-            .filter(odt=odt)
-            .values_list("estado", flat=True)
-            .first()
-        ) or "APROBADA"
-
-        if estado_revision == "POR_REVISAR":
-            estado_revision = "APROBADA"
-
-        EventoRevision.objects.create(
-            odt=odt,
-            estado_anterior=estado_revision,
-            estado_nuevo=estado_revision,
-            comentario=(
-                f"Informe: {validos.get(anterior, anterior)} "
-                f"→ {validos[estado]}"
-            ),
-            usuario=request.user,
-        )
-
+    except ErrorOperacionODT as error:
+        return _respuesta_error_odt(error)
     return JsonResponse({
-        "ok": True,
-        "mensaje": "Estado de informe actualizado.",
-        "estado": estado,
+        "ok": True, "estado": resultado.estado,
+        "mensaje": "Estado de informe actualizado." if resultado.cambio else "Sin cambios.",
     })
 
 
@@ -1484,33 +1414,11 @@ def cambiar_estado_correccion(request):
 @login_required
 @require_POST
 def asignar_coordinador(request):
-    if not puede_asignar_coordinador(request.user):
-        raise PermissionDenied("Solo admin y jiturriaga pueden asignar coordinadores.")
     try:
-        numero = int(request.POST.get("numero", ""))
-        if numero <= 0:
-            raise ValueError
-    except (ValueError, TypeError):
-        return JsonResponse({"error": "Número de ODT inválido."}, status=400)
-    usuario = request.POST.get("coordinador", "").strip()
-    datos = next((d for d in COORDINADORES_SOFTGUARD.values() if d["usuario"] == usuario), None)
-    if datos is None:
-        return JsonResponse({"error": "Coordinador inválido."}, status=400)
-    with transaction.atomic():
-        odt = get_object_or_404(ODT.objects.select_for_update(), numero=numero)
-        if AsignacionCoordinadorODT.objects.filter(odt=odt).exists():
-            return JsonResponse({"error": "La ODT ya tiene un coordinador asignado."}, status=409)
-        try:
-            info = identificar_coordinador_softguard(numero)
-        except Exception:
-            return JsonResponse({"error": "No se pudo verificar el coordinador en SoftGuard."}, status=503)
-        if info.get("identificado", False):
-            return JsonResponse({"error": "La ODT ya tiene coordinador identificado. Actualiza la pantalla."}, status=409)
-        AsignacionCoordinadorODT.objects.create(
-            odt=odt, usuario_coordinador=usuario, asignado_por=request.user)
-        revision = Revision.objects.filter(odt=odt).first()
-        estado = revision.estado if revision else "POR_REVISAR"
-        EventoRevision.objects.create(
-            odt=odt, estado_anterior=estado, estado_nuevo=estado,
-            usuario=request.user, comentario=f"Coordinador asignado en SSTT: {datos['nombre']}")
-    return JsonResponse({"ok": True, "coordinador": datos["nombre"]})
+        resultado = asignar_responsable(
+            request.user, numero=request.POST.get("numero", ""), coordinador=request.POST.get("coordinador", ""),
+            verificar_origen=identificar_coordinador_softguard,
+        )
+    except ErrorOperacionODT as error:
+        return _respuesta_error_odt(error)
+    return JsonResponse({"ok": True, "coordinador": resultado.nombre})

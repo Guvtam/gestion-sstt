@@ -5,13 +5,13 @@ from decimal import Decimal
 from django.db import transaction
 
 from ..correcciones import registrar_cambio_manual
-from ..dominio.errores import DatosODTInvalidos, ODTBloqueada, ODTNoEncontrada
-from ..dominio.pagos import estado_pago_efectivo, motivo_bloqueo
+from ..dominio.errores import DatosODTInvalidos
+from ..dominio.pagos import estado_pago_efectivo
 from ..dominio.servicios import SERVICIOS_PRINCIPALES, servicio_efectivo
 from ..dominio.validacion_odt import estado_revision, importe_pago, numero_odt, servicio_obligatorio, texto
-from ..facturacion_models import FacturacionODT
-from ..models import EventoRevision, ODT, Revision
+from ..models import EventoRevision, Revision
 from .autorizacion import exigir_permiso_operativo as _autorizar
+from .bloqueos_odt import cargar_odts_editables as _bloquear_odts
 
 
 @dataclass(frozen=True)
@@ -29,20 +29,6 @@ class ResultadoRevision:
 
 
 
-def _bloquear_odts(numeros):
-    odts = list(ODT.objects.select_for_update().filter(numero__in=numeros).order_by("numero"))
-    if len(odts) != len(numeros):
-        raise ODTNoEncontrada("Algunas ODT seleccionadas no existen.")
-    revisiones = Revision.objects.select_for_update().in_bulk([o.pk for o in odts], field_name="odt_id")
-    facturadas = set(FacturacionODT.objects.filter(odt__in=odts).values_list("odt_id", flat=True))
-    for odt in odts:
-        revision = revisiones.get(odt.pk)
-        bloqueo = motivo_bloqueo(
-            facturada=odt.pk in facturadas, rechazada=revision is not None and revision.estado == "RECHAZADA",
-        )
-        if bloqueo:
-            raise ODTBloqueada(f"ODT {odt.numero}: {bloqueo}" if len(numeros) > 1 else bloqueo)
-    return odts, revisiones
 
 
 def editar_odt(usuario, *, numero, servicio, monto, confirmar_monto=False, comentario=""):

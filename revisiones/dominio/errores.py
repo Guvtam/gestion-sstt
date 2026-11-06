@@ -15,3 +15,7 @@ class ODTNoEncontrada(ErrorOperacionODT):
 
 class ODTBloqueada(ErrorOperacionODT):
     pass
+
+
+class VerificacionCoordinadorFallida(ErrorOperacionODT):
+    pass
