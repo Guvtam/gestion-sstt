@@ -1,506 +1,130 @@
+"""Adaptadores HTTP de facturación; las escrituras viven en casos de uso."""
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
-from django.contrib.auth.decorators import (
-    login_required,
-    permission_required,
-)
-from django.db import IntegrityError, transaction
-from django.db.models import Q
-from django.shortcuts import (
-    get_object_or_404,
-    redirect,
-    render,
-)
+from django.contrib.auth.decorators import login_required, permission_required
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import (
-    require_http_methods,
-    require_POST,
-)
+from django.views.decorators.http import require_http_methods, require_POST
 
-from .models import ODT
-from .consultas.pagos import condicion_aprobada
-from .facturacion_models import (
-    PeriodoFacturacion,
-    FacturacionContratista,
-    FacturacionODT,
+from .casos_uso.facturacion import (
+    actualizar_requisicion as guardar_requisicion,
+    confirmar, previsualizar,
 )
+from .consultas.facturacion import odts_facturables
+from .dominio.facturacion import (
+    FacturacionInvalida, FacturacionNoEncontrada, SeleccionFacturacion, validar_periodo,
+)
+from .facturacion_models import FacturacionContratista, FacturacionODT
 
 
 def _parametros(request):
     datos = request.GET if request.method == "GET" else request.POST
-
     try:
-        desde = date.fromisoformat(
-            datos.get("fecha_desde", "")
-        )
-        hasta = date.fromisoformat(
-            datos.get("fecha_hasta", "")
-        )
+        desde = date.fromisoformat(datos.get("fecha_desde", ""))
+        hasta = date.fromisoformat(datos.get("fecha_hasta", ""))
     except (ValueError, TypeError):
-        raise ValueError(
-            "Debes indicar ambas fechas válidas."
-        )
+        raise FacturacionInvalida("Debes indicar ambas fechas válidas.") from None
+    validar_periodo(desde, hasta)
+    return desde, hasta, [v for v in datos.getlist("contratista") if v], [v for v in datos.getlist("servicios") if v], datos
 
-    siguiente = (
-        desde.replace(day=28) + timedelta(days=4)
-    ).replace(day=1)
 
-    if desde.day != 21 or hasta != siguiente.replace(day=20):
-        raise ValueError(
-            "El período debe comenzar el día 21 y "
-            "terminar el día 20 del mes siguiente."
-        )
-
-    contratistas = [
-        v for v in datos.getlist("contratista") if v
-    ]
-
-    servicios = [
-        v for v in datos.getlist("servicios") if v
-    ]
-
-    return desde, hasta, contratistas, servicios, datos
+def _seleccion(desde, hasta, contratistas, servicios, datos):
+    return SeleccionFacturacion(
+        desde=desde, hasta=hasta, contratistas=tuple(contratistas), servicios=tuple(servicios),
+        contratistas_filtrados=datos.get("contratistas_filtrados") == "1",
+        tipo_cliente=datos.get("tipo_cliente", ""), estado=datos.get("estado", ""), q=datos.get("q", ""),
+    )
 
 
 def _odts(desde, hasta, contratistas, servicios, datos):
-
-    qs = ODT.objects.filter(
-        fecha_finalizacion__date__gte=desde,
-        fecha_finalizacion__date__lte=hasta,
-        estado_softguard__iexact="Finalizado",
-    ).filter(condicion_aprobada())
-
-    if datos.get("contratistas_filtrados") == "1" and not contratistas:
-        return qs.none()
-
-    if contratistas:
-        qs = qs.filter(
-            contratista__in=contratistas
-        )
-    else:
-        qs = qs.exclude(
-            contratista=""
-        )
-
-    if servicios:
-        qs = qs.filter(
-            Q(
-                servicio_editado__isnull=True,
-                servicio__in=servicios,
-            )
-            | Q(
-                servicio_editado__in=servicios
-            )
-        )
-
-    if datos.get("tipo_cliente"):
-        qs = qs.filter(
-            tipo_cliente=datos["tipo_cliente"]
-        )
-
-    if (
-        datos.get("estado")
-        and datos["estado"].lower() != "finalizado"
-    ):
-        return qs.none()
-
-    # La facturación utiliza siempre la regla
-    # de aprobación, independientemente del
-    # filtro de revisión de la bandeja.
-
-    q = datos.get("q", "").strip()
-
-    if q:
-        condicion = (
-            Q(contratista__icontains=q)
-            | Q(tecnico__icontains=q)
-            | Q(cuenta_completa__icontains=q)
-            | Q(servicio__icontains=q)
-            | Q(servicio_editado__icontains=q)
-            | Q(direccion__icontains=q)
-        )
-
-        if q.isdigit():
-            condicion |= Q(numero=int(q))
-
-        qs = qs.filter(condicion)
-
-    return qs.order_by(
-        "contratista",
-        "numero",
-    )
+    """Compatibilidad de la selección anterior, usando la consulta común."""
+    return odts_facturables(_seleccion(desde, hasta, contratistas, servicios, datos))
 
 
 def _resumen(qs):
-
-    grupos = defaultdict(
-        lambda: {
-            "odts": [],
-            "monto": Decimal("0"),
-        }
-    )
-
-    for odt in qs.iterator(chunk_size=1000):
-
+    """Compatibilidad para consumidores que ya dispongan de un queryset."""
+    grupos = defaultdict(lambda: {"cantidad": 0, "monto": Decimal("0")})
+    for odt in qs.iterator(chunk_size=500):
         grupo = grupos[odt.contratista]
-
-        grupo["odts"].append(odt)
-
-        monto = (
-            odt.valor_pago_editado
-            if odt.valor_pago_editado is not None
-            else odt.valor_pago_tecnico
-        )
-
-        grupo["monto"] += (
-            monto if monto is not None
-            else Decimal("0")
-        )
-
-    return [
-        {
-            "contratista": nombre,
-            "cantidad": len(datos["odts"]),
-            "monto": datos["monto"],
-        }
-        for nombre, datos in sorted(grupos.items())
-    ]
+        grupo["cantidad"] += 1
+        monto = odt.valor_pago_tecnico if odt.valor_pago_editado is None else odt.valor_pago_editado
+        grupo["monto"] += monto if monto is not None else Decimal("0")
+    return [{"contratista": nombre, **datos} for nombre, datos in sorted(grupos.items())]
 
 
 @login_required
-@permission_required(
-    "revisiones.exportar_pagos_sstt",
-    raise_exception=True,
-)
+@permission_required("revisiones.exportar_pagos_sstt", raise_exception=True)
 @require_http_methods(["GET", "POST"])
 def previsualizar_facturacion(request):
-
     try:
-        (
-            desde,
-            hasta,
-            contratistas,
-            servicios,
-            datos,
-        ) = _parametros(request)
-
-    except ValueError as exc:
-        messages.error(request, str(exc))
+        desde, hasta, contratistas, servicios, datos = _parametros(request)
+        seleccion = _seleccion(desde, hasta, contratistas, servicios, datos)
+        vista = previsualizar(request.user, seleccion)
+    except ValueError as error:
+        messages.error(request, str(error))
         return redirect("bandeja")
 
-    # Selección original de ODT aprobadas.
-    seleccion = _odts(
-        desde,
-        hasta,
-        contratistas,
-        servicios,
-        datos,
-    )
-
-    # Contar las que ya están facturadas.
-    ya_facturadas = FacturacionODT.objects.filter(
-        odt__in=seleccion
-    ).count()
-
-    # Excluir las ODT facturadas.
-    pendientes = seleccion.filter(
-        item_facturacion__isnull=True
-    )
-
-    # Resumen exclusivamente de ODT pendientes.
-    resumen = _resumen(pendientes)
-
-    # Consultar requisiciones existentes.
+    resumen = vista.resumen
+    ya_facturadas = FacturacionODT.objects.filter(odt__in=odts_facturables(seleccion)).count()
     existentes = {
-        f.contratista: f.numero_requisicion
-        for f in FacturacionContratista.objects.filter(
-            periodo__fecha_desde=desde,
-            periodo__fecha_hasta=hasta,
+        f.contratista: f.numero_requisicion for f in FacturacionContratista.objects.filter(
+            periodo__fecha_desde=desde, periodo__fecha_hasta=hasta,
         )
     }
-
     for grupo in resumen:
-        grupo["requisicion_existente"] = (
-            existentes.get(
-                grupo["contratista"],
-                "",
-            )
-        )
+        grupo["requisicion_existente"] = existentes.get(grupo["contratista"], "")
 
-    # Confirmar facturación.
     if request.method == "POST":
-
         if not resumen:
-            messages.error(
-                request,
-                "No existen ODT pendientes y "
-                "aprobadas para facturar.",
-            )
-
+            messages.error(request, "No existen ODT pendientes y aprobadas para facturar.")
         else:
-            requisiciones = {}
-            error_requisicion = False
+            requisiciones = {grupo["contratista"]: datos.get(f"requisicion_{i}", "")
+                             for i, grupo in enumerate(resumen)}
+            try:
+                resultado = confirmar(
+                    request.user, seleccion, requisiciones=requisiciones,
+                    confirmacion=datos.get("confirmacion_facturacion", ""),
+                )
+            except FacturacionInvalida as error:
+                messages.error(request, f"No se guardó la facturación: {error}")
+            else:
+                messages.success(request,
+                    f"Facturación guardada: {resultado.cantidad_odt} ODT de {resultado.cantidad_contratistas} contratistas.")
+                return redirect(f"{reverse('historial_facturacion')}?periodo={resultado.periodo_id}")
 
-            for i, grupo in enumerate(resumen):
-
-                valor = request.POST.get(
-                    f"requisicion_{i}",
-                    "",
-                ).strip()
-
-                if len(valor) > 100:
-                    messages.error(
-                        request,
-                        "La requisición de "
-                        f'{grupo["contratista"]} '
-                        "supera los 100 caracteres.",
-                    )
-                    error_requisicion = True
-                    break
-
-                requisiciones[
-                    grupo["contratista"]
-                ] = valor
-
-            if not error_requisicion:
-
-                try:
-                    with transaction.atomic():
-
-                        # Volver a consultar y bloquear
-                        # las ODT pendientes.
-                        odts = list(
-                            _odts(
-                                desde,
-                                hasta,
-                                contratistas,
-                                servicios,
-                                datos,
-                            )
-                            .select_for_update()
-                            .filter(
-                                item_facturacion__isnull=True
-                            )
-                        )
-
-                        if not odts:
-                            raise ValueError(
-                                "Ya no quedan ODT pendientes "
-                                "para facturar."
-                            )
-
-                        cantidad_esperada = sum(
-                            grupo["cantidad"]
-                            for grupo in resumen
-                        )
-
-                        if len(odts) != cantidad_esperada:
-                            raise ValueError(
-                                "La selección cambió. "
-                                "Actualiza la previsualización."
-                            )
-
-                        nombres_actuales = {
-                            odt.contratista
-                            for odt in odts
-                        }
-
-                        if nombres_actuales != set(requisiciones):
-                            raise ValueError(
-                                "Los contratistas cambiaron. "
-                                "Actualiza la previsualización."
-                            )
-
-                        # Crear el período si no existe.
-                        periodo, _ = (
-                            PeriodoFacturacion.objects.get_or_create(
-                                fecha_desde=desde,
-                                fecha_hasta=hasta,
-                                defaults={
-                                    "creado_por": request.user,
-                                },
-                            )
-                        )
-
-                        # Bloquear el período durante
-                        # la operación cuando el motor
-                        # de base de datos lo permita.
-                        (
-                            PeriodoFacturacion.objects
-                            .select_for_update()
-                            .get(pk=periodo.pk)
-                        )
-
-                        facturaciones = {}
-
-                        # Crear o reutilizar la facturación
-                        # del contratista en este período.
-                        for nombre, requisicion in (
-                            requisiciones.items()
-                        ):
-
-                            facturacion, creada = (
-                                FacturacionContratista.objects
-                                .get_or_create(
-                                    periodo=periodo,
-                                    contratista=nombre,
-                                    defaults={
-                                        "numero_requisicion": requisicion,
-                                        "creado_por": request.user,
-                                    },
-                                )
-                            )
-
-                            # No sobrescribir requisiciones
-                            # previamente registradas.
-                            facturaciones[
-                                nombre
-                            ] = facturacion
-
-                        # Última comprobación de duplicados.
-                        if FacturacionODT.objects.filter(
-                            odt__in=odts
-                        ).exists():
-                            raise ValueError(
-                                "Se detectaron ODT facturadas "
-                                "durante la operación. "
-                                "Actualiza la previsualización."
-                            )
-
-                        # Guardar únicamente las nuevas ODT.
-                        FacturacionODT.objects.bulk_create(
-                            [
-                                FacturacionODT(
-                                    facturacion=facturaciones[
-                                        odt.contratista
-                                    ],
-                                    odt=odt,
-                                    servicio_facturado=(
-                                        odt.servicio_editado
-                                        if odt.servicio_editado is not None
-                                        else odt.servicio
-                                    ),
-                                    monto_facturado=(
-                                        odt.valor_pago_editado
-                                        if odt.valor_pago_editado is not None
-                                        else (
-                                            odt.valor_pago_tecnico
-                                            if odt.valor_pago_tecnico is not None
-                                            else Decimal("0")
-                                        )
-                                    ),
-                                )
-                                for odt in odts
-                            ],
-                            batch_size=500,
-                        )
-
-                    messages.success(
-                        request,
-                        f"Facturación guardada: {len(odts)} "
-                        f"ODT de {len(facturaciones)} "
-                        "contratistas.",
-                    )
-
-                    return redirect(
-                        f"{reverse('historial_facturacion')}"
-                        f"?periodo={periodo.id}"
-                    )
-
-                except (IntegrityError, ValueError) as exc:
-                    messages.error(
-                        request,
-                        "No se guardó la facturación: "
-                        f"{exc}",
-                    )
-
-    # Totales de la previsualización.
-    total = sum(
-        (
-            grupo["monto"]
-            for grupo in resumen
-        ),
-        Decimal("0"),
-    )
-
-    return render(
-        request,
-        "revisiones/facturacion_periodo.html",
-        {
-            "desde": desde,
-            "hasta": hasta,
-            "resumen": resumen,
-            "cantidad_odt": sum(
-                grupo["cantidad"]
-                for grupo in resumen
-            ),
-            "monto_total": total,
-            "ya_facturadas": ya_facturadas,
-            "parametros": [
-                (k, v)
-                for k, valores in datos.lists()
-                for v in valores
-            ],
-        },
-    )
+    return render(request, "revisiones/facturacion_periodo.html", {
+        "desde": desde, "hasta": hasta, "resumen": resumen,
+        "cantidad_odt": vista.cantidad,
+        "monto_total": sum((g["monto"] for g in resumen), Decimal("0")),
+        "ya_facturadas": ya_facturadas, "confirmacion_facturacion": vista.confirmacion,
+        "parametros": [(k, v) for k, valores in datos.lists() for v in valores
+                       if k not in ("confirmacion_facturacion", "csrfmiddlewaretoken")
+                       and not k.startswith("requisicion_")],
+    })
 
 
 @login_required
-@permission_required(
-    "revisiones.exportar_pagos_sstt",
-    raise_exception=True,
-)
+@permission_required("revisiones.exportar_pagos_sstt", raise_exception=True)
 @require_POST
 def actualizar_requisicion(request, facturacion_id):
-
-    facturacion = get_object_or_404(
-        FacturacionContratista,
-        pk=facturacion_id,
-    )
-
-    numero = request.POST.get(
-        "numero_requisicion",
-        "",
-    ).strip()
-
-    if len(numero) > 100:
-        messages.error(
-            request,
-            "La requisición no puede superar "
-            "los 100 caracteres.",
+    factura = get_object_or_404(FacturacionContratista, pk=facturacion_id)
+    try:
+        resultado = guardar_requisicion(
+            request.user, facturacion_id=facturacion_id, numero=request.POST.get("numero_requisicion", ""),
         )
-
+    except FacturacionInvalida as error:
+        messages.error(request, str(error))
+    except FacturacionNoEncontrada:
+        raise Http404("Facturación no encontrada.") from None
     else:
-        facturacion.numero_requisicion = numero
-
-        facturacion.save(
-            update_fields=[
-                "numero_requisicion",
-            ]
-        )
-
-        if numero:
-            messages.success(
-                request,
-                f"Requisición de {facturacion.contratista} "
-                "actualizada correctamente.",
-            )
-        else:
-            messages.success(
-                request,
-                f"La requisición de {facturacion.contratista} "
-                "quedó pendiente.",
-            )
-
-    return redirect(
-        f"{reverse('historial_facturacion')}"
-        f"?periodo={facturacion.periodo_id}"
-        f"&contratista={facturacion.id}"
-    )
-
+        mensaje = (f"Requisición de {resultado.contratista} actualizada correctamente."
+                   if resultado.numero else f"La requisición de {resultado.contratista} quedó pendiente.")
+        messages.success(request, mensaje)
+    return redirect(f"{reverse('historial_facturacion')}?periodo={factura.periodo_id}&contratista={factura.id}")
 
 
 def resumen_costos_periodo(periodo):
