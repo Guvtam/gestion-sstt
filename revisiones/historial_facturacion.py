@@ -1,5 +1,3 @@
-from .cuentas_utils import cargar_catalogo_cuentas, tipo_cliente_cuenta
-
 from decimal import Decimal
 
 from django.contrib.auth.decorators import (
@@ -24,130 +22,12 @@ from django.views.decorators.http import require_POST
 
 
 def resumen_costos_periodo(periodo):
-    """
-    Calcula el resumen financiero de las ODT
-    efectivamente facturadas en un período.
-    """
-
-    categorias = {
-        "correctiva_con_cobro": {
-            "nombre": "Mantención correctiva con cobro",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "correctiva_sin_cobro": {
-            "nombre": "Mantención correctiva sin cobro",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "renovacion": {
-            "nombre": "Mantención renovación",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "preventivo": {
-            "nombre": "Mantenimiento preventivo",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "otros": {
-            "nombre": "Otros servicios",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-    }
-
-    clientes = {
-        "B2B": {
-            "monto": Decimal("0"),
-            "cantidad": 0,
-            "promedio": Decimal("0"),
-        },
-        "B2C": {
-            "monto": Decimal("0"),
-            "cantidad": 0,
-            "promedio": Decimal("0"),
-        },
-        "SIN_CLASIFICAR": {
-            "monto": Decimal("0"),
-            "cantidad": 0,
-            "promedio": Decimal("0"),
-        },
-    }
-
-    items = (
-        FacturacionODT.objects
-        .filter(facturacion__periodo=periodo)
-        .select_related("odt")
+    """Contrato histórico: resumen con cantidades y promedios por cliente."""
+    from .consultas.resumen_facturacion import resumir_items
+    return resumir_items(
+        FacturacionODT.objects.filter(facturacion__periodo=periodo).select_related("odt")
     )
 
-    catalogo_clientes = cargar_catalogo_cuentas(
-        items.values_list("odt__cuenta_completa", flat=True)
-    )
-
-    total = Decimal("0")
-    cantidad = 0
-
-    for item in items.iterator(chunk_size=1000):
-
-        monto = item.monto_facturado or Decimal("0")
-
-        servicio = (
-            item.servicio_facturado or ""
-        ).strip().upper()
-
-        servicio = (
-            servicio
-            .replace("Á", "A")
-            .replace("É", "E")
-            .replace("Í", "I")
-            .replace("Ó", "O")
-            .replace("Ú", "U")
-        )
-
-        if servicio == "MANTENCION CORRECTIVA CON COBRO":
-            categoria = "correctiva_con_cobro"
-
-        elif servicio == "MANTENCION CORRECTIVA SIN COBRO":
-            categoria = "correctiva_sin_cobro"
-
-        elif servicio in (
-            "MANTENIMIENTO RENOVACION",
-            "MANTENCION RENOVACION",
-            "RENOVACION",
-        ):
-            categoria = "renovacion"
-
-        elif servicio == "MANTENIMIENTO PREVENTIVO":
-            categoria = "preventivo"
-
-        else:
-            categoria = "otros"
-
-        categorias[categoria]["monto"] += monto
-        categorias[categoria]["cantidad"] += 1
-        
-
-        tipo_cliente = tipo_cliente_cuenta(item.odt.cuenta_completa, catalogo_clientes)
-
-        clientes[tipo_cliente]["monto"] += monto
-        clientes[tipo_cliente]["cantidad"] += 1
-
-        total += monto
-        cantidad += 1
-
-        for datos in clientes.values():
-            if datos["cantidad"] > 0:
-                datos["promedio"] = (
-                    datos["monto"] / datos["cantidad"]
-                )
-
-    return {
-        "categorias": categorias,
-        "clientes": clientes,
-        "total": total,
-        "cantidad": cantidad,
-    }
 
 @login_required
 @permission_required(

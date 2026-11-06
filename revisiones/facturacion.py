@@ -1,5 +1,3 @@
-from .cuentas_utils import cargar_catalogo_cuentas, tipo_cliente_cuenta
-
 from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
@@ -23,6 +21,7 @@ from django.views.decorators.http import (
 )
 
 from .models import ODT
+from .consultas.pagos import condicion_aprobada
 from .facturacion_models import (
     PeriodoFacturacion,
     FacturacionContratista,
@@ -72,13 +71,7 @@ def _odts(desde, hasta, contratistas, servicios, datos):
         fecha_finalizacion__date__gte=desde,
         fecha_finalizacion__date__lte=hasta,
         estado_softguard__iexact="Finalizado",
-    ).filter(
-        Q(revision__isnull=True)
-        | Q(revision__estado__in=(
-            "APROBADA",
-            "POR_REVISAR",
-        ))
-    )
+    ).filter(condicion_aprobada())
 
     if datos.get("contratistas_filtrados") == "1" and not contratistas:
         return qs.none()
@@ -511,107 +504,11 @@ def actualizar_requisicion(request, facturacion_id):
 
 
 def resumen_costos_periodo(periodo):
-    """
-    Calcula costos de las ODT efectivamente
-    facturadas en el período seleccionado.
-    """
-
-    categorias = {
-        "correctiva_con_cobro": {
-            "nombre": "Mantención correctiva con cobro",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "correctiva_sin_cobro": {
-            "nombre": "Mantención correctiva sin cobro",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "renovacion": {
-            "nombre": "Mantención renovación",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "preventivo": {
-            "nombre": "Mantenimiento preventivo",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-        "otros": {
-            "nombre": "Otros servicios",
-            "monto": Decimal("0"),
-            "cantidad": 0,
-        },
-    }
-
-    resumen_clientes = {
-        "B2B": Decimal("0"),
-        "B2C": Decimal("0"),
-        "SIN_CLASIFICAR": Decimal("0"),
-    }
-
-    items = (
-        FacturacionODT.objects
-        .filter(facturacion__periodo=periodo)
-        .select_related("odt")
+    """Compatibilidad: esta vista conserva el mapa de montos por cliente."""
+    from .consultas.resumen_facturacion import resumir_items
+    resumen = resumir_items(
+        FacturacionODT.objects.filter(facturacion__periodo=periodo).select_related("odt")
     )
-
-    catalogo_clientes = cargar_catalogo_cuentas(
-        items.values_list("odt__cuenta_completa", flat=True)
-    )
-
-    total = Decimal("0")
-    cantidad = 0
-
-    for item in items.iterator(chunk_size=1000):
-        monto = item.monto_facturado or Decimal("0")
-        servicio = (
-            item.servicio_facturado or ""
-        ).strip().upper()
-
-        # Normalizar tildes.
-        servicio = (
-            servicio
-            .replace("Á", "A")
-            .replace("É", "E")
-            .replace("Í", "I")
-            .replace("Ó", "O")
-            .replace("Ú", "U")
-        )
-
-        if servicio == "MANTENCION CORRECTIVA CON COBRO":
-            categoria = "correctiva_con_cobro"
-
-        elif servicio == "MANTENCION CORRECTIVA SIN COBRO":
-            categoria = "correctiva_sin_cobro"
-
-        elif servicio in (
-            "MANTENIMIENTO RENOVACION",
-            "MANTENCION RENOVACION",
-            "RENOVACION",
-        ):
-            categoria = "renovacion"
-
-        elif servicio == "MANTENIMIENTO PREVENTIVO":
-            categoria = "preventivo"
-
-        else:
-            categoria = "otros"
-
-        categorias[categoria]["monto"] += monto
-        categorias[categoria]["cantidad"] += 1
-
-        # Clasificación actual del catálogo de cuentas.
-        tipo = tipo_cliente_cuenta(item.odt.cuenta_completa, catalogo_clientes)
-
-        resumen_clientes[tipo] += monto
-
-        total += monto
-        cantidad += 1
-
-    return {
-        "categorias": categorias,
-        "clientes": resumen_clientes,
-        "total": total,
-        "cantidad": cantidad,
-    }
+    return {**resumen, "clientes": {
+        tipo: datos["monto"] for tipo, datos in resumen["clientes"].items()
+    }}

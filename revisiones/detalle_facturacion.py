@@ -1,11 +1,8 @@
 
-from decimal import Decimal
-
 from django.contrib.auth.decorators import (
     login_required,
     permission_required,
 )
-from django.db.models import Sum
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET
 
@@ -52,60 +49,12 @@ def detalle_facturacion(request, facturacion_id):
             cuenta.ceco if cuenta else ""
         )
 
-    monto_total = sum(
-        (
-            item.monto_facturado or Decimal("0")
-            for item in items
-        ),
-        Decimal("0"),
-    )
-    
-# =====================================================
-# RESUMEN POR TIPO DE SERVICIO FACTURADO
-# =====================================================
-
-    def normalizar_servicio(valor):
-        return " ".join(
-            str(valor or "").upper().split()
-        ).replace("Ó", "O").replace("Á", "A").replace(
-            "É", "E"
-        ).replace("Í", "I").replace("Ú", "U")
-
-
-    cantidad_con_cobro = 0
-    monto_con_cobro = Decimal("0")
-
-    cantidad_sin_cobro = 0
-    monto_sin_cobro = Decimal("0")
-
-    cantidad_renovacion = 0
-    monto_renovacion = Decimal("0")
-    cantidad_preventivo = 0
-    monto_preventivo = Decimal("0")
-
-    for item in items:
-        servicio = normalizar_servicio(
-            item.servicio_facturado
-        )
-
-        monto = item.monto_facturado or Decimal("0")
-
-        if servicio == "MANTENCION CORRECTIVA CON COBRO":
-            cantidad_con_cobro += 1
-            monto_con_cobro += monto
-
-        elif servicio == "MANTENCION CORRECTIVA SIN COBRO":
-            cantidad_sin_cobro += 1
-            monto_sin_cobro += monto
-
-        elif servicio in ("MANTENIMIENTO RENOVACION", "MANTENCION RENOVACION", "RENOVACION"):
-            cantidad_renovacion += 1
-            monto_renovacion += monto
-
-        elif servicio in ("MANTENIMIENTO PREVENTIVO", "MANTENCION PREVENTIVA", "PREVENTIVO"):
-            cantidad_preventivo += 1
-            monto_preventivo += monto
-
+    from .consultas.resumen_facturacion import resumir_items
+    resumen = resumir_items(items, catalogo=catalogo)
+    con_cobro = resumen["categorias"]["correctiva_con_cobro"]
+    sin_cobro = resumen["categorias"]["correctiva_sin_cobro"]
+    renovacion = resumen["categorias"]["renovacion"]
+    preventivo = resumen["categorias"]["preventivo"]
 
     return render(
         request,
@@ -114,14 +63,14 @@ def detalle_facturacion(request, facturacion_id):
             "facturacion": facturacion,
             "items": items,
             "cantidad": len(items),
-            "monto_total": monto_total,
-            "cantidad_con_cobro": cantidad_con_cobro,
-            "monto_con_cobro": monto_con_cobro,
-            "cantidad_sin_cobro": cantidad_sin_cobro,
-            "monto_sin_cobro": monto_sin_cobro,
-            "cantidad_renovacion": cantidad_renovacion,
-            "monto_renovacion": monto_renovacion,
-            "cantidad_preventivo": cantidad_preventivo,
-            "monto_preventivo": monto_preventivo,
+            "monto_total": resumen["total"],
+            "cantidad_con_cobro": con_cobro["cantidad"],
+            "monto_con_cobro": con_cobro["monto"],
+            "cantidad_sin_cobro": sin_cobro["cantidad"],
+            "monto_sin_cobro": sin_cobro["monto"],
+            "cantidad_renovacion": renovacion["cantidad"],
+            "monto_renovacion": renovacion["monto"],
+            "cantidad_preventivo": preventivo["cantidad"],
+            "monto_preventivo": preventivo["monto"],
         },
     )
