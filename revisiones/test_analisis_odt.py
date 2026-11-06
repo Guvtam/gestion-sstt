@@ -29,18 +29,18 @@ class AnalisisODTTests(TestCase):
 
     def test_metricas_y_denominador_sla(self):
         c=self.consultar()
-        self.assertEqual(c["resumen"]["total"],3)
+        self.assertEqual(c["resumen"]["total"],2)
         self.assertEqual(c["resumen"]["cumple"],1)
         self.assertEqual(c["resumen"]["no_cumple"],1)
-        self.assertEqual(c["resumen"]["pendiente"],1)
+        self.assertEqual(c["resumen"]["pendiente"],0)
         self.assertEqual(c["resumen"]["porcentaje_sla"],50)
         self.assertEqual(c["resumen"]["recurrentes"],2)
         self.assertEqual(c["resumen"]["con_preventivo"],2)
-        self.assertEqual(sum(x["cantidad"] for x in c["por_servicio"]),3)
+        self.assertEqual(sum(x["cantidad"] for x in c["por_servicio"]),2)
 
     def test_filtro_detalle_no_altera_indicadores(self):
         c=self.consultar(vista="sla")
-        self.assertEqual(c["resumen"]["total"],3)
+        self.assertEqual(c["resumen"]["total"],2)
         self.assertEqual([o.numero for o in c["pagina"]],[2])
 
     def test_fechas_invalidas_y_vacio(self):
@@ -58,7 +58,8 @@ class AnalisisODTTests(TestCase):
             html=engines["django"].get_template("revisiones/analisis_odt.html").render(self.consultar())
         self.assertIn("Gestión de pagos",html)
         self.assertIn("numero_odt=1",html)
-        self.assertIn("SLA pendiente",html)
+        self.assertIn("Cumplimiento SLA",html)
+        self.assertNotIn("Distribución de ODT por estado",html)
 
     def test_permiso_restringido(self):
         self.user=get_user_model().objects.create_user("lectura")
@@ -70,22 +71,20 @@ class AnalisisODTTests(TestCase):
         self.assertEqual(c["resumen"]["total"],1)
         self.assertEqual([o.numero for o in c["pagina"]],[1])
         c=self.consultar(preventivo="sin")
-        self.assertEqual(c["resumen"]["total"],1)
+        self.assertEqual(c["resumen"]["total"],0)
         c=self.consultar(servicio="CORRECTIVO",recurrencia="con")
         self.assertEqual(c["resumen"]["total"],2)
-        self.assertEqual(sum(i["cantidad"] for i in c["por_estado"]),2)
+        self.assertEqual(sum(i["cantidad"] for i in c["por_servicio"]),2)
 
     def test_enlaces_conservan_filtros_y_reinician_paginacion(self):
         from urllib.parse import urlsplit,parse_qs
         c=self.consultar(q="FIR-100",page="2",estado="Finalizado")
         url=c["por_servicio"][0]["url"]
         parametros=parse_qs(urlsplit(url).query)
-        self.assertEqual(parametros["estado"],["Finalizado"])
+        self.assertNotIn("estado",parametros)
         self.assertEqual(parametros["q"],["FIR-100"])
         self.assertNotIn("page",parametros)
         self.assertIn("servicio",parametros)
-        parametros=parse_qs(urlsplit(c["por_estado"][0]["url"]).query,keep_blank_values=True)
-        self.assertEqual(parametros["estado"],[""])
 
     def test_datos_graficas_concilian_y_tendencia_filtra_periodo(self):
         c=self.consultar()
@@ -101,3 +100,39 @@ class AnalisisODTTests(TestCase):
         self.assertEqual(c["resumen"]["total"],0)
         self.assertEqual(c["donut_fondo"],"#e6edf5")
         self.assertEqual(c["tendencia"],[])
+
+    def test_solo_finalizadas_y_rango_por_finalizacion_sin_opcion_de_anularlo(self):
+        ODT.objects.create(numero=10,estado_softguard="Asignado",fecha_creacion=self.base,
+                           fecha_finalizacion=self.base+timedelta(hours=10))
+        ODT.objects.create(numero=11,estado_softguard="Finalizado",
+            fecha_creacion=self.base-timedelta(days=90),fecha_finalizacion=self.base+timedelta(hours=10))
+        c=self.consultar(campo="creacion",estado="Pendiente")
+        self.assertEqual({o.numero for o in c["pagina"]},{1,2,11})
+        self.assertEqual(c["campo"],"finalizacion")
+
+    def test_metricas_en_tres_consultas_independientes_de_numero_de_odt(self):
+        for cantidad in (0,100):
+            if cantidad:
+                ODT.objects.bulk_create([ODT(numero=100+n,estado_softguard="Finalizado",
+                    fecha_creacion=self.base,fecha_finalizacion=self.base+timedelta(hours=24),
+                    cuenta_completa="FIR-100",contratista="Prueba") for n in range(cantidad)])
+            with self.assertNumQueries(3):
+                contexto=self.consultar()
+            self.assertEqual(contexto["resumen"]["total"],2+cantidad)
+
+    def test_sla_porcentajes_excluyen_fechas_invalidas(self):
+        ODT.objects.create(numero=20,estado_softguard="Finalizado",fecha_creacion=None,fecha_finalizacion=self.base)
+        c=self.consultar()
+        self.assertEqual(c["resumen"]["revisar_fechas"],1)
+        self.assertEqual([g["porcentaje"] for g in c["sla_grafico"]],[50,50])
+        self.assertEqual(c["resumen"]["porcentaje_sla"],50)
+
+    def test_metricas_rapidas_equivalen_a_reglas_de_bandeja(self):
+        from .metricas_analisis import cargar_metricas
+        base=ODT.objects.filter(numero__in=[1,2,3,4])
+        actuales={o.pk:o for o in con_indicadores_odt(base)}
+        for o in cargar_metricas(base):
+            anterior=actuales[o.pk]
+            self.assertEqual(o.estado_sla,anterior.estado_sla)
+            self.assertEqual(o.cantidad_incidencias,anterior.cantidad_incidencias)
+            self.assertEqual(o.fecha_ultimo_preventivo,anterior.fecha_ultimo_preventivo)

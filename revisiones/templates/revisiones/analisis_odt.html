@@ -38,15 +38,13 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 <main class="hist-main" id="dashboard"><div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
 <input type="hidden" name="servicio" value="{{ servicio }}"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
-<div class="field"><label for="campo">Fecha de</label><select id="campo" name="campo"><option value="creacion" {% if campo == 'creacion' %}selected{% endif %}>Creación</option><option value="finalizacion" {% if campo == 'finalizacion' %}selected{% endif %}>Finalización</option></select></div>
-<div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ desde }}"></div>
-<div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
-<div class="field"><label for="estado">Estado SoftGuard</label><select id="estado" name="estado"><option value="">Todos</option>{% for e in estados %}<option value="{{ e }}" {% if estado == e %}selected{% endif %}>{{ e }}</option>{% endfor %}</select></div>
+<div class="field"><label for="desde">Finalización desde</label><input type="date" id="desde" name="desde" value="{{ desde }}"></div>
+<div class="field"><label for="hasta">Finalización hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
 <div class="field"><label for="q">Cuenta, técnico o contratista</label><input id="q" name="q" value="{{ q }}"></div>
-<div class="field"><label for="vista">Detalle</label><select id="vista" name="vista"><option value="todas">Todas las ODT</option><option value="incidencias" {% if vista == 'incidencias' %}selected{% endif %}>Con recurrencia</option><option value="sla" {% if vista == 'sla' %}selected{% endif %}>SLA no cumple</option><option value="sin_preventivo" {% if vista == 'sin_preventivo' %}selected{% endif %}>Sin preventivo registrado</option></select></div>
+<div class="field"><label for="vista">Detalle</label><select id="vista" name="vista"><option value="todas">Todas las ODT</option><option value="incidencias" {% if vista == 'incidencias' %}selected{% endif %}>Con atenciones repetidas</option><option value="sla" {% if vista == 'sla' %}selected{% endif %}>SLA no cumple</option><option value="sin_preventivo" {% if vista == 'sin_preventivo' %}selected{% endif %}>Sin preventivo registrado</option></select></div>
 <div class="filtro-acciones"><button class="btn">Aplicar filtros</button><a class="btn alt" href="{% url 'analisis_odt' %}">Limpiar</a></div></form>
 {% for error in errores %}<p class="error-fecha" role="alert">{{ error }}</p>{% endfor %}
-<p class="hist-sub">Datos de la última sincronización local. Los gráficos y KPI se filtran entre sí. “Detalle” solo limita la tabla inferior.</p>
+<p class="hist-sub">Solo ODT finalizadas, por fecha de finalización. Datos de la última sincronización local. Los gráficos y KPI se filtran entre sí. “Detalle” solo limita la tabla inferior.</p>
 </section>
 <div class="filtros-activos" aria-label="Selecciones de gráficos">
 {% for filtro in filtros_activos %}<a class="filtro-chip" href="{{ filtro.url }}" title="Quitar filtro">{{ filtro.nombre }} ×</a>{% endfor %}
@@ -55,16 +53,11 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 <a class="kpi-card {{ tarjeta.color }}" href="{{ tarjeta.url }}"><span>{{ tarjeta.nombre }}</span><strong>{{ tarjeta.valor }}</strong><small>{{ tarjeta.nota }}</small></a>
 {% endfor %}</div>
 <div class="dashboard-grid">
-<section class="chart-panel"><h2>Distribución de ODT por estado</h2><p class="chart-nota">Selecciona un estado para explorar sus órdenes.</p><div class="chart-scroll">
-{% for e in por_estado %}<a class="grafico-barra {% if e.activo %}activo{% endif %}" href="{{ e.url }}" aria-label="{{ e.nombre }}: {{ e.cantidad }} ODT. Filtrar">
-<div class="barra-titulo"><span>{{ e.nombre }}</span><b>{{ e.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ e.ancho }}%"></div></div></a>
-{% empty %}<p class="vacio-grafico">Sin datos para estos filtros.</p>{% endfor %}
-</div></section>
-<section class="chart-panel"><h2>SLA · resolución en 48 horas</h2><p class="chart-nota">Distribución de todas las ODT analizadas. Selecciona una categoría de la leyenda.</p>
-<div class="donut-layout"><div class="donut" style="background:{{ donut_fondo }}" role="img" aria-label="Distribución de SLA: {{ resumen.cumple }} cumplen, {{ resumen.no_cumple }} no cumplen, {{ resumen.pendiente }} pendientes y {{ resumen.revisar_fechas }} para revisar">
-<div class="donut-centro"><b>{{ resumen.total }}</b><small>ODT analizadas</small></div></div>
-<div class="leyenda">{% for item in sla_grafico %}<a class="leyenda-item {% if item.activo %}activo{% endif %}" href="{{ item.url }}"><i class="punto" style="background:{{ item.color }}"></i>{{ item.nombre }}<b>{{ item.cantidad }}</b></a>{% endfor %}</div></div>
-<p class="chart-nota">SLA pendiente: {{ resumen.pendiente }}. El KPI de cumplimiento usa solo Cumple y No cumple. Son horas corridas desde creación hasta finalización.</p></section>
+<section class="chart-panel"><h2>SLA · resolución en 48 horas</h2><p class="chart-nota">Porcentaje de finalizadas con fechas válidas. Selecciona Cumple o No cumple para filtrar.</p>
+<div class="donut-layout"><div class="donut" style="background:{{ donut_fondo }}" role="img" aria-label="Cumplimiento SLA: {{ resumen.porcentaje_sla|default_if_none:'Sin datos' }} por ciento">
+<div class="donut-centro"><b>{% if resumen.porcentaje_sla != None %}{{ resumen.porcentaje_sla }} %{% else %}—{% endif %}</b><small>Cumplimiento SLA</small></div></div>
+<div class="leyenda">{% for item in sla_grafico %}<a class="leyenda-item {% if item.activo %}activo{% endif %}" href="{{ item.url }}"><i class="punto" style="background:{{ item.color }}"></i>{{ item.nombre }}<b>{% if item.porcentaje != None %}{{ item.porcentaje }} %{% else %}—{% endif %}</b><small>({{ item.cantidad }} ODT)</small></a>{% endfor %}</div></div>
+<p class="chart-nota">Horas corridas desde creación hasta finalización. <a href="{{ url_revisar_fechas }}">{{ resumen.revisar_fechas }} ODT con fechas inválidas o incompletas</a>, excluidas del porcentaje.</p></section>
 <section class="chart-panel"><h2>Distribución por servicio</h2><p class="chart-nota">Servicio efectivo, incluyendo las correcciones registradas.</p><div class="chart-scroll">
 {% for s in por_servicio %}<a class="grafico-barra {% if s.activo %}activo{% endif %}" href="{{ s.url }}" aria-label="{{ s.nombre }}: {{ s.cantidad }} ODT. Filtrar">
 <div class="barra-titulo"><span>{{ s.nombre }}</span><b>{{ s.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ s.ancho }}%;background:#6489bc"></div></div></a>
@@ -72,10 +65,10 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 </div></section>
 <section class="chart-panel"><h2>Antecedentes de mantenimiento preventivo</h2><p class="chart-nota">ODT cuyas cuentas tienen o no un preventivo finalizado registrado.</p>
 {% for p in preventivos_grafico %}<a class="grafico-barra" href="{{ p.url }}"><div class="barra-titulo"><span>{{ p.nombre }}</span><b>{{ p.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ p.ancho }}%;background:#0d9488"></div></div></a>{% endfor %}
-<h2 style="margin-top:25px">Recurrencia de atención</h2><p class="chart-nota">Dos o más ODT finalizadas para la misma cuenta y contratista en los últimos 90 días, a la fecha actual. Puede incluir la ODT analizada.</p>
+<h2 style="margin-top:25px">Atenciones repetidas en 90 días</h2><p class="chart-nota">Cuenta las ODT del período cuya cuenta y contratista tienen al menos dos ODT finalizadas en los últimos 90 días. Por ejemplo, dos atenciones de la misma cuenta con el mismo contratista marcan ambas como repetidas. No equivale a una falla confirmada.</p>
 {% for p in recurrencias_grafico %}<a class="grafico-barra" href="{{ p.url }}"><div class="barra-titulo"><span>{{ p.nombre }}</span><b>{{ p.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ p.ancho }}%;background:#ee9271"></div></div></a>{% endfor %}
 </section>
-<section class="chart-panel tendencia-panel"><h2>Evolución de ODT por {% if tendencia_mensual %}mes{% else %}día{% endif %}</h2><p class="chart-nota">Según fecha de {{ campo }}. Selecciona una barra para explorar ese período. Días o meses sin registros no tienen barra.</p>
+<section class="chart-panel tendencia-panel"><h2>Evolución de ODT por {% if tendencia_mensual %}mes{% else %}día{% endif %}</h2><p class="chart-nota">Según fecha de finalización. Selecciona una barra para explorar ese período. Días o meses sin registros no tienen barra.</p>
 <div class="tendencia-scroll"><div class="tendencia">
 {% for t in tendencia %}<a class="tendencia-col" href="{{ t.url }}" title="{{ t.etiqueta }}: {{ t.cantidad }} ODT"><b>{{ t.cantidad }}</b><em style="height:{{ t.alto }}%"></em><span>{{ t.etiqueta }}</span></a>{% empty %}<p class="vacio-grafico">Sin registros con fecha disponible.</p>{% endfor %}
 </div></div></section>
