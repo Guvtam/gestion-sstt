@@ -106,7 +106,7 @@ class VinculacionTests(TestCase):
         from io import StringIO
         self.odt.delete()
         datos = defaultdict(lambda: None, {"Numero": 2, "Tecnico": "T. EXTERNO - Jose Alvarez"})
-        with patch("revisiones.management.commands.sincronizar_odts.consultar_odts_completas", return_value=[datos]):
+        with patch("revisiones.management.commands.sincronizar_odts.iterar_odts_completas", return_value=[datos]):
             call_command("sincronizar_odts", simular=True, stdout=StringIO())
             self.assertEqual(EquivalenciaSoftGuard.objects.count(), 0)
             call_command("sincronizar_odts", stdout=StringIO())

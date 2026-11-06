@@ -56,10 +56,10 @@ def consultar_odts_prueba(limite=None):
     """)
 
 
-def consultar_odts_completas(limite=None):
+def _sql_odts_completas(limite=None):
     limite = _validar_limite(limite)
     top = f'TOP ({limite})' if limite is not None else ''
-    return _consultar(f"""
+    return f"""
         SELECT {top}
             Numero,
             FechaCreacion,
@@ -90,7 +90,37 @@ def consultar_odts_completas(limite=None):
             FechaCarga
         FROM [DW_Reporting].[proyectos].[ODT]
         ORDER BY Numero DESC
-    """)
+    """
+
+
+def iterar_odts_completas(limite=None, tamano_lote=250):
+    """Lectura acotada en memoria; cerrar generador al abortar el consumo."""
+    if not isinstance(tamano_lote, int) or not 1 <= tamano_lote <= 1000:
+        raise ValueError("El tamaño del lote debe estar entre 1 y 1000.")
+    sql = _sql_odts_completas(limite)
+    conexion = obtener_conexion_sql()
+    cursor = None
+    try:
+        cursor = conexion.cursor()
+        cursor.execute(sql)
+        columnas = [columna[0] for columna in cursor.description]
+        while True:
+            lote = cursor.fetchmany(tamano_lote)
+            if not lote:
+                break
+            for fila in lote:
+                yield dict(zip(columnas, fila))
+    finally:
+        try:
+            if cursor is not None:
+                cursor.close()
+        finally:
+            conexion.close()
+
+
+def consultar_odts_completas(limite=None):
+    """Compatibilidad para consumidores que necesitan una lista completa."""
+    return list(iterar_odts_completas(limite=limite))
 
 
 def consultar_historial_odt(numero_odt):
