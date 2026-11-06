@@ -1,36 +1,17 @@
-
+{% extends "revisiones/base_operativa.html" %}
 {% load static formato_sstt %}
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
 
-    <title>Historial de facturación · SSTT</title>
-
-    <link rel="stylesheet"
-          href="{% static 'revisiones/bandeja.css' %}">
-
-    <link rel="stylesheet"
-          href="{% static 'revisiones/historial_facturacion.css' %}?v=20261105-seleccion">
-</head>
-
-<body>
-
-<header class="header-sstt">
-    <div class="header-contenido">
-        <div class="header-titulo">
-            <h1>Gestión de pagos SSTT</h1>
-            <p>Historial de facturación y requisiciones</p>
-        </div>
-
-        <a class="btn alt" href="{% url 'bandeja' %}">
+{% block titulo %}Historial de facturación · SSTT{% endblock %}
+{% block estilos %}
+    <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}?v=20261105-seleccion">
+{% endblock %}
+{% block subtitulo %}Historial de facturación y requisiciones{% endblock %}
+{% block acciones_encabezado %}
+<a class="btn alt" href="{% url 'bandeja' %}">
             Volver a bandeja
         </a>
-    </div>
-</header>
-
+{% endblock %}
+{% block contenido %}
 <main class="hist-main">
 
     <!-- MENSAJES DEL SISTEMA -->
@@ -698,7 +679,8 @@
     {% endif %}
 
 </main>
-
+{% endblock %}
+{% block scripts %}
 <script>
 /* ==============================================
    CONFIRMACIÓN DE ELIMINACIÓN DE PERÍODO
@@ -943,7 +925,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
-
 <script>
 (() => {
     const form = document.getElementById("exportarSeleccion");
@@ -973,5 +954,4 @@ document.addEventListener("DOMContentLoaded", function () {
     actualizar();
 })();
 </script>
-</body>
-</html>
+{% endblock %}
