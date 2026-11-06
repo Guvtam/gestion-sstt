@@ -64,3 +64,40 @@ class AnalisisODTTests(TestCase):
         self.user=get_user_model().objects.create_user("lectura")
         with self.assertRaises(PermissionDenied):
             self.consultar()
+
+    def test_selecciones_graficas_actualizan_kpi_y_detalle(self):
+        c=self.consultar(sla="CUMPLE")
+        self.assertEqual(c["resumen"]["total"],1)
+        self.assertEqual([o.numero for o in c["pagina"]],[1])
+        c=self.consultar(preventivo="sin")
+        self.assertEqual(c["resumen"]["total"],1)
+        c=self.consultar(servicio="CORRECTIVO",recurrencia="con")
+        self.assertEqual(c["resumen"]["total"],2)
+        self.assertEqual(sum(i["cantidad"] for i in c["por_estado"]),2)
+
+    def test_enlaces_conservan_filtros_y_reinician_paginacion(self):
+        from urllib.parse import urlsplit,parse_qs
+        c=self.consultar(q="FIR-100",page="2",estado="Finalizado")
+        url=c["por_servicio"][0]["url"]
+        parametros=parse_qs(urlsplit(url).query)
+        self.assertEqual(parametros["estado"],["Finalizado"])
+        self.assertEqual(parametros["q"],["FIR-100"])
+        self.assertNotIn("page",parametros)
+        self.assertIn("servicio",parametros)
+        parametros=parse_qs(urlsplit(c["por_estado"][0]["url"]).query,keep_blank_values=True)
+        self.assertEqual(parametros["estado"],[""])
+
+    def test_datos_graficas_concilian_y_tendencia_filtra_periodo(self):
+        c=self.consultar()
+        self.assertEqual(sum(p["cantidad"] for p in c["sla_grafico"]), c["resumen"]["total"])
+        self.assertEqual(sum(p["cantidad"] for p in c["preventivos_grafico"]), c["resumen"]["total"])
+        self.assertEqual(sum(p["cantidad"] for p in c["recurrencias_grafico"]), c["resumen"]["total"])
+        self.assertEqual(sum(p["cantidad"] for p in c["tendencia"]), c["resumen"]["total"])
+        self.assertIn("desde=", c["tendencia"][0]["url"])
+        self.assertTrue(self.consultar(desde="")["tendencia_mensual"])
+
+    def test_dashboard_vacio_sin_porcentajes_invalidos(self):
+        c=self.consultar(q="no-existe")
+        self.assertEqual(c["resumen"]["total"],0)
+        self.assertEqual(c["donut_fondo"],"#e6edf5")
+        self.assertEqual(c["tendencia"],[])

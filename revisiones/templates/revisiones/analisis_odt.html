@@ -2,13 +2,42 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Análisis de ODT · SSTT</title><link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
 <style>
-.analisis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.analisis-grid .hist-panel{margin:0} .sla-bar{width:100%;height:24px;accent-color:#1765ad}
+body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spacing:-.5px}
+.dashboard-intro{display:flex;justify-content:space-between;gap:16px;align-items:center;margin:22px 0}
+.dashboard-intro h2{margin:0;font-size:24px;color:#19395e}.dashboard-intro p{margin:5px 0;color:#6b7e95}
+.kpi-dashboard{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.kpi-card{background:white;border:1px solid #dce5f0;border-radius:14px;padding:22px;text-decoration:none;color:#17324f;box-shadow:0 4px 18px #17324f06;border-top:4px solid #3379c2;transition:transform .15s}
+.kpi-card:hover{transform:translateY(-3px)}.kpi-card:focus-visible,.grafico-barra:focus-visible,.leyenda-item:focus-visible{outline:3px solid #397ec8;outline-offset:3px}
+.kpi-card strong{display:block;font-size:34px;margin:12px 0;line-height:1.1}.kpi-card small{color:#71839b;display:block;line-height:1.5}
+.kpi-card.verde{border-top-color:#0d9488}.kpi-card.naranja{border-top-color:#ee765c}.kpi-card.violeta{border-top-color:#8b78ca}
+.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px}
+.chart-panel{background:white;border:1px solid #dce5f0;border-radius:14px;padding:24px;min-width:0}
+.chart-panel h2{font-size:17px;margin:0 0 5px;color:#17324f}.chart-nota{color:#73849b;font-size:12px;line-height:1.5;margin:0 0 20px}
+.grafico-barra{display:block;color:#294767;text-decoration:none;padding:10px 0;border-radius:5px}
+.barra-titulo{display:flex;align-items:baseline;justify-content:space-between;gap:14px;font-size:12px;margin-bottom:8px}.barra-titulo span{overflow-wrap:anywhere}.barra-titulo b{font-size:14px;white-space:nowrap}
+.barra-fondo{height:12px;border-radius:8px;background:#edf2f8;overflow:hidden}.barra-relleno{height:100%;border-radius:8px;background:#397fc1;min-width:0}
+.grafico-barra:hover .barra-relleno{background:#155a9b}.grafico-barra.activo{background:#edf5ff;outline:1px solid #c1d6ed;padding:10px}
+.donut-layout{display:flex;gap:28px;align-items:center;justify-content:center;min-height:235px}
+.donut{width:190px;height:190px;border-radius:50%;position:relative;flex-shrink:0;display:grid;place-items:center}
+.donut:before{content:"";position:absolute;inset:27px;background:white;border-radius:50%}.donut-centro{z-index:1;text-align:center}.donut-centro b{display:block;font-size:32px;color:#17324f}.donut-centro small{color:#8290a3}
+.leyenda{min-width:165px;flex:1}.leyenda-item{display:flex;gap:9px;align-items:center;color:#36516f;text-decoration:none;padding:10px;border-radius:7px;font-size:12px}.leyenda-item:hover,.leyenda-item.activo{background:#edf4fc}
+.leyenda-item b{margin-left:auto}.punto{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.chart-scroll{max-height:350px;overflow:auto;padding:0 5px 4px 0}.tendencia-panel{grid-column:1/-1}
+.tendencia-scroll{overflow-x:auto}.tendencia{display:flex;align-items:end;gap:8px;height:200px;min-width:100%;padding-top:24px;padding-bottom:28px;box-sizing:border-box}
+.tendencia-col{height:100%;min-width:34px;flex:1;text-decoration:none;display:flex;flex-direction:column;justify-content:flex-end;text-align:center;color:#6c8099;font-size:10px;position:relative}
+.tendencia-col em{background:#4b87cc;border-radius:5px 5px 0 0;display:block;min-height:2px;width:75%;margin:0 auto;transition:background .15s}
+.tendencia-col:hover em{background:#0d9488}.tendencia-col span{position:absolute;bottom:-22px;left:0;right:0;white-space:nowrap}.tendencia-col b{font-size:11px;font-weight:600;margin-bottom:5px}
+.filtros-activos{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}.filtro-chip{padding:7px 11px;background:#e3edf9;border-radius:20px;font-size:12px;text-decoration:none;color:#285581;max-width:100%;overflow-wrap:anywhere}
+.dashboard-detalle summary{cursor:pointer;font-size:17px;font-weight:700;color:#17324f;margin-bottom:16px}.vacio-grafico{padding:40px 10px;text-align:center;color:#7c8da4}
+@media(max-width:1000px){.kpi-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}.donut-layout{flex-wrap:wrap}}
+@media(max-width:650px){.dashboard-grid{grid-template-columns:1fr}.dashboard-intro{align-items:flex-start;flex-direction:column}.kpi-card{padding:16px}.kpi-card strong{font-size:26px}.chart-panel{padding:18px}.donut{width:155px;height:155px}}
+@media(prefers-reduced-motion:reduce){.kpi-card,.tendencia-col em{transition:none}}
 </style></head><body class="preventivos-page">
 <header class="header-sstt"><div class="header-contenido"><div class="header-titulo"><h1>Análisis de ODT</h1><p>Incidencias, cumplimiento SLA y antecedentes preventivos</p></div>
 <div class="filtro-acciones"><a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a><a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a></div></div></header>
-<main class="hist-main">
+<main class="hist-main" id="dashboard"><div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
+<input type="hidden" name="servicio" value="{{ servicio }}"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
 <div class="field"><label for="campo">Fecha de</label><select id="campo" name="campo"><option value="creacion" {% if campo == 'creacion' %}selected{% endif %}>Creación</option><option value="finalizacion" {% if campo == 'finalizacion' %}selected{% endif %}>Finalización</option></select></div>
 <div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ desde }}"></div>
 <div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
@@ -17,30 +46,42 @@
 <div class="field"><label for="vista">Detalle</label><select id="vista" name="vista"><option value="todas">Todas las ODT</option><option value="incidencias" {% if vista == 'incidencias' %}selected{% endif %}>Con recurrencia</option><option value="sla" {% if vista == 'sla' %}selected{% endif %}>SLA no cumple</option><option value="sin_preventivo" {% if vista == 'sin_preventivo' %}selected{% endif %}>Sin preventivo registrado</option></select></div>
 <div class="filtro-acciones"><button class="btn">Aplicar filtros</button><a class="btn alt" href="{% url 'analisis_odt' %}">Limpiar</a></div></form>
 {% for error in errores %}<p class="error-fecha" role="alert">{{ error }}</p>{% endfor %}
-<p class="hist-sub">Datos de la última sincronización local. Los indicadores usan los filtros superiores; “Detalle” solo filtra la tabla inferior.</p>
+<p class="hist-sub">Datos de la última sincronización local. Los gráficos y KPI se filtran entre sí. “Detalle” solo limita la tabla inferior.</p>
 </section>
-<section class="hist-panel"><div class="hist-resumen-odt">
-<div class="hist-tarjeta-resumen"><small>ODT analizadas</small><strong>{{ resumen.total }}</strong></div>
-<div class="hist-tarjeta-resumen"><small>ODT con recurrencia</small><strong>{{ resumen.recurrentes }}</strong></div>
-<div class="hist-tarjeta-resumen"><small>SLA cumple</small><strong>{{ resumen.cumple }}</strong></div>
-<div class="hist-tarjeta-resumen"><small>SLA no cumple</small><strong>{{ resumen.no_cumple }}</strong></div>
-<div class="hist-tarjeta-resumen"><small>SLA pendiente</small><strong>{{ resumen.pendiente }}</strong></div>
-<div class="hist-tarjeta-resumen"><small>SLA revisar fechas</small><strong>{{ resumen.revisar_fechas }}</strong></div>
-<div class="hist-tarjeta-resumen"><small>ODT con preventivo registrado</small><strong>{{ resumen.con_preventivo }}</strong></div>
-<div class="hist-tarjeta-resumen"><small>ODT sin preventivo registrado</small><strong>{{ resumen.sin_preventivo }}</strong></div>
-</div></section>
-<div class="analisis-grid">
-<section class="hist-panel"><h2>Cumplimiento SLA · 48 horas</h2>
-{% if resumen.porcentaje_sla != None %}<strong>{{ resumen.porcentaje_sla }} %</strong><progress class="sla-bar" max="{{ resumen.cumple|add:resumen.no_cumple }}" value="{{ resumen.cumple }}">{{ resumen.porcentaje_sla }} %</progress>{% else %}<p>Sin ODT evaluables.</p>{% endif %}
-<p class="hist-sub">Creación a finalización, en horas corridas. El porcentaje usa solo Cumple y No cumple; excluye pendientes y fechas inválidas.</p>
-<p class="hist-sub">Recurrencia: al menos dos ODT finalizadas para la misma cuenta y contratista en los últimos 90 días, igual que en la bandeja. Se mide a la fecha actual; puede incluir la ODT analizada.</p>
-<p class="hist-sub">Preventivo registrado: último preventivo finalizado disponible para la cuenta. No implica cumplimiento de una frecuencia contractual.</p>
-</section>
-<section class="hist-panel"><h2>ODT por estado</h2><table class="hist-table"><thead><tr><th>Estado</th><th>ODT</th></tr></thead><tbody>{% for e in por_estado %}<tr><td>{{ e.estado_softguard|default:"Sin estado" }}</td><td>{{ e.cantidad }}</td></tr>{% empty %}<tr><td colspan="2">Sin datos</td></tr>{% endfor %}</tbody></table></section>
-<section class="hist-panel"><h2>ODT por servicio</h2><table class="hist-table"><thead><tr><th>Servicio</th><th>ODT</th></tr></thead><tbody>{% for s in por_servicio %}<tr><td>{{ s.servicio_efectivo|default:"Sin servicio" }}</td><td>{{ s.cantidad }}</td></tr>{% empty %}<tr><td colspan="2">Sin datos</td></tr>{% endfor %}</tbody></table></section>
+<div class="filtros-activos" aria-label="Selecciones de gráficos">
+{% for filtro in filtros_activos %}<a class="filtro-chip" href="{{ filtro.url }}" title="Quitar filtro">{{ filtro.nombre }} ×</a>{% endfor %}
 </div>
-<section class="hist-panel"><h2>Detalle de ODT · {{ pagina.paginator.count }}</h2><div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>ODT</th><th>Cuenta</th><th>Técnico / contratista</th><th>Estado</th><th>Incidencias 90 días</th><th>SLA</th><th>Último preventivo</th></tr></thead><tbody>
+<div class="kpi-dashboard">{% for tarjeta in tarjetas %}
+<a class="kpi-card {{ tarjeta.color }}" href="{{ tarjeta.url }}"><span>{{ tarjeta.nombre }}</span><strong>{{ tarjeta.valor }}</strong><small>{{ tarjeta.nota }}</small></a>
+{% endfor %}</div>
+<div class="dashboard-grid">
+<section class="chart-panel"><h2>Distribución de ODT por estado</h2><p class="chart-nota">Selecciona un estado para explorar sus órdenes.</p><div class="chart-scroll">
+{% for e in por_estado %}<a class="grafico-barra {% if e.activo %}activo{% endif %}" href="{{ e.url }}" aria-label="{{ e.nombre }}: {{ e.cantidad }} ODT. Filtrar">
+<div class="barra-titulo"><span>{{ e.nombre }}</span><b>{{ e.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ e.ancho }}%"></div></div></a>
+{% empty %}<p class="vacio-grafico">Sin datos para estos filtros.</p>{% endfor %}
+</div></section>
+<section class="chart-panel"><h2>SLA · resolución en 48 horas</h2><p class="chart-nota">Distribución de todas las ODT analizadas. Selecciona una categoría de la leyenda.</p>
+<div class="donut-layout"><div class="donut" style="background:{{ donut_fondo }}" role="img" aria-label="Distribución de SLA: {{ resumen.cumple }} cumplen, {{ resumen.no_cumple }} no cumplen, {{ resumen.pendiente }} pendientes y {{ resumen.revisar_fechas }} para revisar">
+<div class="donut-centro"><b>{{ resumen.total }}</b><small>ODT analizadas</small></div></div>
+<div class="leyenda">{% for item in sla_grafico %}<a class="leyenda-item {% if item.activo %}activo{% endif %}" href="{{ item.url }}"><i class="punto" style="background:{{ item.color }}"></i>{{ item.nombre }}<b>{{ item.cantidad }}</b></a>{% endfor %}</div></div>
+<p class="chart-nota">SLA pendiente: {{ resumen.pendiente }}. El KPI de cumplimiento usa solo Cumple y No cumple. Son horas corridas desde creación hasta finalización.</p></section>
+<section class="chart-panel"><h2>Distribución por servicio</h2><p class="chart-nota">Servicio efectivo, incluyendo las correcciones registradas.</p><div class="chart-scroll">
+{% for s in por_servicio %}<a class="grafico-barra {% if s.activo %}activo{% endif %}" href="{{ s.url }}" aria-label="{{ s.nombre }}: {{ s.cantidad }} ODT. Filtrar">
+<div class="barra-titulo"><span>{{ s.nombre }}</span><b>{{ s.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ s.ancho }}%;background:#6489bc"></div></div></a>
+{% empty %}<p class="vacio-grafico">Sin servicios para estos filtros.</p>{% endfor %}
+</div></section>
+<section class="chart-panel"><h2>Antecedentes de mantenimiento preventivo</h2><p class="chart-nota">ODT cuyas cuentas tienen o no un preventivo finalizado registrado.</p>
+{% for p in preventivos_grafico %}<a class="grafico-barra" href="{{ p.url }}"><div class="barra-titulo"><span>{{ p.nombre }}</span><b>{{ p.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ p.ancho }}%;background:#0d9488"></div></div></a>{% endfor %}
+<h2 style="margin-top:25px">Recurrencia de atención</h2><p class="chart-nota">Dos o más ODT finalizadas para la misma cuenta y contratista en los últimos 90 días, a la fecha actual. Puede incluir la ODT analizada.</p>
+{% for p in recurrencias_grafico %}<a class="grafico-barra" href="{{ p.url }}"><div class="barra-titulo"><span>{{ p.nombre }}</span><b>{{ p.cantidad }}</b></div><div class="barra-fondo"><div class="barra-relleno" style="width:{{ p.ancho }}%;background:#ee9271"></div></div></a>{% endfor %}
+</section>
+<section class="chart-panel tendencia-panel"><h2>Evolución de ODT por {% if tendencia_mensual %}mes{% else %}día{% endif %}</h2><p class="chart-nota">Según fecha de {{ campo }}. Selecciona una barra para explorar ese período. Días o meses sin registros no tienen barra.</p>
+<div class="tendencia-scroll"><div class="tendencia">
+{% for t in tendencia %}<a class="tendencia-col" href="{{ t.url }}" title="{{ t.etiqueta }}: {{ t.cantidad }} ODT"><b>{{ t.cantidad }}</b><em style="height:{{ t.alto }}%"></em><span>{{ t.etiqueta }}</span></a>{% empty %}<p class="vacio-grafico">Sin registros con fecha disponible.</p>{% endfor %}
+</div></div></section>
+</div>
+<section class="hist-panel"><details class="dashboard-detalle" {% if vista != "todas" %}open{% endif %}><summary>Detalle de ODT · {{ pagina.paginator.count }} — abrir / cerrar</summary><div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>ODT</th><th>Cuenta</th><th>Técnico / contratista</th><th>Estado</th><th>Incidencias 90 días</th><th>SLA</th><th>Último preventivo</th></tr></thead><tbody>
 {% for o in pagina %}<tr><td><a href="{% url 'bandeja' %}?numero_odt={{ o.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ o.numero|stringformat:'d' }}</a></td><td>{{ o.cuenta_completa|default:"Sin cuenta" }}</td><td>{{ o.tecnico|default:o.contratista|default:"Sin técnico / contratista" }}</td><td>{{ o.estado_softguard }}</td><td>{{ o.cantidad_incidencias }}</td><td>{% if o.estado_sla == 'CUMPLE' %}Cumple{% elif o.estado_sla == 'NO_CUMPLE' %}No cumple{% elif o.estado_sla == 'PENDIENTE' %}Pendiente{% else %}Revisar fechas{% endif %}</td><td>{{ o.fecha_ultimo_preventivo|date:"d/m/Y H:i"|default:"Sin preventivo" }}</td></tr>
 {% empty %}<tr><td colspan="7">No hay ODT para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
 {% if pagina.has_other_pages %}<nav class="pagination">{% if pagina.has_previous %}<a href="?{{ querystring }}&amp;page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>{% if pagina.has_next %}<a href="?{{ querystring }}&amp;page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}</nav>{% endif %}
-</section></main></body></html>
+</details></section></main></body></html>
