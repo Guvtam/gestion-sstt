@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.db.models import Q
 from django.db.models.functions import Coalesce, Lower, Trim
 from django.shortcuts import render
+from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import ODT
@@ -32,13 +33,29 @@ def calendario_servicios(request):
         estado_normalizado=Lower(Trim("estado_softguard")),
         servicio_efectivo=Coalesce("servicio_editado", "servicio"),
     ).filter(estado_normalizado__in=("asignado","pendiente","en proceso","finalizado"), fecha_visita__isnull=False)
-    servicios = list(base.exclude(servicio_efectivo="").order_by("servicio_efectivo")
-                     .values_list("servicio_efectivo", flat=True).distinct())
-    odts = base.filter(fecha_visita__range=(mes, ultimo))
+    periodo = base.filter(fecha_visita__range=(mes, ultimo))
+    valores = list(periodo.order_by("servicio_efectivo").values_list("servicio_efectivo",flat=True).distinct())
+    servicios = sorted({v or "__SIN_SERVICIO__" for v in valores})
+    if request.GET.get("formato") == "servicios":
+        return JsonResponse({"servicios":servicios})
+    explicita = "servicios_filtrados" in request.GET or "servicios" in request.GET
+    if explicita:
+        seleccion = request.GET.getlist("servicios")
+    elif servicio:
+        seleccion = [servicio]  # Compatibilidad con enlaces anteriores.
+    else:
+        seleccion = list(servicios)
+    seleccionados = [s for s in seleccion if s in servicios]
+    odts = periodo
     if q:
         odts = odts.filter(Q(cuenta_completa__icontains=q) | Q(tecnico__icontains=q) | Q(contratista__icontains=q))
-    if servicio:
-        odts = odts.filter(servicio_efectivo=servicio)
+    if seleccionados:
+        condicion = Q(servicio_efectivo__in=[s for s in seleccionados if s!="__SIN_SERVICIO__"])
+        if "__SIN_SERVICIO__" in seleccionados:
+            condicion |= Q(servicio_efectivo="") | Q(servicio_efectivo__isnull=True)
+        odts=odts.filter(condicion)
+    else:
+        odts=odts.none()
     odts = list(odts.order_by("fecha_visita", "cuenta_completa", "numero"))
     catalogo = cargar_catalogo_cuentas(o.cuenta_completa for o in odts)
     eventos = {}
@@ -65,13 +82,22 @@ def calendario_servicios(request):
                 for dia in semana]
                for semana in calendar.Calendar(firstweekday=0).monthdatescalendar(mes.year, mes.month)]
     parametros = request.GET.copy()
+    parametros.pop("formato",None)
+    parametros.pop("servicio",None)
+    if set(seleccionados) == set(servicios) and not (explicita and not seleccion):
+        parametros.pop("servicios",None)
+        parametros.pop("servicios_filtrados",None)
+    else:
+        parametros["servicios_filtrados"]="1"
+        parametros.setlist("servicios",seleccion)
+
     parametros["mes"] = sumar_meses(mes, -1).strftime("%Y-%m")
     anterior = "?" + parametros.urlencode()
     parametros["mes"] = sumar_meses(mes, 1).strftime("%Y-%m")
     return render(request, "revisiones/calendario_servicios.html", {
         "totales":totales,
         "mes": mes.strftime("%Y-%m"), "mes_titulo": mes, "semanas": semanas, "errores": errores,
-        "q": q, "servicio": servicio, "servicios": servicios, "cantidad": len(odts),
+        "q": q, "servicio": servicio, "servicios": servicios, "servicios_seleccionados":seleccionados, "cantidad": len(odts),
         "cuentas": len({normalizar_codigo_cuenta(o.cuenta_completa) or o.cuenta_completa for o in odts}),
         "url_mes_anterior": anterior, "url_mes_siguiente": "?" + parametros.urlencode(),
     })

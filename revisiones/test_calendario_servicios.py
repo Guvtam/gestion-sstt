@@ -46,7 +46,7 @@ class CalendarioServiciosTests(TestCase):
         c=self.consultar(servicio="CORREGIDO", q="FIR-1")
         self.assertEqual([e["numero"] for e in self.eventos(c)], [1])
         self.assertIn("q=FIR-1", c["url_mes_siguiente"])
-        self.assertIn("servicio=CORREGIDO", c["url_mes_siguiente"])
+        self.assertIn("servicios=CORREGIDO", c["url_mes_siguiente"])
 
     def test_mes_siguiente_y_mes_invalido(self):
         self.assertEqual([e["numero"] for e in self.eventos(self.consultar(mes="2026-12"))], [7])
@@ -88,3 +88,37 @@ class CalendarioServiciosTests(TestCase):
         for etiqueta in ("Azul · Realizadas","Verde · Abiertas","Amarillo · Atrasadas","Realizada · Finalizado"):
             self.assertIn(etiqueta,html)
         self.assertIn("visita-realizadas",html)
+
+    def test_servicios_disponibles_solo_del_mes_y_todos_marcados(self):
+        ODT.objects.filter(numero=7).update(servicio="SOLO DICIEMBRE")
+        c=self.consultar()
+        self.assertNotIn("SOLO DICIEMBRE",c["servicios"])
+        self.assertEqual(c["servicios_seleccionados"],c["servicios"])
+        self.assertNotIn("servicios_filtrados",c["url_mes_siguiente"])
+        self.assertIn("SOLO DICIEMBRE",self.consultar(mes="2026-12")["servicios"])
+
+    def test_multiseleccion_y_deseleccion_total(self):
+        c=self.consultar(servicios_filtrados="1",servicios=["RENOVACION","MANTENIMIENTO PREVENTIVO"])
+        self.assertEqual({e["numero"] for e in self.eventos(c)},{1,2})
+        self.assertIn("servicios=RENOVACION",c["url_mes_siguiente"])
+        c=self.consultar(servicios_filtrados="1")
+        self.assertEqual(c["cantidad"],0)
+        self.assertEqual(c["servicios_seleccionados"],[])
+        self.assertIn("servicios_filtrados=1",c["url_mes_siguiente"])
+
+    def test_ajax_servicios_solo_mes_visitas_admitidas(self):
+        import json
+        ODT.objects.filter(numero=7).update(servicio="SOLO DICIEMBRE")
+        ODT.objects.filter(numero=4).update(servicio="CANCELADO NO LISTAR")
+        req=RequestFactory().get("/",{"mes":"2026-11","formato":"servicios"})
+        req.user=self.user
+        respuesta=calendario_servicios(req)
+        datos=json.loads(respuesta.content)
+        self.assertNotIn("SOLO DICIEMBRE",datos["servicios"])
+        self.assertNotIn("CANCELADO NO LISTAR",datos["servicios"])
+        self.assertIn("RENOVACION",datos["servicios"])
+
+    def test_sin_servicio_se_puede_seleccionar(self):
+        ODT.objects.filter(numero=1).update(servicio="")
+        c=self.consultar(servicios_filtrados="1",servicios=["__SIN_SERVICIO__"])
+        self.assertEqual([e["numero"] for e in self.eventos(c)],[1])
