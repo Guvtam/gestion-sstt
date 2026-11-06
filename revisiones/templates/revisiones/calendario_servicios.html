@@ -1,0 +1,38 @@
+{% load static %}
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendario de visitas · SSTT</title>
+<link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
+</head><body class="preventivos-page">
+<header class="header-sstt"><div class="header-contenido">
+<div class="header-titulo"><h1>Calendario de visitas</h1><p>Cuentas con ODT asignadas según fecha de visita</p></div>
+<div class="filtro-acciones"><a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a><a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a></div>
+</div></header>
+<main class="hist-main">
+<section class="hist-panel">
+<form method="get" class="preventivos-filtros">
+<div class="field"><label for="mes">Mes</label><input type="month" id="mes" name="mes" value="{{ mes }}"></div>
+<div class="field"><label for="buscar">Cuenta o técnico / contratista</label><input id="buscar" name="q" value="{{ q }}"></div>
+<div class="field"><label for="servicio">Servicio</label><select id="servicio" name="servicio"><option value="">Todos los servicios</option>
+{% for s in servicios %}<option value="{{ s }}" {% if servicio == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+</select></div><div class="filtro-acciones"><button class="btn">Buscar</button><a class="btn alt" href="{% url 'calendario_servicios' %}">Limpiar</a></div>
+</form>
+{% for error in errores %}<p role="alert" class="error-fecha">{{ error }}</p>{% endfor %}
+<p class="hist-sub">Solo ODT con estado Asignado y fecha de visita. Incluye todos los servicios; se muestra el servicio corregido cuando existe. Datos de la última sincronización.</p>
+</section>
+<section class="hist-panel">
+<div class="calendario-cabecera"><div><h2>{{ mes_titulo|date:"F Y" }}</h2><p>{{ cantidad }} ODT asignadas · {{ cuentas }} cuentas</p></div>
+<nav class="filtro-acciones" aria-label="Cambiar mes"><a class="btn alt" href="{{ url_mes_anterior }}">Anterior</a><a class="btn alt" href="{{ url_mes_siguiente }}">Siguiente</a></nav></div>
+{% if not cantidad %}<p class="hist-sub">No hay visitas asignadas para el mes y filtros seleccionados.</p>{% endif %}
+<div class="calendario-scroll"><div class="calendario-grid">
+{% for dia in "LMXJVSD" %}<div class="calendario-semana">{{ dia }}</div>{% endfor %}
+{% for semana in semanas %}{% for dia in semana %}
+<div class="calendario-dia {% if not dia.del_mes %}fuera-mes{% endif %} {% if dia.hoy %}es-hoy{% endif %}">
+<time datetime="{{ dia.fecha|date:'Y-m-d' }}">{{ dia.fecha|date:"j" }}</time>
+{% for evento in dia.eventos %}
+<a class="calendario-evento evento-programado" href="{% url 'bandeja' %}?numero_odt={{ evento.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">
+<b>{{ evento.codigo }}</b><span>{{ evento.nombre }}</span><span>ODT {{ evento.numero|stringformat:'d' }} · {{ evento.servicio|default:"Sin servicio" }}</span><span>{{ evento.tecnico }}</span></a>
+{% endfor %}</div>
+{% endfor %}{% endfor %}
+</div></div>
+</section></main></body></html>
