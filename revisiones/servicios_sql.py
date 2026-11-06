@@ -138,3 +138,23 @@ def consultar_historial_odt(numero_odt):
         WHERE NumeroODT = ?
         ORDER BY FechaHora ASC, Id ASC
     """, (int(numero_odt),))
+
+
+def consultar_eventos_coordinadores(numeros, usuarios):
+    """Solo campos de atribución; las listas se parametrizan y se acotan."""
+    from .dominio.validacion_odt import numero_odt
+    numeros = list(dict.fromkeys(numero_odt(n) for n in numeros))
+    usuarios = list(dict.fromkeys(int(u) for u in usuarios))
+    if len(numeros) > 250 or len(usuarios) > 100:
+        raise ValueError("El lote de responsables supera el límite permitido.")
+    if not numeros or not usuarios:
+        return []
+    odts_sql = ",".join("?" for _ in numeros)
+    usuarios_sql = ",".join("?" for _ in usuarios)
+    return _consultar(f"""
+        SELECT NumeroODT, FechaHora, Accion, IDUsuario
+        FROM [DW_Reporting].[proyectos].[ODT_Timeline]
+        WHERE NumeroODT IN ({odts_sql})
+          AND TRY_CONVERT(INT, IDUsuario) IN ({usuarios_sql})
+        ORDER BY NumeroODT ASC, FechaHora ASC, Id ASC
+    """, (*numeros, *usuarios))

@@ -1,5 +1,6 @@
-from datetime import datetime
-from .servicios_sql import consultar_historial_odt
+from .servicios_sql import consultar_historial_odt, consultar_eventos_coordinadores
+from .dominio.coordinadores import inferir_coordinador
+from .dominio.validacion_odt import numero_odt
 
 COORDINADORES_SOFTGUARD = {
     4: {"nombre": "Josué Tapia", "usuario": "jtapia"},
@@ -10,76 +11,8 @@ COORDINADORES_SOFTGUARD = {
 
 
 def identificar_coordinador_softguard(numero):
-    """Busca acciones de coordinadores autorizados en TODO el historial.
-
-    Prioriza la última acción registrada por un coordinador. No presupone
-    que quien creó la ODT siga siendo responsable. No escribe en BD.
-    """
-    resultado = {
-        "id_softguard": None,
-        "nombre": "Sin identificar",
-        "usuario": None,
-        "fecha_alta": None,
-        "identificado": False,
-        "accion_identificada": None,
-        "fecha_ultima_accion": None,
-    }
-
-    movimientos = consultar_historial_odt(numero) or []
-    candidatos = []
-    for indice, movimiento in enumerate(movimientos):
-        try:
-            id_usuario = int(str(movimiento.get("IDUsuario") or "").strip())
-        except (TypeError, ValueError):
-            continue
-        if id_usuario not in COORDINADORES_SOFTGUARD:
-            continue
-        fecha = movimiento.get("FechaHora")
-        if isinstance(fecha, str):
-            try:
-                fecha = datetime.fromisoformat(fecha)
-            except ValueError:
-                fecha = None
-        if not isinstance(fecha, datetime):
-            fecha = None
-        candidatos.append({
-            "id_usuario": id_usuario,
-            "fecha": fecha,
-            "accion": str(movimiento.get("Accion") or "").strip().upper(),
-            "indice": indice,
-        })
-
-    if not candidatos:
-        return resultado
-
-    # Si existen fechas, utilizar la última acción cronológica. Cuando
-    # faltan fechas, no se puede afirmar quién fue el último responsable:
-    # se identifica únicamente si todos los eventos apuntan al mismo usuario.
-    fechados = [c for c in candidatos if c["fecha"] is not None]
-    if fechados:
-        ultimo = max(fechados, key=lambda c: c["fecha"])
-        # En un empate entre distintos usuarios no atribuir arbitrariamente.
-        empatados = {c["id_usuario"] for c in fechados if c["fecha"] == ultimo["fecha"]}
-        if len(empatados) > 1:
-            return resultado
-    else:
-        usuarios = {c["id_usuario"] for c in candidatos}
-        if len(usuarios) != 1:
-            return resultado
-        ultimo = candidatos[0]
-
-    altas = [c["fecha"] for c in candidatos if c["id_usuario"] == ultimo["id_usuario"] and c["accion"] == "ALTA" and c["fecha"] is not None]
-    datos = COORDINADORES_SOFTGUARD[ultimo["id_usuario"]]
-    resultado.update({
-        "id_softguard": ultimo["id_usuario"],
-        "nombre": datos["nombre"],
-        "usuario": datos["usuario"],
-        "fecha_alta": min(altas) if altas else None,
-        "identificado": True,
-        "accion_identificada": ultimo["accion"],
-        "fecha_ultima_accion": ultimo["fecha"],
-    })
-    return resultado
+    """Compatibilidad de consulta individual; la regla se comparte con los lotes."""
+    return inferir_coordinador(consultar_historial_odt(numero), COORDINADORES_SOFTGUARD)
 
 
 def puede_asignar_coordinador(user):
@@ -93,12 +26,57 @@ def identificar_coordinador_odt(numero):
     asignacion = AsignacionCoordinadorODT.objects.filter(odt__numero=numero).first()
     if asignacion is None:
         return identificar_coordinador_softguard(numero)
+    return _datos_asignacion(asignacion.usuario_coordinador, asignacion.asignado_en)
+
+
+def _datos_asignacion(usuario, asignado_en):
     datos = next((d for d in COORDINADORES_SOFTGUARD.values()
-                  if d["usuario"] == asignacion.usuario_coordinador), None)
+                  if d["usuario"] == usuario), None)
     if datos is None:
         raise ValueError("Coordinador asignado no reconocido.")
     return {
         "nombre": datos["nombre"], "usuario": datos["usuario"],
         "identificado": True, "asignacion_manual": True,
-        "fecha_ultima_accion": asignacion.asignado_en,
+        "fecha_ultima_accion": asignado_en,
     }
+
+
+class CoordinadoresNoDisponibles(Exception):
+    def __init__(self, confirmados=None):
+        super().__init__("No se pudo verificar el coordinador. Intenta nuevamente.")
+        self.confirmados = dict(confirmados or {})
+
+
+def identificar_coordinadores_odt(numeros):
+    """Un lote: una consulta local y, si hace falta, una consulta al origen.
+
+    Una falla no equivale a Sin identificar. Solo devuelve esa clasificación
+    cuando la lectura terminó y no encontró un responsable inequívoco.
+    """
+    from .models import AsignacionCoordinadorODT
+    numeros = list(dict.fromkeys(numero_odt(n) for n in numeros))
+    if len(numeros) > 250:
+        raise ValueError("El lote admite como máximo 250 ODT.")
+    if not numeros:
+        return {}
+    resultados = {}
+    try:
+        for asignacion in AsignacionCoordinadorODT.objects.filter(odt__numero__in=numeros).values(
+            "odt__numero", "usuario_coordinador", "asignado_en",
+        ):
+            resultados[asignacion["odt__numero"]] = _datos_asignacion(
+                asignacion["usuario_coordinador"], asignacion["asignado_en"],
+            )
+        pendientes = [n for n in numeros if n not in resultados]
+        if pendientes:
+            movimientos = {n: [] for n in pendientes}
+            for movimiento in consultar_eventos_coordinadores(pendientes, COORDINADORES_SOFTGUARD):
+                numero = numero_odt(movimiento.get("NumeroODT"))
+                if numero in movimientos:
+                    movimientos[numero].append(movimiento)
+            for numero, eventos in movimientos.items():
+                resultados[numero] = inferir_coordinador(eventos, COORDINADORES_SOFTGUARD)
+        return resultados
+    except Exception:
+        # No exponer errores del driver ni atribuir fallos a Sin identificar.
+        raise CoordinadoresNoDisponibles(resultados) from None

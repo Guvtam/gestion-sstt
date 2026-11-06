@@ -101,7 +101,7 @@ class PreventivosConsistentesTests(TestCase):
             "q": "10", "estado": "", "fecha_desde": "", "fecha_hasta": "",
         })
         req.user = self.user
-        with patch("revisiones.views.identificar_coordinador_odt", return_value={}), \
+        with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {} for n in numeros}), \
              patch("revisiones.views.render", side_effect=lambda r, t, c: c):
             bandeja = views.bandeja(req)
         self.assertEqual([o.numero for o in bandeja["registros"]], [10])
@@ -180,7 +180,7 @@ class ResumenFacturacionCompartidoTests(TestCase):
         ODT.objects.filter(numero=2).update(servicio_editado="PREVENTIVO")
         req = RequestFactory().get("/", {"estado": "", "fecha_desde": "", "fecha_hasta": ""})
         req.user = User.objects.create_superuser("admin", password="test")
-        with patch("revisiones.views.identificar_coordinador_odt", return_value={}), \
+        with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {} for n in numeros}), \
              patch("revisiones.views.render", side_effect=lambda r,t,c:c):
             c = views.bandeja(req)
         # La tarjeta usa valores operativos; el resumen histórico conserva 17.50.
