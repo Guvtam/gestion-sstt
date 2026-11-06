@@ -50,6 +50,7 @@ def analisis_odt(request):
     sla=request.GET.get("sla","")
     preventivo=request.GET.get("preventivo","")
     recurrencia=request.GET.get("recurrencia","")
+    incidencias_cuenta=request.GET.get("incidencias_cuenta","")
     if servicio:
         filas=[o for o in filas if (o.servicio_efectivo==servicio if servicio!="__SIN_SERVICIO__" else not o.servicio_efectivo)]
     if sla in ("CUMPLE","NO_CUMPLE","REVISAR"):
@@ -58,6 +59,9 @@ def analisis_odt(request):
         filas=[o for o in filas if (o.fecha_ultimo_preventivo is not None)==(preventivo=="con")]
     if recurrencia in ("con","sin"):
         filas=[o for o in filas if (o.cantidad_incidencias>=2)==(recurrencia=="con")]
+
+    if incidencias_cuenta in ("2","3","4mas"):
+        filas=[o for o in filas if (o.incidencias_cuenta_90>=4 if incidencias_cuenta=="4mas" else o.incidencias_cuenta_90==int(incidencias_cuenta))]
 
     def enlace(clave=None, valor=None, **cambios):
         parametros = request.GET.copy()
@@ -133,18 +137,27 @@ def analisis_odt(request):
         fila["alto"]=f'{fila["cantidad"]*100/maximo:.2f}'
         fila["etiqueta"]=dia.strftime("%m/%Y" if mensual else "%d/%m")
         fila["url"]=enlace(desde=dia.isoformat(),hasta=fin.isoformat())
+    cuentas_unicas = {o.clave_cuenta_analisis:o.incidencias_cuenta_90 for o in filas if o.clave_cuenta_analisis}
+    incidencias_grafico = []
+    for clave,nombre in (("2","2 incidencias"),("3","3 incidencias"),("4mas","4 o más incidencias")):
+        cantidad=sum((v>=4 if clave=="4mas" else v==int(clave)) for v in cuentas_unicas.values())
+        incidencias_grafico.append({"nombre":nombre,"cantidad":cantidad,"url":enlace("incidencias_cuenta",clave),"activo":incidencias_cuenta==clave})
+    max_cuentas=max((g["cantidad"] for g in incidencias_grafico),default=0) or 1
+    for g in incidencias_grafico:
+        g["ancho"]=f'{g["cantidad"]*100/max_cuentas:.2f}'
+
     tarjetas = [
-        {"nombre":"ODT analizadas","valor":resumen["total"],"url":enlace(estado="",servicio="",sla="",preventivo="",recurrencia=""),"nota":"Quitar selecciones de gráficos","color":"azul"},
+        {"nombre":"ODT analizadas","valor":resumen["total"],"url":enlace(estado="",servicio="",sla="",preventivo="",recurrencia="",incidencias_cuenta=""),"nota":"Quitar selecciones de gráficos","color":"azul"},
         {"nombre":"Cumplimiento SLA","valor":str(resumen["porcentaje_sla"])+" %" if evaluables else "—","url":enlace("sla","CUMPLE"),"nota":f"{evaluables} ODT evaluables","color":"verde"},
         {"nombre":"ODT con atenciones repetidas","valor":resumen["recurrentes"],"url":enlace("recurrencia","con"),"nota":"2 o más finalizadas · misma cuenta y contratista · últimos 90 días","color":"naranja"},
         {"nombre":"Sin preventivo registrado","valor":resumen["sin_preventivo"],"url":enlace("preventivo","sin"),"nota":"Antecedentes disponibles por cuenta","color":"violeta"},
     ]
     filtros_activos=[]
-    for clave,titulo in (("servicio","Servicio"),("sla","SLA"),("preventivo","Preventivo"),("recurrencia","Recurrencia")):
+    for clave,titulo in (("servicio","Servicio"),("sla","SLA"),("preventivo","Preventivo"),("recurrencia","Recurrencia"),("incidencias_cuenta","Incidencias por cuenta")):
         valor=request.GET.get(clave)
         if valor:
             etiquetas = {"CUMPLE":"Cumple","NO_CUMPLE":"No cumple","PENDIENTE":"Pendiente","REVISAR":"Revisar fechas",
-                         "__SIN_ESTADO__":"Sin estado","__SIN_SERVICIO__":"Sin servicio","con":"Con registro","sin":"Sin registro"}
+                         "__SIN_ESTADO__":"Sin estado","__SIN_SERVICIO__":"Sin servicio","con":"Con registro","sin":"Sin registro","2":"2 incidencias","3":"3 incidencias","4mas":"4 o más incidencias"}
             filtros_activos.append({"nombre":f"{titulo}: {etiquetas.get(valor,valor)}","url":enlace(**{clave:""})})
 
     vista = request.GET.get("vista","todas")
@@ -161,6 +174,8 @@ def analisis_odt(request):
     params = request.GET.copy()
     params.pop("page",None)
     return render(request,"revisiones/analisis_odt.html",{
+        "incidencias_cuenta":incidencias_cuenta,"incidencias_grafico":incidencias_grafico,
+        "cuentas_repetidas":sum(g["cantidad"] for g in incidencias_grafico),
         "url_revisar_fechas":enlace("sla","REVISAR"),
         "tarjetas":tarjetas,"sla_grafico":sla_grafico,
         "donut_fondo":"conic-gradient("+", ".join(segmentos)+")" if evaluables else "#e6edf5",
@@ -168,7 +183,7 @@ def analisis_odt(request):
         "tendencia":tendencia,"tendencia_mensual":mensual,"filtros_activos":filtros_activos,
         "servicios_disponibles":servicios_disponibles,"servicios_seleccionados":servicios_seleccionados,
         "servicio":servicio,"sla":sla,"preventivo":preventivo,"recurrencia":recurrencia,
-        "quitar_selecciones":enlace(estado="",servicio="",sla="",preventivo="",recurrencia=""),
+        "quitar_selecciones":enlace(estado="",servicio="",sla="",preventivo="",recurrencia="",incidencias_cuenta=""),
         "resumen":resumen,"por_estado":por_estado,"por_servicio":por_servicio,"pagina":pagina,
         "desde":desde,"hasta":hasta,"campo":campo,"estado":estado,"q":q,"vista":vista,
         "errores":errores,"querystring":params.urlencode(),

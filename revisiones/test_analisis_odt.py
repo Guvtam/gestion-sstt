@@ -155,3 +155,32 @@ class AnalisisODTTests(TestCase):
         c=self.consultar(servicios_filtrados="1",servicios=["MANTENCION CORRECTIVA CON COBRO","MANTENIMIENTO PREVENTIVO"])
         params=parse_qs(urlsplit(c["sla_grafico"][0]["url"]).query)
         self.assertEqual(params["servicios"],["MANTENCION CORRECTIVA CON COBRO","MANTENIMIENTO PREVENTIVO"])
+
+    def test_grafico_cuenta_cuentas_unicas_en_categorias_exclusivas(self):
+        ODT.objects.all().delete()
+        numero=1000
+        for codigo,cantidad in (("FIR-200",2),("FIR-300",3),("FIR-400",5)):
+            for i in range(cantidad):
+                numero+=1
+                ODT.objects.create(numero=numero,cuenta_completa=codigo+" - "+str(i),
+                    contratista="Proveedor "+str(i),servicio="MANTENCION CORRECTIVA CON COBRO",
+                    fecha_creacion=self.base,fecha_finalizacion=self.base+timedelta(hours=1),
+                    estado_softguard="Finalizado")
+        c=self.consultar()
+        self.assertEqual([g["cantidad"] for g in c["incidencias_grafico"]],[1,1,1])
+        self.assertEqual(c["cuentas_repetidas"],3)
+        self.assertTrue(all("incidencias_cuenta=" in g["url"] for g in c["incidencias_grafico"]))
+        c=self.consultar(incidencias_cuenta="3")
+        self.assertEqual(c["resumen"]["total"],3)
+        self.assertEqual({o.clave_cuenta_analisis for o in c["pagina"]},{"FIR-300"})
+
+    def test_incidencias_cuenta_solo_finalizadas_en_90_dias(self):
+        ODT.objects.all().delete()
+        for n,dias,estado in ((100,5,"Finalizado"),(101,6,"Finalizado"),(102,95,"Finalizado"),(103,5,"Pendiente")):
+            ODT.objects.create(numero=n,cuenta_completa="FIR-500",contratista="",
+                servicio="MANTENCION CORRECTIVA CON COBRO",fecha_creacion=self.base-timedelta(days=dias),
+                fecha_finalizacion=timezone.now()-timedelta(days=dias),estado_softguard=estado)
+        c=self.consultar()
+        self.assertEqual(c["incidencias_grafico"][0]["cantidad"],1)
+        self.assertEqual({o.incidencias_cuenta_90 for o in c["pagina"]},{2})
+        self.assertEqual({o.cantidad_incidencias for o in c["pagina"]},{0})
