@@ -14,6 +14,12 @@
 .visita-leyenda .atrasadas{background:#fef9c3;color:#854d0e;border-color:#eab308}
 .calendario-evento .visita-etiqueta{font-weight:700;margin:3px 0}
 .calendario-evento:focus-visible{outline:3px solid #17324f;outline-offset:2px}
+.calendario-servicios{position:relative;min-width:200px}
+.calendario-servicios summary{padding:10px 12px;border:1px solid #c5d5e7;border-radius:5px;background:white;cursor:pointer;font-size:12px}
+.calendario-servicios-panel{position:absolute;z-index:50;top:100%;left:0;background:white;border:1px solid #c5d5e7;border-radius:8px;padding:12px;width:340px;max-width:80vw;max-height:330px;overflow:auto;box-shadow:0 8px 30px #17324f20}
+.calendario-servicios-panel label{display:flex;align-items:flex-start;gap:9px;padding:8px 3px;font-size:12px;line-height:1.5;cursor:pointer}
+.calendario-servicios-panel input[type=checkbox]{appearance:auto;width:17px;height:17px;min-width:17px;padding:0;margin:2px 0 0;accent-color:#1765ad}
+.acciones-servicios{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.acciones-servicios button{font-size:11px;padding:7px}
 </style></head><body class="preventivos-page">
 <header class="header-sstt"><div class="header-contenido">
 <div class="header-titulo"><h1>Calendario de visitas</h1><p>Visitas realizadas, abiertas y atrasadas por cuenta</p></div>
@@ -21,12 +27,20 @@
 </div></header>
 <main class="hist-main">
 <section class="hist-panel">
-<form method="get" class="preventivos-filtros">
+<form method="get" class="preventivos-filtros" id="filtrosCalendario">
+<input type="hidden" name="servicios_filtrados" value="1">
 <div class="field"><label for="mes">Mes</label><input type="month" id="mes" name="mes" value="{{ mes }}"></div>
 <div class="field"><label for="buscar">Cuenta o técnico / contratista</label><input id="buscar" name="q" value="{{ q }}"></div>
-<div class="field"><label for="servicio">Servicio</label><select id="servicio" name="servicio"><option value="">Todos los servicios</option>
-{% for s in servicios %}<option value="{{ s }}" {% if servicio == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
-</select></div><div class="filtro-acciones"><button class="btn">Buscar</button><a class="btn alt" href="{% url 'calendario_servicios' %}">Limpiar</a></div>
+<div class="field calendario-servicios"><label>Servicios del mes</label>
+<details><summary id="resumenServicios">{{ servicios_seleccionados|length }} servicios seleccionados</summary>
+<div class="calendario-servicios-panel">
+<div class="acciones-servicios"><button type="button" id="todosServicios">Seleccionar todos</button><button type="button" id="ningunServicio">Desmarcar todos</button></div>
+<div id="opcionesServicios">{% for s in servicios %}
+<label><input type="checkbox" name="servicios" value="{{ s }}" {% if s in servicios_seleccionados %}checked{% endif %}><span>{% if s == "__SIN_SERVICIO__" %}Sin servicio{% else %}{{ s }}{% endif %}</span></label>
+{% empty %}<p>No hay servicios con visitas en este mes.</p>{% endfor %}</div>
+<p id="estadoServicios" role="status" aria-live="polite"></p>
+</div></details></div>
+<div class="filtro-acciones"><button class="btn">Buscar</button><a class="btn alt" href="{% url 'calendario_servicios' %}">Limpiar</a></div>
 </form>
 {% for error in errores %}<p role="alert" class="error-fecha">{{ error }}</p>{% endfor %}
 <p class="hist-sub">ODT asignadas, pendientes, en proceso y finalizadas con fecha de visita. Las canceladas quedan excluidas. Incluye todos los servicios; se muestra el servicio corregido cuando existe. Datos de la última sincronización.</p>
@@ -52,4 +66,52 @@
 {% endfor %}</div>
 {% endfor %}{% endfor %}
 </div></div>
-</section></main></body></html>
+</section></main><script>
+(() => {
+    const lista=document.getElementById("opcionesServicios");
+    const resumen=document.getElementById("resumenServicios");
+    const estado=document.getElementById("estadoServicios");
+    const form=document.getElementById("filtrosCalendario");
+    const submit=form.querySelector('button:not([type="button"])');
+    const opciones=()=>[...lista.querySelectorAll('input[name="servicios"]')];
+    function actualizar(){
+        const n=opciones().filter(c=>c.checked).length;
+        resumen.textContent=n ? n+" servicios seleccionados" : "Ningún servicio seleccionado";
+    }
+    lista.addEventListener("change",actualizar);
+    document.getElementById("todosServicios").addEventListener("click",()=>{opciones().forEach(c=>c.checked=true);actualizar();});
+    document.getElementById("ningunServicio").addEventListener("click",()=>{opciones().forEach(c=>c.checked=false);actualizar();});
+    form.addEventListener("submit",evento=>{if(submit.disabled)evento.preventDefault();});
+    let controlador, secuencia=0;
+    document.getElementById("mes").addEventListener("change",async()=>{
+        controlador?.abort(); controlador=new AbortController(); const solicitud=++secuencia;
+        const anteriores=opciones(), disponibles=new Set(anteriores.map(c=>c.value));
+        const marcados=new Set(anteriores.filter(c=>c.checked).map(c=>c.value));
+        const todos=anteriores.length>0 && marcados.size===anteriores.length;
+        const ninguno=anteriores.length>0 && marcados.size===0;
+        submit.disabled=true; estado.textContent="Actualizando servicios del mes…";
+        try{
+            const params=new URLSearchParams({mes:document.getElementById("mes").value,formato:"servicios"});
+            const response=await fetch(location.pathname+"?"+params.toString(),{signal:controlador.signal,credentials:"same-origin"});
+            if(!response.ok)throw new Error();
+            const datos=await response.json();
+            if(solicitud!==secuencia)return;
+            lista.replaceChildren();
+            (datos.servicios||[]).forEach(nombre=>{
+                const label=document.createElement("label"), input=document.createElement("input"), texto=document.createElement("span");
+                input.type="checkbox";input.name="servicios";input.value=nombre;
+                input.checked=todos || marcados.has(nombre) || (!ninguno && !disponibles.has(nombre));
+                texto.textContent=nombre==="__SIN_SERVICIO__" ? "Sin servicio" : nombre;
+                label.append(input,texto);lista.append(label);
+            });
+            estado.textContent=datos.servicios.length ? "Servicios actualizados. Pulsa Buscar para aplicar." : "No hay servicios con visitas en este mes.";
+            submit.disabled=false;actualizar();
+        }catch(error){
+            if(error.name!=="AbortError" && solicitud===secuencia){
+                estado.textContent="No se pudieron actualizar los servicios. Cambia el mes nuevamente para reintentar.";
+            }
+        }
+    });
+    actualizar();
+})();
+</script></body></html>
