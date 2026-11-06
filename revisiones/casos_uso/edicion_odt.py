@@ -2,10 +2,8 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
-from ..acceso_coordinadores import es_coordinador_sstt
 from ..correcciones import registrar_cambio_manual
 from ..dominio.errores import DatosODTInvalidos, ODTBloqueada, ODTNoEncontrada
 from ..dominio.pagos import estado_pago_efectivo, motivo_bloqueo
@@ -13,6 +11,7 @@ from ..dominio.servicios import SERVICIOS_PRINCIPALES, servicio_efectivo
 from ..dominio.validacion_odt import estado_revision, importe_pago, numero_odt, servicio_obligatorio, texto
 from ..facturacion_models import FacturacionODT
 from ..models import EventoRevision, ODT, Revision
+from .autorizacion import exigir_permiso_operativo as _autorizar
 
 
 @dataclass(frozen=True)
@@ -28,11 +27,6 @@ class ResultadoRevision:
     cambio: bool
 
 
-def _autorizar(usuario, permiso):
-    # La restricción no depende solo del middleware: protege otros consumidores.
-    if (not usuario.is_authenticated or not usuario.is_active
-            or not usuario.has_perm(permiso) or es_coordinador_sstt(usuario)):
-        raise PermissionDenied("No tienes permiso para realizar esta operación.")
 
 
 def _bloquear_odts(numeros):

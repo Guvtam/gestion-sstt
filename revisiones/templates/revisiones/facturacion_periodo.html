@@ -230,6 +230,8 @@
 
             {% endfor %}
 
+            <input type="hidden" name="confirmacion_facturacion" value="{{ confirmacion_facturacion }}">
+
             <!-- TABLA -->
 
             <div class="fact-table-wrap">
@@ -367,8 +369,9 @@
 
         <p class="fact-note">
             Al confirmar, se registran únicamente las ODT
-            pendientes de facturación y sus montos y servicios
-            vigentes. Las ODT previamente facturadas no se
+            previsualizadas y sus montos y servicios revisados.
+            Si los datos cambian, debes actualizar la previsualización.
+            Las ODT previamente facturadas no se
             duplican. Los números de requisición pueden
             completarse posteriormente desde el historial.
         </p>
