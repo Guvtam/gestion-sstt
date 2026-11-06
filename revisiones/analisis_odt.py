@@ -41,6 +41,11 @@ def analisis_odt(request):
     if q:
         qs=qs.filter(Q(cuenta_completa__icontains=q)|Q(tecnico__icontains=q)|Q(contratista__icontains=q))
     filas=cargar_metricas(qs)
+    from .views import SERVICIOS_PRINCIPALES
+    servicios_disponibles = sorted(set(SERVICIOS_PRINCIPALES) | {o.servicio_efectivo for o in filas if o.servicio_efectivo})
+    servicios_seleccionados = (request.GET.getlist("servicios") if "servicios_filtrados" in request.GET or "servicios" in request.GET
+                              else list(SERVICIOS_PRINCIPALES))
+    filas = [o for o in filas if o.servicio_efectivo in servicios_seleccionados]
     servicio=request.GET.get("servicio","")
     sla=request.GET.get("sla","")
     preventivo=request.GET.get("preventivo","")
@@ -161,6 +166,7 @@ def analisis_odt(request):
         "donut_fondo":"conic-gradient("+", ".join(segmentos)+")" if evaluables else "#e6edf5",
         "preventivos_grafico":preventivos_grafico,"recurrencias_grafico":recurrencias_grafico,
         "tendencia":tendencia,"tendencia_mensual":mensual,"filtros_activos":filtros_activos,
+        "servicios_disponibles":servicios_disponibles,"servicios_seleccionados":servicios_seleccionados,
         "servicio":servicio,"sla":sla,"preventivo":preventivo,"recurrencia":recurrencia,
         "quitar_selecciones":enlace(estado="",servicio="",sla="",preventivo="",recurrencia=""),
         "resumen":resumen,"por_estado":por_estado,"por_servicio":por_servicio,"pagina":pagina,
