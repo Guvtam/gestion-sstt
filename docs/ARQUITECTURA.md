@@ -8,10 +8,9 @@ base local; la identificación de coordinador y los historiales todavía consult
 SQL durante ciertas peticiones. Nginx y Gunicorn existen en el piloto según la
 instalación realizada, pero sus archivos no forman parte del repositorio revisado.
 
-Los modelos de facturación están en `facturacion_models.py` y se importan desde
-vistas. En una extracción posterior conviene registrar todos los modelos desde
-el módulo de modelos, sin depender de la carga de rutas para descubrirlos.
-Preservar nombres de tablas, app labels y migraciones al reorganizar.
+Los modelos de facturación permanecen en `facturacion_models.py`, pero ahora se
+registran explícitamente desde `models.py`, sin depender de la carga de rutas.
+Se preservan nombres de tablas, app labels y migraciones.
 
 ## Objetivo: monolito modular
 
@@ -29,7 +28,8 @@ más aplicaciones o servicios independientes.
 | Presentación | Templates, componentes, CSS y JS comunes | Decidir permisos o cálculos financieros autoritativos |
 | Operación | Configuración por entorno, logs, pruebas, backup, release | Guardar datos o credenciales en Git |
 
-Directorios objetivo (aún no implementados por completo):
+Directorios objetivo (implementación parcial documentada en
+[reestructuración](REESTRUCTURACION.md)):
 
 - `config/`: configuración común y módulos explícitos por entorno.
 - `revisiones/dominio/`: reglas puras de cuentas, servicios, SLA y estados.

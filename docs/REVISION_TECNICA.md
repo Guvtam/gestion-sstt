@@ -93,6 +93,11 @@ Los hallazgos restantes son trabajo pendiente, no correcciones ya aplicadas.
 
 ## Resultado de validación de esta entrega
 
+Este informe conserva la fotografía de la revisión inicial. La extracción de
+reglas, corrección de último preventivo y unificación de resúmenes posteriores
+se detallan en [reestructuración](REESTRUCTURACION.md), que actualiza el estado
+de R09, R10 y R11. La contención de R01 continúa pendiente.
+
 - `check --settings=config.settings_test`: sin incidencias.
 - `makemigrations --check --dry-run --settings=config.settings_test`: sin cambios.
 - Suite `contratistas revisiones`: 138 pruebas aprobadas en SQLite en memoria.

@@ -130,7 +130,8 @@ class AnalisisODTTests(TestCase):
     def test_metricas_rapidas_equivalen_a_reglas_de_bandeja(self):
         from .metricas_analisis import cargar_metricas
         base=ODT.objects.filter(numero__in=[1,2,3,4])
-        actuales={o.pk:o for o in con_indicadores_odt(base)}
+        from .consultas.preventivos import asignar_ultimos_preventivos
+        actuales={o.pk:o for o in asignar_ultimos_preventivos(con_indicadores_odt(base))}
         for o in cargar_metricas(base):
             anterior=actuales[o.pk]
             self.assertEqual(o.estado_sla,anterior.estado_sla)

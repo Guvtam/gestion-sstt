@@ -1,10 +1,11 @@
-"""Reglas de SLA, incidencias a 90 días y último preventivo compartidas."""
+"""SLA e incidencias SQL; preventivos se agregan por lote tras paginar."""
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import (Q, Count, OuterRef, Subquery, IntegerField, Case, When,
     Value, ExpressionWrapper, DurationField, F, CharField)
 from django.db.models.functions import Coalesce
 from .models import ODT
+from .dominio.indicadores import LIMITE_SLA
 
 
 def con_indicadores_odt(queryset):
@@ -35,22 +36,6 @@ def con_indicadores_odt(queryset):
 
 
     # ==================================================
-    # ÚLTIMO MANTENIMIENTO PREVENTIVO
-    # ==================================================
-
-    ultimo_preventivo = (
-        ODT.objects
-        .filter(
-            cuenta_completa=OuterRef("cuenta_completa"),
-            servicio__iexact="MANTENIMIENTO PREVENTIVO",
-            estado_softguard__iexact="Finalizado",
-            fecha_finalizacion__isnull=False,
-        )
-        .order_by("-fecha_finalizacion")
-        .values("fecha_finalizacion")[:1]
-    )
-
-    # ==================================================
     # CONSULTA PRINCIPAL DE ODT
     # ==================================================
 
@@ -65,14 +50,6 @@ def con_indicadores_odt(queryset):
             )
         )
 
-        # Último preventivo de la cuenta.
-        .annotate(
-            fecha_ultimo_preventivo=Subquery(
-                ultimo_preventivo
-            )
-        )
-
-        
         # Contador de incidencias:
         # mismo contratista y misma cuenta en 90 días.
         .annotate(
@@ -114,7 +91,7 @@ def con_indicadores_odt(queryset):
                     then=Value("ERROR_FECHAS"),
                 ),
                 When(
-                    duracion_sla__lte=timedelta(hours=48),
+                    duracion_sla__lte=LIMITE_SLA,
                     then=Value("CUMPLE"),
                 ),
                 default=Value("NO_CUMPLE"),

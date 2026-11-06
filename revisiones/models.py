@@ -231,3 +231,8 @@ class AsignacionCoordinadorODT(models.Model):
     usuario_coordinador = models.CharField(max_length=50)
     asignado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     asignado_en = models.DateTimeField(auto_now_add=True)
+
+
+# Registrar estos modelos durante django.setup(), sin depender de importar vistas.
+# Se conserva su módulo original, tablas y migraciones existentes.
+from .facturacion_models import FacturacionContratista, FacturacionODT, PeriodoFacturacion

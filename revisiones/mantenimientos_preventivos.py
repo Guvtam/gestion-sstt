@@ -1,25 +1,17 @@
-import calendar
 from datetime import date
 """Consulta de preventivos desde la última sincronización local de ODT."""
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
-from django.db.models.functions import Coalesce
-from django.db.models import Q
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import ODT, CatalogoCuenta
 from .cuentas_utils import normalizar_codigo_cuenta, tipo_cliente_cuenta
+from .dominio.servicios import SERVICIOS_PREVENTIVOS
+from .consultas.preventivos import preventivos as consultar_preventivos
 
 
-def sumar_meses(fecha, meses):
-    indice = fecha.year * 12 + fecha.month - 1 + meses
-    anio, mes = divmod(indice, 12)
-    mes += 1
-    return date(anio, mes, min(fecha.day, calendar.monthrange(anio, mes)[1]))
-
-
-SERVICIOS_PREVENTIVOS = ("MANTENIMIENTO PREVENTIVO", "MANTENCION PREVENTIVA", "PREVENTIVO")
+from .dominio.fechas import sumar_meses
 
 
 @login_required
@@ -66,11 +58,7 @@ def mantenimientos_preventivos(request):
             cuentas[codigo] = {"codigo": codigo, "nombre": texto, "tipo_cliente": tipo_cliente_cuenta(codigo, {}),
                               "ceco": "", "cantidad": 0, "pendientes": 0, "ultimo": None}
 
-    condiciones = Q()
-    for servicio in SERVICIOS_PREVENTIVOS:
-        condiciones |= Q(servicio_efectivo__iexact=servicio)
-    preventivos = (ODT.objects.annotate(servicio_efectivo=Coalesce("servicio_editado", "servicio"))
-                   .filter(condiciones).order_by("-fecha_finalizacion", "-numero"))
+    preventivos = consultar_preventivos().order_by("-fecha_finalizacion", "-numero")
     detalle = []
     for odt in preventivos.iterator(chunk_size=1000):
         codigo = normalizar_codigo_cuenta(odt.cuenta_completa)

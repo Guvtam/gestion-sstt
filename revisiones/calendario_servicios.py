@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import ODT
 from .cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta
-from .mantenimientos_preventivos import sumar_meses
+from .dominio.fechas import sumar_meses
 
 
 @login_required

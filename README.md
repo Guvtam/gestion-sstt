@@ -14,6 +14,7 @@ requiere endurecimiento antes del despliegue corporativo.
 
 - [Revisión técnica y prioridades](docs/REVISION_TECNICA.md)
 - [Arquitectura propuesta](docs/ARQUITECTURA.md)
+- [Reestructuración implementada y siguientes etapas](docs/REESTRUCTURACION.md)
 - [Operación, respaldos y traslado](docs/OPERACION.md)
 
 El archivo `README_INICIO.txt` corresponde al prototipo original y queda

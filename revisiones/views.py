@@ -43,42 +43,13 @@ from django.db.models import (
 )
 
 # Estados anteriores que ahora se consideran aprobados por defecto.
-SERVICIOS_PRINCIPALES = (
-    "MANTENCION CORRECTIVA CON COBRO",
-    "MANTENCION CORRECTIVA SIN COBRO",
-    "MANTENIMIENTO RENOVACIÓN",
-    "MANTENIMIENTO PREVENTIVO",
-)
-
-ESTADOS_APROBADOS = ("APROBADA", "POR_REVISAR")
-
-# Estados que se pueden seleccionar en la nueva bandeja.
-OPCIONES_BANDEJA = (
-    ("APROBADA", "Aprobado"),
-    ("EN_REVISION", "En revisión"),
-    ("RECHAZADA", "Rechazado"),
-)
+from .dominio.servicios import SERVICIOS_PRINCIPALES, nombres_canonicos
+from .consultas.servicios import servicio_normalizado
+from .consultas.preventivos import asignar_ultimos_preventivos
 
 
-def importe_efectivo():
-    """Monto corregido si existe; en otro caso, monto original."""
-    return Coalesce(
-        "valor_pago_editado",
-        "valor_pago_tecnico",
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
-
-
-def condicion_aprobada():
-    """
-    Las ODT sin revisión o con estado POR_REVISAR anterior
-    se consideran aprobadas en la nueva lógica.
-    """
-    return (
-        Q(revision__isnull=True)
-        | Q(revision__estado__in=ESTADOS_APROBADOS)
-    )
-
+from .dominio.pagos import ESTADOS_APROBADOS, OPCIONES_BANDEJA
+from .consultas.pagos import importe_efectivo, condicion_aprobada
 
 
 def odt_facturada(odt):
@@ -196,12 +167,7 @@ def bandeja(request, por_creacion=False):
     # SERVICIOS PREDETERMINADOS
     # ==================================================
 
-    servicios_predeterminados = [
-        "MANTENCION CORRECTIVA CON COBRO",
-        "MANTENCION CORRECTIVA SIN COBRO",
-        "MANTENIMIENTO PREVENTIVO",
-        "MANTENIMIENTO RENOVACIÓN",
-    ]
+    servicios_predeterminados = list(SERVICIOS_PRINCIPALES)
 
     servicios_seleccionados = request.GET.getlist(
         "servicios"
@@ -459,62 +425,18 @@ def bandeja(request, por_creacion=False):
 
     # Evitamos transportar los cálculos de SLA,
     # incidencias y preventivos a la consulta financiera.
-    base_indicadores = registros.order_by().values(
+    base_indicadores = registros.annotate(servicio_resumen=servicio_normalizado()).order_by().values(
         "pk",
         "valor_pago_tecnico",
         "valor_pago_editado",
         "revision__estado",
     )
     
-    # Clasificación de mantenciones según el servicio efectivo.
-    # Se prioriza el servicio corregido manualmente.
-
-    condicion_mantencion_con_cobro = (
-        Q(servicio_editado__iexact="MANTENCION CORRECTIVA CON COBRO")
-        | (
-            Q(servicio_editado__isnull=True)
-            & Q(servicio__iexact="MANTENCION CORRECTIVA CON COBRO")
-        )
-    )
-
-    condicion_mantencion_sin_cobro = (
-        Q(servicio_editado__iexact="MANTENCION CORRECTIVA SIN COBRO")
-        | (
-            Q(servicio_editado__isnull=True)
-            & Q(servicio__iexact="MANTENCION CORRECTIVA SIN COBRO")
-        )
-    )
-
-
-    
-    # Mantenimiento renovación.
-    # Se prioriza el servicio editado sobre el original.
-
-    nombres_renovacion = (
-        "RENOVACION",
-        "RENOVACIÓN",
-        "MANTENIMIENTO RENOVACION",
-        "MANTENIMIENTO RENOVACIÓN",
-        "MANTENCION RENOVACION",
-        "MANTENCIÓN RENOVACIÓN",
-    )
-
-    condicion_renovacion = (
-        Q(servicio_editado__in=nombres_renovacion)
-        | (
-            Q(servicio_editado__isnull=True)
-            & Q(servicio__in=nombres_renovacion)
-        )
-    )
-
-
-    condicion_mantenimiento_preventivo = (
-        Q(servicio_editado__iexact="MANTENIMIENTO PREVENTIVO")
-        | (
-            Q(servicio_editado__isnull=True)
-            & Q(servicio__iexact="MANTENIMIENTO PREVENTIVO")
-        )
-    )
+    # El mismo catálogo clasifica tarjetas e instantáneas de facturación.
+    condicion_mantencion_con_cobro = Q(servicio_resumen__in=nombres_canonicos("correctiva_con_cobro"))
+    condicion_mantencion_sin_cobro = Q(servicio_resumen__in=nombres_canonicos("correctiva_sin_cobro"))
+    condicion_renovacion = Q(servicio_resumen__in=nombres_canonicos("renovacion"))
+    condicion_mantenimiento_preventivo = Q(servicio_resumen__in=nombres_canonicos("preventivo"))
 
     indicadores_sql = base_indicadores.aggregate(
         cantidad_total=Count("pk"),
@@ -740,7 +662,7 @@ def bandeja(request, por_creacion=False):
         key=lambda odt: orden_ids[odt.pk]
     )
 
-    pagina.object_list = registros_pagina
+    pagina.object_list = asignar_ultimos_preventivos(registros_pagina)
 
     
     # ==================================================

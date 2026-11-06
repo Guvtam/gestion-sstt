@@ -65,7 +65,7 @@ from .facturacion_models import (
     FacturacionContratista,
 )
 from .servicios_sql import consultar_historial_odt
-from .views import condicion_aprobada
+from .consultas.pagos import condicion_aprobada
 
 
 # ============================================================

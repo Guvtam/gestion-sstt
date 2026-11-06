@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import ODT
 from .metricas_analisis import cargar_metricas
+from .dominio.servicios import SERVICIOS_PRINCIPALES
 
 
 @login_required
@@ -41,7 +42,6 @@ def analisis_odt(request):
     if q:
         qs=qs.filter(Q(cuenta_completa__icontains=q)|Q(tecnico__icontains=q)|Q(contratista__icontains=q))
     filas=cargar_metricas(qs)
-    from .views import SERVICIOS_PRINCIPALES
     servicios_disponibles = sorted(set(SERVICIOS_PRINCIPALES) | {o.servicio_efectivo for o in filas if o.servicio_efectivo})
     servicios_seleccionados = (request.GET.getlist("servicios") if "servicios_filtrados" in request.GET or "servicios" in request.GET
                               else list(SERVICIOS_PRINCIPALES))
