@@ -1,43 +1,21 @@
-
+{% extends "revisiones/base_operativa.html" %}
 {% load static formato_sstt %}
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1">
 
-    <title>ODT facturadas · SSTT</title>
-
-    <link rel="stylesheet"
-          href="{% static 'revisiones/bandeja.css' %}">
-
-    <link rel="stylesheet"
-          href="{% static 'revisiones/historial_facturacion.css' %}">
-</head>
-
-<body>
-
-    <!-- ENCABEZADO -->
-    <header class="header-sstt">
-        <div class="header-contenido">
-
-            <div class="header-titulo">
-                <h1>Gestión de pagos SSTT</h1>
-                <p>Detalle de órdenes de trabajo facturadas</p>
-            </div>
-
-            <a
+{% block titulo %}ODT facturadas · SSTT{% endblock %}
+{% block estilos %}
+    <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}">
+{% endblock %}
+{% block subtitulo %}Detalle de órdenes de trabajo facturadas{% endblock %}
+{% block acciones_encabezado %}
+<a
                 class="btn alt"
                 href="{% url 'historial_facturacion' %}?periodo={{ facturacion.periodo_id }}"
             >
                 Volver a facturación
             </a>
-
-        </div>
-    </header>
-
-    <main class="hist-main">
+{% endblock %}
+{% block contenido %}
+<main class="hist-main">
 
         <!-- TÍTULO -->
         <div class="hist-top">
@@ -276,49 +254,9 @@
         </section>
 
     </main>
-
-    <!-- ==========================================
-         VENTANA EMERGENTE: HISTORIAL DE ODT
-         ========================================== -->
-
-    <dialog id="modalHistorial" class="historial-modal">
-
-        <div class="historial-encabezado">
-
-            <div>
-                <h2>
-                    Historial de ODT
-                    <span id="historialNumero"></span>
-                </h2>
-
-                <p class="hint">
-                    Registro de actividades, observaciones
-                    y modificaciones de la orden de trabajo.
-                </p>
-            </div>
-
-            <button
-                type="button"
-                id="cerrarHistorial"
-                class="alt"
-            >
-                Cerrar
-            </button>
-
-        </div>
-
-        <div id="historialContenido">
-            <p class="hint">
-                Cargando historial...
-            </p>
-        </div>
-
-    </dialog>
-
-    <!-- JAVASCRIPT DEL HISTORIAL -->
-    <script
+{% endblock %}
+{% block scripts %}
+<script
         src="{% static 'revisiones/historial_facturacion_odt.js' %}?v=2"
     ></script>
-
-</body>
-</html>
+{% endblock %}

@@ -1,17 +1,12 @@
+{% extends "revisiones/base_operativa.html" %}
 {% load static %}
-<!doctype html>
-<html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Historial de requisición · SSTT</title>
-    <link rel="stylesheet" href="{% static 'revisiones/bandeja.css' %}">
+
+{% block titulo %}Historial de requisición · SSTT{% endblock %}
+{% block estilos %}
     <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}">
-</head>
-<body>
-<header class="header-sstt">
-    <div class="header-contenido"><div class="header-titulo"><h1>Gestión de pagos SSTT</h1><p>Trazabilidad de requisiciones</p></div></div>
-</header>
+{% endblock %}
+{% block subtitulo %}Trazabilidad de requisiciones{% endblock %}
+{% block contenido %}
 <main class="hist-main">
     <div class="hist-top">
         <div><h2>Historial de requisición</h2><p class="hist-sub">{{ contratista }} · {{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}</p></div>
@@ -51,5 +46,4 @@
         {% endif %}
     </section>
 </main>
-</body>
-</html>
+{% endblock %}

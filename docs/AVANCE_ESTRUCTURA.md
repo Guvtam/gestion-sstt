@@ -12,7 +12,7 @@ la fotografía técnica de cada entrega.
 | Historial de requisiciones | Implementado; requiere migración 0012 |
 | Alta automática de cuentas B2C consistente | Unificada entre lectura, sincronización y completar catálogo |
 | Anulación financiera auditable y permiso dedicado | Pendiente de definir reglas antes de sustituir el borrado actual |
-| Componentes visuales compartidos | Pendiente de unificación gradual |
+| Componentes visuales compartidos | Base común en cuatro pantallas de facturación; resto pendiente |
 | Rendimiento de índices, exportaciones y concurrencia | Pendiente de medir en entorno representativo |
 | Usuarios y responsables configurables | Pendiente; se conservan las excepciones autorizadas actuales |
 | Configuración de despliegue y traslado corporativo | Pendiente de validar en el servidor real |
