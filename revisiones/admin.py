@@ -1,5 +1,26 @@
 from django.contrib import admin
 from .models import ODT, Revision, EventoRevision, CatalogoCuenta
+from .models import EjecucionSincronizacion
+
+
+@admin.register(EjecucionSincronizacion)
+class EjecucionSincronizacionAdmin(admin.ModelAdmin):
+    list_display = (
+        "id", "iniciada_en", "estado", "duracion", "fecha_carga_origen",
+        "consultadas", "creadas", "actualizadas", "sin_cambios", "omitidas",
+    )
+    list_filter = ("estado",)
+    readonly_fields = tuple(campo.name for campo in EjecucionSincronizacion._meta.fields)
+    actions = None
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 

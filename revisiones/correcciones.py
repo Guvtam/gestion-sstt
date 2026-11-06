@@ -36,9 +36,13 @@ def registrar_cambio_manual(odt, usuario):
     return seguimiento
 
 
-def verificar_sincronizacion(odt):
+_NO_CARGADO = object()
+
+
+def verificar_sincronizacion(odt, *, seguimiento=_NO_CARGADO):
     """Comparar con SoftGuard luego de actualizar sus valores originales."""
-    seguimiento = CorreccionODT.objects.select_for_update().filter(odt=odt).first()
+    if seguimiento is _NO_CARGADO:
+        seguimiento = CorreccionODT.objects.select_for_update().filter(odt=odt).first()
     if not seguimiento:
         return
     coincide = coinciden(odt, seguimiento)

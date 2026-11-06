@@ -48,7 +48,7 @@ class ClasificacionConsistenteTests(TestCase):
             "Numero": 90001, "CuentaCompleta": "FIR-100 - Cuenta",
             "Tecnico": "Prueba", "Servicio": "MANTENIMIENTO PREVENTIVO",
         })
-        with patch("revisiones.management.commands.sincronizar_odts.consultar_odts_completas", return_value=[registro]):
+        with patch("revisiones.management.commands.sincronizar_odts.iterar_odts_completas", return_value=[registro]):
             call_command("sincronizar_odts", stdout=StringIO())
         self.assertEqual(ODT.objects.get(numero=90001).tipo_cliente, "B2B")
 
@@ -63,7 +63,7 @@ class ClasificacionConsistenteTests(TestCase):
     def test_sincronizacion_b2c_es_estable_y_recalculo_idempotente(self):
         from collections import defaultdict
         registro = defaultdict(lambda: None, {"Numero": 90100, "CuentaCompleta": "FIR-999 - Cuenta"})
-        with patch("revisiones.management.commands.sincronizar_odts.consultar_odts_completas", return_value=[registro]):
+        with patch("revisiones.management.commands.sincronizar_odts.iterar_odts_completas", return_value=[registro]):
             for _ in range(2):
                 call_command("sincronizar_odts", stdout=StringIO())
                 self.assertEqual(ODT.objects.get(numero=90100).tipo_cliente, "B2C")

@@ -27,3 +27,5 @@ backups/
 catalogo_cuentas*.json
 catalogo_inicial_sstt.csv
 config/settings_prueba.py
+*.sync.lock
+.sstt-sync.lock
