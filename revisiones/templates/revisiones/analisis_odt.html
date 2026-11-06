@@ -32,14 +32,24 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 @media(max-width:1000px){.kpi-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}.donut-layout{flex-wrap:wrap}}
 @media(max-width:650px){.dashboard-grid{grid-template-columns:1fr}.dashboard-intro{align-items:flex-start;flex-direction:column}.kpi-card{padding:16px}.kpi-card strong{font-size:26px}.chart-panel{padding:18px}.donut{width:155px;height:155px}}
 @media(prefers-reduced-motion:reduce){.kpi-card,.tendencia-col em{transition:none}}
+.servicios-field{position:relative;min-width:200px}.servicios-selector summary{padding:10px 12px;border:1px solid #c5d5e7;border-radius:5px;background:white;cursor:pointer;font-size:12px}
+.servicios-panel{position:absolute;z-index:50;top:100%;left:0;background:white;border:1px solid #c5d5e7;border-radius:8px;padding:12px;width:340px;max-width:80vw;max-height:330px;overflow:auto;box-shadow:0 8px 30px #17324f20}
+.servicios-panel label{display:flex;align-items:flex-start;gap:9px;padding:9px 3px;font-size:12px;line-height:1.5;cursor:pointer}
+.servicios-panel input[type=checkbox]{appearance:auto;width:17px;height:17px;min-width:17px;margin:2px 0 0;padding:0;accent-color:#1765ad}.servicios-panel span{overflow-wrap:anywhere}
+.servicios-acciones{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.servicios-acciones button{font-size:11px;padding:7px}
 </style></head><body class="preventivos-page">
 <header class="header-sstt"><div class="header-contenido"><div class="header-titulo"><h1>Análisis de ODT</h1><p>Incidencias, cumplimiento SLA y antecedentes preventivos</p></div>
 <div class="filtro-acciones"><a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a><a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a></div></div></header>
 <main class="hist-main" id="dashboard"><div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
-<input type="hidden" name="servicio" value="{{ servicio }}"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
+<input type="hidden" name="servicios_filtrados" value="1"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
 <div class="field"><label for="desde">Finalización desde</label><input type="date" id="desde" name="desde" value="{{ desde }}"></div>
 <div class="field"><label for="hasta">Finalización hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
+<div class="field servicios-field"><label>Servicios</label>
+<details class="servicios-selector"><summary id="serviciosResumen">{{ servicios_seleccionados|length }} servicios seleccionados</summary>
+<div class="servicios-panel"><div class="servicios-acciones"><button type="button" id="serviciosTodos">Seleccionar todos</button><button type="button" id="serviciosNinguno">Desmarcar todos</button></div>
+{% for s in servicios_disponibles %}<label><input type="checkbox" name="servicios" value="{{ s }}" {% if s in servicios_seleccionados %}checked{% endif %}><span>{{ s }}</span></label>{% endfor %}
+</div></details></div>
 <div class="field"><label for="q">Cuenta, técnico o contratista</label><input id="q" name="q" value="{{ q }}"></div>
 <div class="field"><label for="vista">Detalle</label><select id="vista" name="vista"><option value="todas">Todas las ODT</option><option value="incidencias" {% if vista == 'incidencias' %}selected{% endif %}>Con atenciones repetidas</option><option value="sla" {% if vista == 'sla' %}selected{% endif %}>SLA no cumple</option><option value="sin_preventivo" {% if vista == 'sin_preventivo' %}selected{% endif %}>Sin preventivo registrado</option></select></div>
 <div class="filtro-acciones"><button class="btn">Aplicar filtros</button><a class="btn alt" href="{% url 'analisis_odt' %}">Limpiar</a></div></form>
@@ -77,4 +87,16 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 {% for o in pagina %}<tr><td><a href="{% url 'bandeja' %}?numero_odt={{ o.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ o.numero|stringformat:'d' }}</a></td><td>{{ o.cuenta_completa|default:"Sin cuenta" }}</td><td>{{ o.tecnico|default:o.contratista|default:"Sin técnico / contratista" }}</td><td>{{ o.estado_softguard }}</td><td>{{ o.cantidad_incidencias }}</td><td>{% if o.estado_sla == 'CUMPLE' %}Cumple{% elif o.estado_sla == 'NO_CUMPLE' %}No cumple{% elif o.estado_sla == 'PENDIENTE' %}Pendiente{% else %}Revisar fechas{% endif %}</td><td>{{ o.fecha_ultimo_preventivo|date:"d/m/Y H:i"|default:"Sin preventivo" }}</td></tr>
 {% empty %}<tr><td colspan="7">No hay ODT para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
 {% if pagina.has_other_pages %}<nav class="pagination">{% if pagina.has_previous %}<a href="?{{ querystring }}&amp;page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>{% if pagina.has_next %}<a href="?{{ querystring }}&amp;page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}</nav>{% endif %}
-</details></section></main></body></html>
+</details></section></main><script>
+(() => {
+    const opciones = [...document.querySelectorAll('input[name="servicios"]')];
+    function actualizar() {
+        const cantidad = opciones.filter(c => c.checked).length;
+        document.getElementById("serviciosResumen").textContent = cantidad ? cantidad + " servicios seleccionados" : "Ningún servicio seleccionado";
+    }
+    document.getElementById("serviciosTodos").addEventListener("click", () => {opciones.forEach(c => c.checked = true);actualizar();});
+    document.getElementById("serviciosNinguno").addEventListener("click", () => {opciones.forEach(c => c.checked = false);actualizar();});
+    opciones.forEach(c => c.addEventListener("change",actualizar));
+    actualizar();
+})();
+</script></body></html>

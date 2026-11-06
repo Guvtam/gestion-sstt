@@ -14,7 +14,7 @@ class AnalisisODTTests(TestCase):
         self.user=get_user_model().objects.create_superuser("admin",password="test")
         self.base=timezone.now()-timedelta(days=7)
         for n, horas in ((1,24),(2,72)):
-            ODT.objects.create(numero=n,cuenta_completa="FIR-100",contratista="Prueba",servicio="CORRECTIVO",
+            ODT.objects.create(numero=n,cuenta_completa="FIR-100",contratista="Prueba",servicio="MANTENCION CORRECTIVA CON COBRO",
                 fecha_creacion=self.base,fecha_finalizacion=self.base+timedelta(hours=horas),estado_softguard="Finalizado")
         ODT.objects.create(numero=3,cuenta_completa="FIR-200",fecha_creacion=self.base,estado_softguard="Pendiente")
         ODT.objects.create(numero=4,cuenta_completa="FIR-100",servicio="MANTENIMIENTO PREVENTIVO",
@@ -72,7 +72,7 @@ class AnalisisODTTests(TestCase):
         self.assertEqual([o.numero for o in c["pagina"]],[1])
         c=self.consultar(preventivo="sin")
         self.assertEqual(c["resumen"]["total"],0)
-        c=self.consultar(servicio="CORRECTIVO",recurrencia="con")
+        c=self.consultar(servicio="MANTENCION CORRECTIVA CON COBRO",recurrencia="con")
         self.assertEqual(c["resumen"]["total"],2)
         self.assertEqual(sum(i["cantidad"] for i in c["por_servicio"]),2)
 
@@ -104,7 +104,7 @@ class AnalisisODTTests(TestCase):
     def test_solo_finalizadas_y_rango_por_finalizacion_sin_opcion_de_anularlo(self):
         ODT.objects.create(numero=10,estado_softguard="Asignado",fecha_creacion=self.base,
                            fecha_finalizacion=self.base+timedelta(hours=10))
-        ODT.objects.create(numero=11,estado_softguard="Finalizado",
+        ODT.objects.create(numero=11,estado_softguard="Finalizado",servicio="MANTENCION CORRECTIVA CON COBRO",
             fecha_creacion=self.base-timedelta(days=90),fecha_finalizacion=self.base+timedelta(hours=10))
         c=self.consultar(campo="creacion",estado="Pendiente")
         self.assertEqual({o.numero for o in c["pagina"]},{1,2,11})
@@ -113,7 +113,7 @@ class AnalisisODTTests(TestCase):
     def test_metricas_en_tres_consultas_independientes_de_numero_de_odt(self):
         for cantidad in (0,100):
             if cantidad:
-                ODT.objects.bulk_create([ODT(numero=100+n,estado_softguard="Finalizado",
+                ODT.objects.bulk_create([ODT(numero=100+n,estado_softguard="Finalizado",servicio="MANTENCION CORRECTIVA CON COBRO",
                     fecha_creacion=self.base,fecha_finalizacion=self.base+timedelta(hours=24),
                     cuenta_completa="FIR-100",contratista="Prueba") for n in range(cantidad)])
             with self.assertNumQueries(3):
@@ -121,7 +121,7 @@ class AnalisisODTTests(TestCase):
             self.assertEqual(contexto["resumen"]["total"],2+cantidad)
 
     def test_sla_porcentajes_excluyen_fechas_invalidas(self):
-        ODT.objects.create(numero=20,estado_softguard="Finalizado",fecha_creacion=None,fecha_finalizacion=self.base)
+        ODT.objects.create(numero=20,estado_softguard="Finalizado",servicio="MANTENCION CORRECTIVA CON COBRO",fecha_creacion=None,fecha_finalizacion=self.base)
         c=self.consultar()
         self.assertEqual(c["resumen"]["revisar_fechas"],1)
         self.assertEqual([g["porcentaje"] for g in c["sla_grafico"]],[50,50])
@@ -136,3 +136,22 @@ class AnalisisODTTests(TestCase):
             self.assertEqual(o.estado_sla,anterior.estado_sla)
             self.assertEqual(o.cantidad_incidencias,anterior.cantidad_incidencias)
             self.assertEqual(o.fecha_ultimo_preventivo,anterior.fecha_ultimo_preventivo)
+
+    def test_servicios_predeterminados_iguales_bandeja_y_seleccion_explicita(self):
+        from .views import SERVICIOS_PRINCIPALES
+        ODT.objects.create(numero=30,estado_softguard="Finalizado",servicio="MARCHA BLANCA",
+            fecha_creacion=self.base,fecha_finalizacion=self.base+timedelta(hours=2))
+        c=self.consultar()
+        self.assertEqual(c["servicios_seleccionados"],list(SERVICIOS_PRINCIPALES))
+        self.assertEqual(c["resumen"]["total"],2)
+        c=self.consultar(servicios_filtrados="1",servicios=["MARCHA BLANCA"])
+        self.assertEqual(c["resumen"]["total"],1)
+        self.assertEqual([o.numero for o in c["pagina"]],[30])
+        c=self.consultar(servicios_filtrados="1")
+        self.assertEqual(c["resumen"]["total"],0)
+
+    def test_enlaces_de_graficos_conservan_servicios_multiple(self):
+        from urllib.parse import parse_qs,urlsplit
+        c=self.consultar(servicios_filtrados="1",servicios=["MANTENCION CORRECTIVA CON COBRO","MANTENIMIENTO PREVENTIVO"])
+        params=parse_qs(urlsplit(c["sla_grafico"][0]["url"]).query)
+        self.assertEqual(params["servicios"],["MANTENCION CORRECTIVA CON COBRO","MANTENIMIENTO PREVENTIVO"])
