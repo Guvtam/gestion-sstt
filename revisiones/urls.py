@@ -12,6 +12,7 @@ from .historial_facturacion import eliminar_periodo_facturacion
 
 
 urlpatterns = [
+    path("odt-por-creacion/", views.bandeja_creacion, name="bandeja_creacion"),
     path("mantenimientos-preventivos/", mantenimientos_preventivos, name="mantenimientos_preventivos"),
     path("asignar-coordinador/", views.asignar_coordinador, name="asignar_coordinador"),
     path(
