@@ -78,3 +78,7 @@ ODT, diferencias del origen y correcciones locales.
 Respaldos/restauración, protección del repositorio, configuración final y
 traslado corporativo siguen siendo etapas pendientes. No se declaran
 verificados por esta guía.
+
+## Medición individual reproducible
+
+Consultar DIAGNOSTICO_RENDIMIENTO.md para medir una lectura de bandeja con los mismos filtros en PC y servidor. El comando no mide peticiones concurrentes ni la RAM total. Empezar con una repetición y conservar commit y parámetros junto al resultado.

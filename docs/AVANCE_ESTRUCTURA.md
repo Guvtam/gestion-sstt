@@ -13,7 +13,7 @@ la fotografía técnica de cada entrega.
 | Alta automática de cuentas B2C consistente | Unificada entre lectura, sincronización y completar catálogo |
 | Anulación financiera auditable y permiso dedicado | Pendiente de definir reglas antes de sustituir el borrado actual |
 | Componentes visuales compartidos | Base, opciones de servicios, errores, mensajes y navegación compartidos; columnas y formularios específicos conservan su contrato |
-| Rendimiento de índices, exportaciones y concurrencia | Pendiente de medir en entorno representativo |
+| Rendimiento de índices, exportaciones y concurrencia | Diagnóstico individual de bandeja disponible; medición real, exportaciones y concurrencia pendientes |
 | Usuarios y responsables configurables | Vínculos de login (0013) y catálogo de nuevos responsables (0014) administrables |
 | División de módulos | Vistas, bandeja, catálogos auxiliares y exportación separados; otros componentes y revisión del despliegue pendientes |
 | Configuración de despliegue y traslado corporativo | Pendiente de validar en el servidor real |
@@ -37,3 +37,5 @@ La [navegación compartida](NAVEGACION_COMPARTIDA.md) conserva multiselección y
 [Revisión estructural de la etapa](CIERRE_REVISION_ESTRUCTURAL.md): guardas automatizadas, actualización transaccional de cuentas y límites pendientes de entorno.
 
 [Gestión de correcciones](GESTION_CORRECCIONES.md): última operación identificada de estado separada del adaptador y verificada con rollback.
+
+[Diagnóstico individual de rendimiento](DIAGNOSTICO_RENDIMIENTO.md): herramienta preparada, resultados reales todavía pendientes.
