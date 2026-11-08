@@ -27,7 +27,7 @@ class ExportacionSeleccionTests(TestCase):
         return exportar_aprobados_pdf(request)
 
     def test_exporta_solo_contratista_seleccionado_con_valores_facturados(self):
-        with patch("revisiones.exportar_pdf.generar_pdf_contratista", return_value=b"PDF") as generar:
+        with patch("revisiones.vistas.exportacion_pdf.generar_pdf_contratista", return_value=b"PDF") as generar:
             respuesta = self.descargar({"seleccion": "1", "facturacion": [self.facturas[1].pk]})
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(len(ZipFile(BytesIO(respuesta.content)).namelist()), 1)
@@ -36,7 +36,7 @@ class ExportacionSeleccionTests(TestCase):
 
     def test_todos_y_compatibilidad_sin_seleccion(self):
         for datos in ({}, {"seleccion": "1", "facturacion": [f.pk for f in self.facturas]}):
-            with patch("revisiones.exportar_pdf.generar_pdf_contratista", return_value=b"PDF") as generar:
+            with patch("revisiones.vistas.exportacion_pdf.generar_pdf_contratista", return_value=b"PDF") as generar:
                 self.assertEqual(self.descargar(datos).status_code, 200)
                 self.assertEqual(generar.call_count, 2)
 
@@ -44,7 +44,7 @@ class ExportacionSeleccionTests(TestCase):
         otro = PeriodoFacturacion.objects.create(fecha_desde=date(2026,8,21), fecha_hasta=date(2026,9,20))
         ajeno = FacturacionContratista.objects.create(periodo=otro, contratista="Otro")
         for valores in ([], ["abc"], [ajeno.pk], [self.facturas[0].pk, ajeno.pk]):
-            with patch("revisiones.exportar_pdf.generar_pdf_contratista") as generar:
+            with patch("revisiones.vistas.exportacion_pdf.generar_pdf_contratista") as generar:
                 self.assertEqual(self.descargar({"seleccion":"1", "facturacion": valores}).status_code, 400)
                 generar.assert_not_called()
 
@@ -52,7 +52,7 @@ class ExportacionSeleccionTests(TestCase):
         CatalogoCuenta.objects.create(codigo_cuenta="FIR-1", tipo_cliente="B2B", ceco="50-30-43")
         odt = ODT.objects.get(numero=1)
         for historico in (True, False):
-            with patch("revisiones.exportar_pdf.consultar_historial_odt", return_value=[]):
+            with patch("revisiones.casos_uso.exportacion_pdf.consultar_historial_odt", return_value=[]):
                 data = generar_pdf_contratista("Prueba", [(odt, "PREVENTIVO", Decimal("100"), "Prueba")],
                     self.periodo.fecha_desde, self.periodo.fecha_hasta, historico=historico)
             paginas = PdfReader(BytesIO(data)).pages

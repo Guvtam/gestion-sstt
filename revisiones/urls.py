@@ -6,7 +6,7 @@ from .analisis_odt import analisis_odt
 from .mantenimientos_preventivos import mantenimientos_preventivos
 from .calendario_servicios import calendario_servicios
 from .estadisticas_correcciones import estadisticas_correcciones
-from .exportar_pdf import exportar_aprobados_pdf
+from .vistas.exportacion_pdf import exportar_aprobados_pdf
 from .facturacion import previsualizar_facturacion, actualizar_requisicion
 from .historial_facturacion import historial_facturacion
 from .detalle_facturacion import detalle_facturacion

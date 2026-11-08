@@ -11,7 +11,7 @@ from .exportar_pdf import generar_pdf_contratista
 class TipoClientePDFTests(TestCase):
     def pdf(self, odts, historico=True):
         registros = [(o, "MANTENIMIENTO PREVENTIVO", Decimal("100"), "Prueba") for o in odts]
-        with patch("revisiones.exportar_pdf.consultar_historial_odt", return_value=[]):
+        with patch("revisiones.casos_uso.exportacion_pdf.consultar_historial_odt", return_value=[]):
             data = generar_pdf_contratista("Prueba", registros, date(2026,9,21), date(2026,10,20), historico=historico)
         return [page.extract_text() for page in PdfReader(BytesIO(data)).pages]
 

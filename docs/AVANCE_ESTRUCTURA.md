@@ -15,7 +15,7 @@ la fotografía técnica de cada entrega.
 | Componentes visuales compartidos | Base común, opciones de servicios y errores de filtro compartidos; resto de filtros, tablas y mensajes pendiente |
 | Rendimiento de índices, exportaciones y concurrencia | Pendiente de medir en entorno representativo |
 | Usuarios y responsables configurables | Vínculos de login (0013) y catálogo de nuevos responsables (0014) administrables |
-| División de módulos | Vistas separadas; filtros, indicadores, paginación y presentación de filas de bandeja extraídos. Catálogos auxiliares y PDF restante pendientes |
+| División de módulos | Vistas y bandeja separadas; exportación con consultas, composición, documento e imágenes propios. Catálogos auxiliares y otros componentes pendientes |
 | Configuración de despliegue y traslado corporativo | Pendiente de validar en el servidor real |
 | Protección de datos y verificación de respaldos | Etapa final aplazada por decisión de la usuaria |
 
@@ -27,3 +27,5 @@ Ver [detalle de la evolución operativa](EVOLUCION_OPERATIVA.md) para los límit
 La [bandeja modular](BANDEJA_MODULAR.md) separa selección y agregaciones y actualiza el selector de coordinadores al catálogo administrable.
 
 La [preparación de filas](FILAS_BANDEJA.md) distingue lecturas por lote y atributos de presentación sin consultas adicionales.
+
+La [exportación modular](EXPORTACION_MODULAR.md) separa HTTP, lecturas, composición y construcción del documento.
