@@ -1,0 +1,7 @@
+{% for mensaje in messages %}
+{% if estilo == "historial" %}
+<p role="{% if 'error' in mensaje.tags %}alert{% else %}status{% endif %}">{{ mensaje }}</p>
+{% else %}
+<div class="message {% if 'error' in mensaje.tags %}error{% endif %}" role="{% if 'error' in mensaje.tags %}alert{% else %}status{% endif %}">{{ mensaje }}</div>
+{% endif %}
+{% endfor %}

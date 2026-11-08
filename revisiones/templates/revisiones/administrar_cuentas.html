@@ -138,9 +138,7 @@
         </a>
     </div>
 
-    {% for mensaje in messages %}
-        <div class="message">{{ mensaje }}</div>
-    {% endfor %}
+    {% include "revisiones/componentes/mensajes.html" with messages=messages estilo="estandar" only %}
 
     <section class="cuentas-indicadores">
 
