@@ -58,11 +58,7 @@
 
   <main>
 
-    {% for msg in messages %}
-      <div class="message {% if msg.tags == 'error' %}error{% endif %}">
-        {{ msg }}
-      </div>
-    {% endfor %}
+    {% include "revisiones/componentes/mensajes.html" with messages=messages estilo="estandar" only %}
 
     <!-- INDICADORES FINANCIEROS -->
     {% if not es_coordinador %}

@@ -18,9 +18,7 @@
 
     {% if messages %}
     <section class="hist-mensajes" aria-live="polite">
-        {% for message in messages %}
-        <p role="status">{{ message }}</p>
-        {% endfor %}
+        {% include "revisiones/componentes/mensajes.html" with messages=messages estilo="historial" only %}
     </section>
     {% endif %}
 

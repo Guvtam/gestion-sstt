@@ -53,16 +53,7 @@
     <!-- MENSAJES -->
 
     <div class="fact-messages">
-        {% for msg in messages %}
-
-            <div
-                class="message {% if 'error' in msg.tags %}error{% endif %}"
-                role="alert"
-            >
-                {{ msg }}
-            </div>
-
-        {% endfor %}
+        {% include "revisiones/componentes/mensajes.html" with messages=messages estilo="estandar" only %}
     </div>
 
     <!-- PERÍODO -->

@@ -2,7 +2,6 @@
 import time as tiempo
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -17,6 +16,7 @@ from ..coordinadores_softguard import catalogo_coordinadores, puede_asignar_coor
 from ..dominio.pagos import OPCIONES_BANDEJA
 from ..dominio.servicios import SERVICIOS_PRINCIPALES
 from ..models import ODT
+from ..consultas.catalogos_bandeja import servicios_disponibles, estados_disponibles, filtrar_opciones_ajax
 from ..consultas.filas_bandeja import paginar_filas, cargar_complementos
 from ..presentacion.filas_bandeja import preparar_filas
 
@@ -163,29 +163,7 @@ def bandeja(request, por_creacion=False):
     # CATÁLOGO DE SERVICIOS
     # ==================================================
 
-    servicios_originales = set(
-        ODT.objects
-        .exclude(servicio__isnull=True)
-        .exclude(servicio="")
-        .order_by()
-        .values_list("servicio", flat=True)
-        .distinct()
-    )
-
-    servicios_editados = set(
-        ODT.objects
-        .exclude(servicio_editado__isnull=True)
-        .exclude(servicio_editado="")
-        .order_by()
-        .values_list("servicio_editado", flat=True)
-        .distinct()
-    )
-
-    
-
-    servicios = sorted(
-        servicios_originales | servicios_editados
-    )
+    servicios = servicios_disponibles()
 
     print(
         f"[SSTT] Catálogo de servicios: "
@@ -234,13 +212,7 @@ def bandeja(request, por_creacion=False):
             "kpi_servicios_corregir": operativos["kpi_servicios_corregir"],
             "kpi_montos_corregir": operativos["kpi_montos_corregir"],
 
-            "estados": (
-                ODT.objects
-                .exclude(estado_softguard="")
-                .order_by("estado_softguard")
-                .values_list("estado_softguard", flat=True)
-                .distinct()
-            ),
+            "estados": estados_disponibles(),
 
             "servicios": servicios,
             "servicios_seleccionados": servicios_seleccionados,
@@ -284,37 +256,11 @@ def contratistas_disponibles_ajax(request):
     estado = request.GET.get("estado", "")
     servicios = request.GET.getlist("servicios")
 
-    registros = ODT.objects.all()
-
-    # Fecha de finalización
-    if fecha_desde:
-        registros = registros.filter(
-            **{f"{campo_fecha}__date__gte": fecha_desde}
-        )
-
-    if fecha_hasta:
-        registros = registros.filter(
-            **{f"{campo_fecha}__date__lte": fecha_hasta}
-        )
-
-    # Estado SoftGuard
-    if estado:
-        registros = registros.filter(
-            estado_softguard=estado
-        )
-
-    # Servicios, considerando modificaciones
-    if servicios:
-        registros = registros.filter(
-            Q(
-                servicio_editado__isnull=True,
-                servicio__in=servicios
-            )
-            |
-            Q(
-                servicio_editado__in=servicios
-            )
-        )
+    registros = filtrar_opciones_ajax(
+        ODT.objects.all(), campo_fecha=campo_fecha,
+        fecha_desde=fecha_desde, fecha_hasta=fecha_hasta,
+        estado=estado, servicios=servicios,
+    )
 
     registros = limitar_odts_coordinador(request, registros)
 
