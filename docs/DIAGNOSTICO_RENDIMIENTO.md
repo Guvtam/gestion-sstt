@@ -64,3 +64,36 @@ de instrumentación y errores sin datos del driver.
 
 No se ejecutó el diagnóstico sobre el PC de la usuaria o el servidor.
 Los resultados reales deben obtenerse allí antes de decidir optimizaciones.
+
+## Segunda medición: etapas sin iniciar traza de memoria
+
+    python manage.py diagnosticar_rendimiento_bandeja --usuario USUARIO_AUTORIZADO --fecha-desde 2026-10-21 --fecha-hasta 2026-11-06 --sin-traza-memoria --detalle --settings=CONFIGURACION_ACTIVA
+
+--sin-traza-memoria no inicia tracemalloc. No detiene una traza externa ya activa;
+si la hay, se informa de ella. Evita comparar como equivalentes una ejecución
+con traza y otra sin ella: el coste de instrumentar memoria puede ser importante.
+
+--detalle envuelve temporalmente puntos de lectura en este proceso de comando:
+opciones, alcance, catálogos, indicadores, paginación/preventivos, responsables,
+complementos, preparación y render. También mide _consultar del origen, incluyendo
+conexión, ejecución, recuperación y cierre, sin guardar SQL o resultados.
+
+Las etapas son inclusivas. «SQL Server directo» puede estar incluido en
+«Responsables de filas» o «Alcance del coordinador»; no sumar esas duraciones.
+Los contadores registran llamadas y fallos, sin mensajes internos del driver.
+Un fallo del origen puede estar absorbido por el fallback visual y terminar
+en HTTP 200: el contador permite reconocerlo.
+
+El tiempo SQL Django corresponde al envoltorio execute y no necesariamente
+incluye toda la recuperación de filas. Ese trabajo queda en el tiempo total y
+en la etapa que lo consume.
+
+La instrumentación se restaura al terminar, también ante excepciones.
+Es exclusiva del comando en un proceso independiente; no debe activarse dentro
+de un servidor web o como medición concurrente. No modifica el proceso servido,
+la configuración ni los datos.
+
+Las pruebas adicionales verifican anidación, propagación de errores, restauración,
+render detallado sin iniciar memoria y fallo de origen con respuesta HTTP 200.
+La suite posterior contiene 425 pruebas aprobadas. No se ha confirmado todavía
+qué etapa explica el resultado del PC o del servidor.

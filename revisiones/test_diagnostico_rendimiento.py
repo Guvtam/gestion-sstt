@@ -124,3 +124,33 @@ class DiagnosticoRendimientoTests(TestCase):
             with self.assertRaises(CommandError) as error:
                 self.ejecutar()
         self.assertNotIn("privado",str(error.exception))
+
+    def test_desglose_real_separa_render_y_responsables_sin_traza(self):
+        with patch("revisiones.management.commands.diagnosticar_rendimiento_bandeja.tracemalloc.start") as iniciar:
+            salida=self.ejecutar(detalle=True,sin_traza_memoria=True)
+        iniciar.assert_not_called()
+        self.assertIn("Renderizado:",salida)
+        self.assertIn("Responsables de filas:",salida)
+        self.assertIn("SQL Server directo: 0.000 s | Llamadas: 0",salida)
+        self.assertIn("Pico de asignaciones Python: Desactivada",salida)
+        self.assertIn("no sumar sus tiempos",salida)
+
+    def test_desglose_registra_fallo_origen_aunque_render_responda_200(self):
+        salida=StringIO()
+        with patch("revisiones.servicios_sql._consultar",side_effect=RuntimeError("PASSWORD=privado")):
+            call_command("diagnosticar_rendimiento_bandeja",usuario="admin",
+                fecha_desde="2026-01-01",fecha_hasta="2027-01-01",
+                detalle=True,sin_traza_memoria=True,stdout=salida)
+        texto=salida.getvalue()
+        self.assertIn("HTTP 200",texto)
+        linea=next(l for l in texto.splitlines() if "SQL Server directo:" in l)
+        self.assertIn("Llamadas: 1",linea)
+        self.assertIn("Fallos: 1",linea)
+        self.assertNotIn("privado",texto)
+
+    def test_instrumentacion_restaurada_al_salir(self):
+        from importlib import import_module
+        modulo=import_module("revisiones.vistas.bandeja")
+        original=modulo.render
+        self.ejecutar(detalle=True,sin_traza_memoria=True)
+        self.assertIs(modulo.render,original)

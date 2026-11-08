@@ -82,3 +82,5 @@ verificados por esta guía.
 ## Medición individual reproducible
 
 Consultar DIAGNOSTICO_RENDIMIENTO.md para medir una lectura de bandeja con los mismos filtros en PC y servidor. El comando no mide peticiones concurrentes ni la RAM total. Empezar con una repetición y conservar commit y parámetros junto al resultado.
+
+Si la primera medición es lenta, repetir con --sin-traza-memoria --detalle para separar etapas y lecturas directas del origen. No sumar etapas anidadas; comparar parámetros y versión idénticos.
