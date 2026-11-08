@@ -1,11 +1,9 @@
 """Vistas HTTP de bandeja. Sin cambios de reglas de negocio."""
-from datetime import date, timedelta
-from decimal import Decimal
 import time as tiempo
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -16,39 +14,17 @@ from ..acceso_coordinadores import (
     coordinadores_en_peticion,
     coordinadores_para_mostrar,
 )
-from ..consultas.pagos import condicion_aprobada, importe_efectivo
 from ..consultas.preventivos import asignar_ultimos_preventivos
-from ..consultas.servicios import servicio_normalizado
 from ..coordinadores_softguard import catalogo_coordinadores, puede_asignar_coordinador
 from ..cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta, tipo_cliente_cuenta
-from ..dominio.pagos import ESTADOS_APROBADOS, OPCIONES_BANDEJA
-from ..dominio.servicios import SERVICIOS_PRINCIPALES, nombres_canonicos
+from ..dominio.pagos import OPCIONES_BANDEJA
+from ..dominio.servicios import SERVICIOS_PRINCIPALES
 from ..facturacion_models import FacturacionODT
 from ..models import ODT
 
-
-SIN_TECNICO_FILTRO = "__SIN_TECNICO__"
-
-
-def indicador(qs):
-    valores = qs.aggregate(
-        cantidad=Count("id"),
-        monto=Sum(importe_efectivo()),
-    )
-    return {
-        "cantidad": valores["cantidad"],
-        "monto": valores["monto"] or Decimal("0"),
-    }
-
-
-
-def opciones_contratistas(queryset, incluir_sin_tecnico=False):
-    valores = list(queryset.order_by("contratista").values_list("contratista", flat=True).distinct())
-    nombres = [v for v in valores if v]
-    if incluir_sin_tecnico:
-        nombres.append(SIN_TECNICO_FILTRO)
-    return nombres
-
+from ..dominio.filtros_bandeja import SIN_TECNICO_FILTRO, leer_seleccion
+from ..consultas.filtros_bandeja import filtrar_disponibles, filtrar_tabla, opciones_contratistas
+from ..consultas.indicadores_bandeja import indicador, indicadores_financieros, indicadores_operativos
 
 
 @login_required
@@ -59,116 +35,18 @@ def bandeja(request, por_creacion=False):
     es_coordinador = es_coordinador_sstt(request.user)
     coordinador_sesion = datos_coordinador(request.user) if es_coordinador else None
 
-    # ==================================================
-    # FILTROS DE LA BANDEJA
-    # ==================================================
-
-    
-   
-    # ==================================================
-    # FILTROS DE LA BANDEJA
-    # ==================================================
-
-    filtros = {
-        k: request.GET.get(k, "").strip()
-        for k in (
-            "estado",
-            "revision",
-            "coordinador",
-            "q",
-            "fecha_desde",
-            "fecha_hasta",
-        )
-    }
-
-    # Estado SoftGuard predeterminado
-    if "estado" not in request.GET:
-        filtros["estado"] = "" if por_creacion else "Finalizado"
-
-    
-    
-    # ==================================================
-    # FECHA INICIAL: DÍA 21 DEL MES ANTERIOR
-    # ==================================================
-
-    if "fecha_desde" not in request.GET:
-        hoy = timezone.localdate()
-
-        primer_dia_mes_actual = hoy.replace(day=1)
-        mes_anterior = primer_dia_mes_actual - timedelta(days=1)
-
-        fecha_desde = mes_anterior.replace(day=21)
-
-        filtros["fecha_desde"] = fecha_desde.isoformat()
-
-
-
-    # Fecha hasta: día actual
-    if "fecha_hasta" not in request.GET:
-        filtros["fecha_hasta"] = (
-            timezone.localdate().isoformat()
-        )
-
-    # ==================================================
-    # SERVICIOS PREDETERMINADOS
-    # ==================================================
-
-    servicios_predeterminados = list(SERVICIOS_PRINCIPALES)
-
-    servicios_seleccionados = request.GET.getlist(
-        "servicios"
+    seleccion = leer_seleccion(
+        request.GET, por_creacion=por_creacion, hoy=timezone.localdate(),
     )
+    filtros = seleccion.filtros()
+    servicios_seleccionados = list(seleccion.servicios)
+    contratistas_seleccionados = list(seleccion.contratistas)
 
-    if not request.GET and not por_creacion:
-        servicios_seleccionados = (
-            servicios_predeterminados.copy()
-        )
-
-    # ==================================================
-    # CONTRATISTAS SELECCIONADOS
-    # ==================================================
-
-    contratistas_seleccionados = request.GET.getlist(
-        "contratista"
-    )
-
-
-   
     contratistas_disponibles = ODT.objects.all()
-    if filtros["estado"]:
-        contratistas_disponibles = contratistas_disponibles.filter(estado_softguard=filtros["estado"])
-
-    # Filtrar por servicios seleccionados.
-    if servicios_seleccionados:
-        contratistas_disponibles = contratistas_disponibles.filter(
-            Q(
-                servicio_editado__isnull=True,
-                servicio__in=servicios_seleccionados,
-            )
-            | Q(
-                servicio_editado__in=servicios_seleccionados
-            )
-        )
-
-    # Filtrar por fechas de finalización.
-    for campo, operador in (
-        ("fecha_desde", "gte"),
-        ("fecha_hasta", "lte"),
-    ):
-        valor = filtros[campo]
-
-        if valor:
-            try:
-                fecha_valida = date.fromisoformat(valor)
-            except ValueError:
-                continue
-
-            contratistas_disponibles = contratistas_disponibles.filter(
-                **{
-                    f"{campo_fecha}__date__{operador}":
-                        fecha_valida
-                }
-            )
+    contratistas_disponibles = filtrar_disponibles(
+        contratistas_disponibles, filtros=filtros,
+        servicios_seleccionados=servicios_seleccionados, campo_fecha=campo_fecha,
+    )
 
     contratistas_disponibles = limitar_odts_coordinador(request, contratistas_disponibles)
 
@@ -176,10 +54,7 @@ def bandeja(request, por_creacion=False):
         contratistas_disponibles, incluir_sin_tecnico=por_creacion
     )
 
-    seleccion_contratistas_explicita = (
-        "contratistas_filtrados" in request.GET or "contratista" in request.GET
-    )
-    if not seleccion_contratistas_explicita:
+    if not seleccion.contratistas_explicitos:
         contratistas_seleccionados = list(contratistas_disponibles)
 
     # ==================================================
@@ -196,126 +71,21 @@ def bandeja(request, por_creacion=False):
     # FILTROS DE LA TABLA
     # ==================================================
 
-    # Contratista.
-    if contratistas_seleccionados:
-        condicion_contratistas = Q(contratista__in=[
-            nombre for nombre in contratistas_seleccionados if nombre != SIN_TECNICO_FILTRO
-        ])
-        if por_creacion and SIN_TECNICO_FILTRO in contratistas_seleccionados:
-            condicion_contratistas |= Q(contratista="") | Q(contratista__isnull=True)
-        registros = registros.filter(condicion_contratistas)
-    else:
-        registros = registros.none()
-
-    # Estado SoftGuard.
-    if filtros["estado"]:
-        registros = registros.filter(
-            estado_softguard=filtros["estado"]
-        )
-
-    
-
-    # Estado de revisión.
-    if filtros["revision"] in ("APROBADA", "POR_REVISAR"):
-        registros = registros.filter(
-            condicion_aprobada()
-        )
-
-    elif filtros["revision"]:
-        registros = registros.filter(
-            revision__estado=filtros["revision"]
-        )
-
-    # Servicios originales y corregidos.
-    if servicios_seleccionados:
-        registros = registros.filter(
-            Q(
-                servicio_editado__isnull=True,
-                servicio__in=servicios_seleccionados,
-            )
-            | Q(
-                servicio_editado__in=servicios_seleccionados
-            )
-        )
-
-    # Fechas de finalización.
-    for campo, operador in (
-        ("fecha_desde", "gte"),
-        ("fecha_hasta", "lte"),
-    ):
-
-        valor = filtros[campo]
-
-        if valor:
-            try:
-                date.fromisoformat(valor)
-
-            except ValueError:
-                messages.warning(
-                    request,
-                    f"Fecha inválida: {valor}",
-                )
-
-            else:
-                registros = registros.filter(
-                    **{
-                        f"{campo_fecha}__date__{operador}":
-                            valor
-                    }
-                )
-
-    
-    # ==================================================
-    # BÚSQUEDA GENERAL DE ODT
-    # Incluye observaciones de SoftGuard
-    # ==================================================
-
-    if filtros["q"]:
-
-        q = filtros["q"]
-
-        condicion = (
-            Q(contratista__icontains=q)
-            | Q(tecnico__icontains=q)
-            | Q(cuenta_completa__icontains=q)
-            | Q(servicio__icontains=q)
-            | Q(servicio_editado__icontains=q)
-            | Q(direccion__icontains=q)
-            | Q(observaciones_insumos__icontains=q)
-        )
-
-        # Permitir búsqueda por número de ODT.
-        if q.isdigit():
-            condicion |= Q(numero=int(q))
-
-        registros = registros.filter(condicion)
-
-    
-    # ==================================================
-    # FILTRO POR COORDINADOR SOFTGUARD
-    # ==================================================
-
-    # Enlace desde el historial: coincidencia exacta sin ampliar el alcance del usuario.
-    if "numero_odt" in request.GET:
-        numero_exacto = request.GET.get("numero_odt", "").strip()
-        if numero_exacto.isascii() and numero_exacto.isdigit() and len(numero_exacto) <= 10:
-            registros = registros.filter(numero=int(numero_exacto))
-        else:
-            registros = registros.none()
+    registros = filtrar_tabla(
+        registros, filtros=filtros, servicios_seleccionados=servicios_seleccionados,
+        contratistas_seleccionados=contratistas_seleccionados, campo_fecha=campo_fecha,
+        por_creacion=por_creacion, numero_exacto=seleccion.numero_exacto,
+        avisar_fecha=lambda valor: messages.warning(request, f"Fecha inválida: {valor}"),
+    )
 
     if es_coordinador:
         filtros["coordinador"] = coordinador_sesion["usuario"]
         registros = limitar_odts_coordinador(request, registros)
 
     coordinador_seleccionado = filtros["coordinador"]
+    catalogo = catalogo_coordinadores()
 
-    coordinadores_validos = {
-        "jtapia",
-        "jbicz",
-        "yramirez",
-        "rsilva",
-        "SIN_IDENTIFICAR",
-    }
+    coordinadores_validos = {d["usuario"] for d in catalogo.values()} | {"SIN_IDENTIFICAR"}
 
     if coordinador_seleccionado and not es_coordinador:
 
@@ -334,7 +104,6 @@ def bandeja(request, por_creacion=False):
             registros = registros.filter(numero__in=numeros_filtrados)
 
 
-
     # ==================================================
     # INDICADORES FINANCIEROS OPTIMIZADOS
     # ==================================================
@@ -346,197 +115,8 @@ def bandeja(request, por_creacion=False):
 
     inicio_indicadores = tiempo.perf_counter()
 
-    from django.db.models import Q as FiltroQ
-
-    # Evitamos transportar los cálculos de SLA,
-    # incidencias y preventivos a la consulta financiera.
-    base_indicadores = registros.annotate(servicio_resumen=servicio_normalizado()).order_by().values(
-        "pk",
-        "valor_pago_tecnico",
-        "valor_pago_editado",
-        "revision__estado",
-    )
-    
-    # El mismo catálogo clasifica tarjetas e instantáneas de facturación.
-    condicion_mantencion_con_cobro = Q(servicio_resumen__in=nombres_canonicos("correctiva_con_cobro"))
-    condicion_mantencion_sin_cobro = Q(servicio_resumen__in=nombres_canonicos("correctiva_sin_cobro"))
-    condicion_renovacion = Q(servicio_resumen__in=nombres_canonicos("renovacion"))
-    condicion_mantenimiento_preventivo = Q(servicio_resumen__in=nombres_canonicos("preventivo"))
-
-    indicadores_sql = base_indicadores.aggregate(
-        cantidad_total=Count("pk"),
-        monto_original=Sum("valor_pago_tecnico"),
-
-        cantidad_aprobadas=Count(
-            "pk",
-            filter=(
-                FiltroQ(revision__isnull=True)
-                | FiltroQ(
-                    revision__estado__in=ESTADOS_APROBADOS
-                )
-            ),
-        ),
-        monto_aprobadas=Sum(
-            importe_efectivo(),
-            filter=condicion_aprobada(),
-        ),
-
-        cantidad_en_revision=Count(
-            "pk",
-            filter=FiltroQ(revision__estado="EN_REVISION"),
-        ),
-        monto_en_revision=Sum(
-            importe_efectivo(),
-            filter=FiltroQ(revision__estado="EN_REVISION"),
-        ),
-
-        cantidad_rechazadas=Count(
-            "pk",
-            filter=FiltroQ(revision__estado="RECHAZADA"),
-        ),
-        monto_rechazadas=Sum(
-            importe_efectivo(),
-            filter=FiltroQ(revision__estado="RECHAZADA"),
-        ),
-
-        cantidad_por_revisar=Count(
-            "pk",
-            filter=(
-                FiltroQ(revision__isnull=True)
-                | FiltroQ(revision__estado="POR_REVISAR")
-            ),
-        ),
-        monto_por_revisar=Sum(
-            importe_efectivo(),
-            filter=(
-                FiltroQ(revision__isnull=True)
-                | FiltroQ(revision__estado="POR_REVISAR")
-            ),
-        ),
-
-        cantidad_observadas=Count(
-            "pk",
-            filter=FiltroQ(revision__estado="OBSERVADA"),
-        ),
-        monto_observadas=Sum(
-            importe_efectivo(),
-            filter=FiltroQ(revision__estado="OBSERVADA"),
-        ),
-        
-        cantidad_mantencion_con_cobro=Count(
-            "pk",
-            filter=condicion_mantencion_con_cobro,
-        ),
-        monto_mantencion_con_cobro=Sum(
-            importe_efectivo(),
-            filter=condicion_mantencion_con_cobro,
-        ),
-
-        cantidad_mantencion_sin_cobro=Count(
-            "pk",
-            filter=condicion_mantencion_sin_cobro,
-        ),
-        monto_mantencion_sin_cobro=Sum(
-            importe_efectivo(),
-            filter=condicion_mantencion_sin_cobro,
-        ),
-
-        cantidad_renovacion=Count(
-            "pk", filter=condicion_renovacion,
-        ),
-        monto_renovacion=Sum(
-            importe_efectivo(), filter=condicion_renovacion,
-        ),
-        cantidad_mantenimiento_preventivo=Count(
-            "pk", filter=condicion_mantenimiento_preventivo,
-        ),
-        monto_mantenimiento_preventivo=Sum(
-            importe_efectivo(), filter=condicion_mantenimiento_preventivo,
-        ),
-    )
-
-    def construir_indicador(nombre):
-        return {
-            "cantidad": indicadores_sql[f"cantidad_{nombre}"],
-            "monto": (
-                indicadores_sql[f"monto_{nombre}"]
-                or Decimal("0")
-            ),
-        }
-
-    total = {
-        "cantidad": indicadores_sql["cantidad_total"],
-        "monto": (
-            indicadores_sql["monto_original"]
-            or Decimal("0")
-        ),
-    }
-
-    aprobadas = construir_indicador("aprobadas")
-    en_revision = construir_indicador("en_revision")
-    rechazadas = construir_indicador("rechazadas")
-    por_revisar = construir_indicador("por_revisar")
-    observadas = construir_indicador("observadas")
-    mantencion_con_cobro = construir_indicador("mantencion_con_cobro")
-    mantencion_sin_cobro = construir_indicador("mantencion_sin_cobro")
-    renovacion = construir_indicador("renovacion")
-    mantenimiento_preventivo = construir_indicador("mantenimiento_preventivo")
-
-
-
-    
-    # ==================================================
-    # INDICADORES OPERATIVOS DE CORRECCIONES
-    # ==================================================
-
-    # Se reutiliza el queryset "registros", que ya contiene
-    # los filtros de la bandeja, incluido el coordinador.
-
-    kpis_correcciones = registros.aggregate(
-        odt_modificadas=Count(
-            "pk",
-            filter=(
-                Q(servicio_editado__isnull=False)
-                | Q(valor_pago_editado__isnull=False)
-            ),
-            distinct=True,
-        ),
-        servicios_pendientes=Count(
-            "pk",
-            filter=(
-                Q(seguimiento_correccion__corrige_servicio=True)
-                & Q(seguimiento_correccion__estado__in=[
-                    "PENDIENTE",
-                    "EN_PROCESO",
-                ])
-            ),
-            distinct=True,
-        ),
-        montos_pendientes=Count(
-            "pk",
-            filter=(
-                Q(seguimiento_correccion__corrige_monto=True)
-                & Q(seguimiento_correccion__estado__in=[
-                    "PENDIENTE",
-                    "EN_PROCESO",
-                ])
-            ),
-            distinct=True,
-        ),
-    )
-
-    kpi_odt_modificadas = (
-        kpis_correcciones["odt_modificadas"] or 0
-    )
-
-    kpi_servicios_corregir = (
-        kpis_correcciones["servicios_pendientes"] or 0
-    )
-
-    kpi_montos_corregir = (
-        kpis_correcciones["montos_pendientes"] or 0
-    )
-
+    financieros = indicadores_financieros(registros)
+    operativos = indicadores_operativos(registros)
 
     # ==================================================
     # PAGINACIÓN
@@ -735,7 +315,6 @@ def bandeja(request, por_creacion=False):
     es_coordinador = es_coordinador_sstt(request.user)
 
 
-
     # ==================================================
     # RENDERIZAR BANDEJA
     # ==================================================
@@ -755,13 +334,13 @@ def bandeja(request, por_creacion=False):
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
             "coordinador_sesion": coordinador_sesion,
-            "coordinadores_asignables": list(catalogo_coordinadores().values()),
+            "coordinadores_asignables": list(catalogo.values()),
             "servicios_principales": SERVICIOS_PRINCIPALES,
             
 
-            "kpi_odt_modificadas": kpi_odt_modificadas,
-            "kpi_servicios_corregir": kpi_servicios_corregir,
-            "kpi_montos_corregir": kpi_montos_corregir,
+            "kpi_odt_modificadas": operativos["kpi_odt_modificadas"],
+            "kpi_servicios_corregir": operativos["kpi_servicios_corregir"],
+            "kpi_montos_corregir": operativos["kpi_montos_corregir"],
 
             "estados": (
                 ODT.objects
@@ -776,33 +355,31 @@ def bandeja(request, por_creacion=False):
             "contratistas_seleccionados": contratistas_seleccionados,
             "opciones": OPCIONES_BANDEJA,
 
-            "total": total,
-            "aprobadas": aprobadas,
-            "en_revision": en_revision,
-            "rechazadas": rechazadas,
-            "por_revisar": por_revisar,
-            "observadas": observadas,
+            "total": financieros["total"],
+            "aprobadas": financieros["aprobadas"],
+            "en_revision": financieros["en_revision"],
+            "rechazadas": financieros["rechazadas"],
+            "por_revisar": financieros["por_revisar"],
+            "observadas": financieros["observadas"],
 
             "indicadores": {
-                "total": total,
-                "aprobadas": aprobadas,
-                "en_revision": en_revision,
-                "rechazadas": rechazadas,
+                "total": financieros["total"],
+                "aprobadas": financieros["aprobadas"],
+                "en_revision": financieros["en_revision"],
+                "rechazadas": financieros["rechazadas"],
             },
-            "mantencion_con_cobro": mantencion_con_cobro,
-            "mantencion_sin_cobro": mantencion_sin_cobro,
-            "renovacion": renovacion,
-            "mantenimiento_preventivo": mantenimiento_preventivo,
+            "mantencion_con_cobro": financieros["mantencion_con_cobro"],
+            "mantencion_sin_cobro": financieros["mantencion_sin_cobro"],
+            "renovacion": financieros["renovacion"],
+            "mantenimiento_preventivo": financieros["mantenimiento_preventivo"],
         },
     )
-
 
 
 @login_required
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
 def bandeja_creacion(request):
     return bandeja(request, por_creacion=True)
-
 
 
 @login_required
