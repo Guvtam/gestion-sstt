@@ -52,3 +52,5 @@ No se realizó una medición de carga ni una revisión visual en navegador.
 Siguen pendientes la extracción de paginación/enriquecimiento de filas y
 catálogos auxiliares de bandeja, el resto de la exportación PDF y otros
 componentes visuales. No se declara terminada la reorganización.
+
+Etapa posterior aplicada: [paginación y preparación de filas](FILAS_BANDEJA.md).
