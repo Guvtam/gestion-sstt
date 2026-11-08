@@ -37,13 +37,7 @@
                 </tbody>
             </table>
         </div>
-        {% if pagina.has_other_pages %}
-        <nav class="hist-nav" aria-label="Páginas del historial de requisición">
-            {% if pagina.has_previous %}<a class="hist-tab" href="?page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
-            <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-            {% if pagina.has_next %}<a class="hist-tab" href="?page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}
-        </nav>
-        {% endif %}
+        {% include "revisiones/componentes/paginacion.html" with pagina=pagina clase="hist-nav" clase_enlace="hist-tab" etiqueta="Páginas del historial de requisición" only %}
     </section>
 </main>
 {% endblock %}

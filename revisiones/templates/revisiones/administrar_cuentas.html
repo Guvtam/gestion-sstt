@@ -314,30 +314,7 @@
 
         </div>
 
-        <div class="cuentas-paginacion">
-
-            <span>
-                Página {{ pagina.number }}
-                de {{ pagina.paginator.num_pages }}
-            </span>
-
-            <div>
-                {% if pagina.has_previous %}
-                    <a class="btn alt"
-                       href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.previous_page_number }}">
-                        Anterior
-                    </a>
-                {% endif %}
-
-                {% if pagina.has_next %}
-                    <a class="btn alt"
-                       href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ pagina.next_page_number }}">
-                        Siguiente
-                    </a>
-                {% endif %}
-            </div>
-
-        </div>
+        {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring agrupada=True siempre=True clase="cuentas-paginacion" clase_enlace="btn alt" only %}
 
     </section>
 

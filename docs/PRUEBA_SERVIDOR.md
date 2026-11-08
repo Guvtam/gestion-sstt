@@ -48,7 +48,7 @@ No asumir que las visitas siguen siendo 76: comparar con el origen del momento.
 | Área | Comprobar |
 |---|---|
 | Acceso | Admin y coordinador acceden con sus permisos; una sesión cerrada no sigue accediendo |
-| Bandeja | Filtros, selección vacía, búsqueda, 50 filas, páginas siguientes y regreso conservan selección |
+| Bandeja | Filtros, selección vacía, búsqueda, 50 filas, páginas siguientes y regreso conservan selección; detalle preventivo conserva su página independiente y ancla |
 | Coordinadores | Solo ODT propias; una URL manipulada no amplía alcance |
 | Catálogos | Servicios originales/corregidos y estados aparecen; responsables nuevos activos se pueden seleccionar |
 | Correcciones | Revisar monto cero, servicio corregido, facturada y rechazada sin alterar registros reales para probar |
