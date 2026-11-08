@@ -18,7 +18,7 @@ class DatosPDFTests(TestCase):
         EquivalenciaSoftGuard.objects.create(contratista=self.c, nombre_softguard="T. EXTERNO - Prueba")
 
     def pdf(self, bancarios=False, datos=True):
-        with patch("revisiones.exportar_pdf.consultar_historial_odt", return_value=[]):
+        with patch("revisiones.casos_uso.exportacion_pdf.consultar_historial_odt", return_value=[]):
             pdf = generar_pdf_contratista("T. EXTERNO - Prueba",
                 [(self.odt, "PREVENTIVO", Decimal("100"), "Prueba")],
                 date(2026,9,21), date(2026,10,20), historico=True,

@@ -75,7 +75,7 @@ class MejorasBandejaTests(TestCase):
     def test_pdf_resumen_primera_pagina_historial_segunda(self):
         from pypdf import PdfReader
         registros = [(o, o.servicio, o.valor_pago_tecnico, o.contratista) for o in ODT.objects.all()]
-        with patch("revisiones.exportar_pdf.consultar_historial_odt", return_value=[
+        with patch("revisiones.casos_uso.exportacion_pdf.consultar_historial_odt", return_value=[
             {"FechaHora": datetime(2026, 10, 25, 10), "Accion": "FINALIZADO",
              "NombreUsuario": "Usuario de prueba", "Observacion": "Trabajo terminado y verificado."}]):
             pdf = generar_pdf_contratista("Contratista de prueba", registros,
