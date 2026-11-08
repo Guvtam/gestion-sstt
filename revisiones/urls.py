@@ -1,7 +1,7 @@
 
 from django.urls import path
 
-from . import views
+from .vistas import bandeja, odt, operaciones_odt, cuentas, correcciones
 from .analisis_odt import analisis_odt
 from .mantenimientos_preventivos import mantenimientos_preventivos
 from .calendario_servicios import calendario_servicios
@@ -18,9 +18,9 @@ urlpatterns = [
     path("facturacion/<int:facturacion_id>/historial-requisicion/", historial_requisiciones, name="historial_requisiciones"),
     path("analisis-odt/", analisis_odt, name="analisis_odt"),
     path("calendario-servicios/", calendario_servicios, name="calendario_servicios"),
-    path("odt-por-creacion/", views.bandeja_creacion, name="bandeja_creacion"),
+    path("odt-por-creacion/", bandeja.bandeja_creacion, name="bandeja_creacion"),
     path("mantenimientos-preventivos/", mantenimientos_preventivos, name="mantenimientos_preventivos"),
-    path("asignar-coordinador/", views.asignar_coordinador, name="asignar_coordinador"),
+    path("asignar-coordinador/", operaciones_odt.asignar_coordinador, name="asignar_coordinador"),
     path(
         "exportar-aprobados-pdf/",
         exportar_aprobados_pdf,
@@ -38,47 +38,47 @@ urlpatterns = [
     ),
     path(
         "",
-        views.bandeja,
+        bandeja.bandeja,
         name="bandeja",
     ),
     path(
         "odt/<int:numero>/",
-        views.detalle,
+        odt.detalle,
         name="detalle",
     ),
     path(
         "acciones/",
-        views.acciones,
+        operaciones_odt.acciones,
         name="acciones",
     ),
     path(
         "guardar-fila/",
-        views.guardar_fila,
+        operaciones_odt.guardar_fila,
         name="guardar_fila",
     ),
     path(
         "historial/<int:numero>/",
-        views.historial_odt,
+        odt.historial_odt,
         name="historial_odt",
     ),
     path(
         "actualizar-revision/",
-        views.actualizar_revision,
+        operaciones_odt.actualizar_revision,
         name="actualizar_revision",
     ),
     path(
         "actualizar-informe/",
-        views.actualizar_informe,
+        operaciones_odt.actualizar_informe,
         name="actualizar_informe",
     ),
     path(
         "cuentas/",
-        views.administrar_cuentas,
+        cuentas.administrar_cuentas,
         name="administrar_cuentas",
     ),
     path(
         "cuentas/<int:cuenta_id>/guardar/",
-        views.guardar_cuenta,
+        cuentas.guardar_cuenta,
         name="guardar_cuenta",
     ),
     path(
@@ -93,7 +93,7 @@ urlpatterns = [
     ),
     path(
         "ajax/contratistas/",
-        views.contratistas_disponibles_ajax,
+        bandeja.contratistas_disponibles_ajax,
         name="contratistas_disponibles_ajax"
     ),
     path(
@@ -102,12 +102,12 @@ urlpatterns = [
         name="eliminar_periodo_facturacion",
     ),
     path("odt-modificadas/estado-correccion/", 
-         views.cambiar_estado_correccion, 
+         operaciones_odt.cambiar_estado_correccion, 
          name="cambiar_estado_correccion"
     ),
     path(
         "odt-modificadas/",
-        views.odt_modificadas,
+        correcciones.odt_modificadas,
         name="odt_modificadas"
     ),
     path(

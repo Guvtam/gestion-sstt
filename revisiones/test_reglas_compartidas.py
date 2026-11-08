@@ -102,7 +102,7 @@ class PreventivosConsistentesTests(TestCase):
         })
         req.user = self.user
         with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {} for n in numeros}), \
-             patch("revisiones.views.render", side_effect=lambda r, t, c: c):
+             patch("revisiones.vistas.bandeja.render", side_effect=lambda r, t, c: c):
             bandeja = views.bandeja(req)
         self.assertEqual([o.numero for o in bandeja["registros"]], [10])
         self.assertEqual(bandeja["registros"][0].fecha_ultimo_preventivo, self.fecha)
@@ -181,7 +181,7 @@ class ResumenFacturacionCompartidoTests(TestCase):
         req = RequestFactory().get("/", {"estado": "", "fecha_desde": "", "fecha_hasta": ""})
         req.user = User.objects.create_superuser("admin", password="test")
         with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {} for n in numeros}), \
-             patch("revisiones.views.render", side_effect=lambda r,t,c:c):
+             patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c):
             c = views.bandeja(req)
         # La tarjeta usa valores operativos; el resumen histórico conserva 17.50.
         self.assertEqual(c["mantenimiento_preventivo"]["cantidad"], 2)

@@ -15,7 +15,7 @@ la fotografía técnica de cada entrega.
 | Componentes visuales compartidos | Base común, opciones de servicios y errores de filtro compartidos; resto de filtros, tablas y mensajes pendiente |
 | Rendimiento de índices, exportaciones y concurrencia | Pendiente de medir en entorno representativo |
 | Usuarios y responsables configurables | Vínculos de login (0013) y catálogo de nuevos responsables (0014) administrables |
-| División de módulos | Consulta de calendario y primitivas PDF extraídas; reorganización restante pendiente |
+| División de módulos | views.py dividido por responsabilidad y con fachada compatible; calendario y primitivas PDF extraídos. Construcción de bandeja y PDF restante pendientes |
 | Configuración de despliegue y traslado corporativo | Pendiente de validar en el servidor real |
 | Protección de datos y verificación de respaldos | Etapa final aplazada por decisión de la usuaria |
 

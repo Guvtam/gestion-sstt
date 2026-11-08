@@ -27,7 +27,7 @@ class MejorasBandejaTests(TestCase):
                                         "fecha_hasta": "2026-11-20", **datos})
         request.user = self.user
         with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}), \
-             patch("revisiones.views.render", side_effect=lambda r, t, c: c):
+             patch("revisiones.vistas.bandeja.render", side_effect=lambda r, t, c: c):
             return views.bandeja(request)
 
     def test_todos_los_contratistas_marcados_por_defecto(self):

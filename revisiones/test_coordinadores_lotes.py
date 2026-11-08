@@ -197,7 +197,7 @@ class CoordinadoresPorLotesTests(TestCase):
         from .views import bandeja
         req = self.request(coordinador=self.datos[1]["usuario"], estado="", fecha_desde="", fecha_hasta="")
         with patch("revisiones.coordinadores_softguard.consultar_eventos_coordinadores", side_effect=self.eventos) as origen, \
-             patch("revisiones.views.render", side_effect=lambda r,t,c:c):
+             patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c):
             contexto = bandeja(req)
         self.assertEqual({o.numero for o in contexto["registros"]}, {1, 3})
         self.assertEqual(contexto["filtros"]["coordinador"], self.datos[0]["usuario"])
@@ -231,7 +231,7 @@ class CoordinadoresPorLotesTests(TestCase):
         from .views import bandeja
         req = self.request(self.admin, estado="", fecha_desde="", fecha_hasta="")
         with patch("revisiones.coordinadores_softguard.consultar_eventos_coordinadores", side_effect=RuntimeError), \
-             patch("revisiones.views.render", side_effect=lambda r,t,c:c):
+             patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c):
             contexto = bandeja(req)
         self.assertEqual({o.numero for o in contexto["registros"]}, {1, 2, 3})
         self.assertTrue(all(o.coordinador_nombre == "No disponible" for o in contexto["registros"]))
