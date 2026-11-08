@@ -8,7 +8,7 @@ la fotografía técnica de cada entrega.
 | Reglas compartidas de servicios, cuentas, SLA y preventivos | Implementadas y con regresiones |
 | Sincronización por lotes, bloqueo y registro de ejecuciones | Implementados |
 | Resolución de coordinadores por lotes durante peticiones | Implementada con proyección local renovable (0015); requiere carga y programación en despliegue |
-| Casos de uso de edición, revisión, facturación, informes y asignaciones | Separados de HTTP y con pruebas transaccionales; actualización de cuentas incorporada |
+| Casos de uso de edición, revisión, facturación, informes y asignaciones | Separados de HTTP y con pruebas transaccionales; cuentas y gestión de correcciones incorporadas |
 | Historial de requisiciones | Implementado; requiere migración 0012 |
 | Alta automática de cuentas B2C consistente | Unificada entre lectura, sincronización y completar catálogo |
 | Anulación financiera auditable y permiso dedicado | Pendiente de definir reglas antes de sustituir el borrado actual |
@@ -35,3 +35,5 @@ La [exportación modular](EXPORTACION_MODULAR.md) separa HTTP, lecturas, composi
 La [navegación compartida](NAVEGACION_COMPARTIDA.md) conserva multiselección y paginaciones independientes.
 
 [Revisión estructural de la etapa](CIERRE_REVISION_ESTRUCTURAL.md): guardas automatizadas, actualización transaccional de cuentas y límites pendientes de entorno.
+
+[Gestión de correcciones](GESTION_CORRECCIONES.md): última operación identificada de estado separada del adaptador y verificada con rollback.

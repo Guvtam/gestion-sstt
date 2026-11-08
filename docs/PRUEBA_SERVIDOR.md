@@ -51,7 +51,7 @@ No asumir que las visitas siguen siendo 76: comparar con el origen del momento.
 | Bandeja | Filtros, selección vacía, búsqueda, 50 filas, páginas siguientes y regreso conservan selección; detalle preventivo conserva su página independiente y ancla |
 | Coordinadores | Solo ODT propias; una URL manipulada no amplía alcance |
 | Catálogos | Servicios originales/corregidos y estados aparecen; responsables nuevos activos se pueden seleccionar |
-| Correcciones | Revisar monto cero, servicio corregido, facturada y rechazada sin alterar registros reales para probar |
+| Correcciones | Revisar monto cero y servicio corregido; coordinador solo marca Procesada sobre ODT propias. No se asigna Actualizada manualmente. Usar registros de prueba |
 | Calendario | Visitas realizadas, abiertas y atrasadas; servicios y búsqueda; cantidades disponibles y filtradas |
 | Preventivos/análisis | Fechas, clasificación y enlaces se mantienen |
 | Mensajes | Confirmaciones visibles una vez, errores diferenciados y sin HTML ejecutable |
