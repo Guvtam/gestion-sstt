@@ -1,0 +1,30 @@
+{% load navegacion_sstt %}
+{% if pagina.has_other_pages or siempre %}
+{% if agrupada %}
+<div class="{{ clase|default:'pagination' }}" role="navigation" aria-label="{{ etiqueta|default:'Páginas del listado' }}">
+    <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    <div>
+        {% if pagina.has_previous %}
+        {% enlace_pagina querystring pagina.previous_page_number parametro|default:"page" ancla as anterior %}
+        <a{% if clase_enlace %} class="{{ clase_enlace }}"{% endif %} href="{{ anterior }}">Anterior</a>
+        {% endif %}
+        {% if pagina.has_next %}
+        {% enlace_pagina querystring pagina.next_page_number parametro|default:"page" ancla as siguiente %}
+        <a{% if clase_enlace %} class="{{ clase_enlace }}"{% endif %} href="{{ siguiente }}">Siguiente</a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<nav class="{{ clase|default:'pagination' }}" aria-label="{{ etiqueta|default:'Páginas del listado' }}">
+    {% if pagina.has_previous %}
+    {% enlace_pagina querystring pagina.previous_page_number parametro|default:"page" ancla as anterior %}
+    <a{% if clase_enlace %} class="{{ clase_enlace }}"{% endif %} href="{{ anterior }}">Anterior</a>
+    {% endif %}
+    <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    {% enlace_pagina querystring pagina.next_page_number parametro|default:"page" ancla as siguiente %}
+    <a{% if clase_enlace %} class="{{ clase_enlace }}"{% endif %} href="{{ siguiente }}">Siguiente</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endif %}

@@ -58,11 +58,7 @@
 <td><a class="hist-link" href="?q={{ q|urlencode }}&amp;situacion={{ situacion|urlencode }}&amp;campo_fecha={{ campo_fecha }}&amp;fecha_desde={{ fecha_desde|urlencode }}&amp;fecha_hasta={{ fecha_hasta|urlencode }}&amp;page={{ pagina.number }}&amp;cuenta={{ cuenta.codigo|urlencode }}#historial-preventivos">Ver preventivos</a></td>
 </tr>{% empty %}<tr><td colspan="12" class="hist-empty">No hay cuentas para los filtros seleccionados.</td></tr>{% endfor %}
 </tbody></table></div>
-{% if pagina.has_other_pages %}<nav class="pagination">
-{% if pagina.has_previous %}<a href="?{{ querystring }}&amp;page={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
-<span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
-{% if pagina.has_next %}<a href="?{{ querystring }}&amp;page={{ pagina.next_page_number }}">Siguiente</a>{% endif %}
-</nav>{% endif %}
+{% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring only %}
 </section>
 {% if cuenta_seleccionada %}
 <section class="hist-panel" id="historial-preventivos">
@@ -78,11 +74,7 @@
 <td><a class="hist-link" href="{% url 'bandeja' %}?numero_odt={{ odt.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">Ver ODT</a></td>
 </tr>{% empty %}<tr><td colspan="8" class="hist-empty">Esta cuenta no tiene ODT preventivas registradas.</td></tr>{% endfor %}
 </tbody></table></div>
-{% if pagina_detalle.has_other_pages %}<nav class="pagination">
-{% if pagina_detalle.has_previous %}<a href="?{{ query_detalle }}&amp;page_detalle={{ pagina_detalle.previous_page_number }}#historial-preventivos">Anterior</a>{% endif %}
-<span>Página {{ pagina_detalle.number }} de {{ pagina_detalle.paginator.num_pages }}</span>
-{% if pagina_detalle.has_next %}<a href="?{{ query_detalle }}&amp;page_detalle={{ pagina_detalle.next_page_number }}#historial-preventivos">Siguiente</a>{% endif %}
-</nav>{% endif %}
+{% include "revisiones/componentes/paginacion.html" with pagina=pagina_detalle querystring=query_detalle parametro="page_detalle" ancla="historial-preventivos" only %}
 </section>
 {% endif %}
 </main>{% endblock %}
