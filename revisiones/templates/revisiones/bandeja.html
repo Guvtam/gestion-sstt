@@ -182,6 +182,9 @@
       <div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
 
         {% if perms.revisiones.ver_bandeja_sstt %}
+          <a class="btn alt" style="margin-right:auto;" href="{% url 'calendario_servicios' %}">
+            Calendario de visitas
+          </a>
           {% if perms.revisiones.revisar_pago_sstt %}<a class="btn alt" href="{% url 'analisis_odt' %}">Análisis de ODT</a>{% endif %}
           {% if por_creacion %}
           <a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a>
