@@ -50,7 +50,7 @@ class AccesoCoordinadoresTests(TestCase):
             req = self.request(data={"coordinador": parametro, "estado": "",
                                      "fecha_desde": "", "fecha_hasta": ""})
             with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: self.info(n) for n in numeros}), \
-                 patch("revisiones.views.render", side_effect=lambda r, t, c: c):
+                 patch("revisiones.vistas.bandeja.render", side_effect=lambda r, t, c: c):
                 context = views.bandeja(req)
             self.assertEqual({o.numero for o in context["registros"]}, {1})
             self.assertEqual(context["filtros"]["coordinador"], "rsilva")
@@ -107,7 +107,7 @@ class AccesoCoordinadoresTests(TestCase):
             req = self.request(data={"numero_odt": numero, "estado": "",
                                      "fecha_desde": "", "fecha_hasta": ""})
             with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: self.info(n) for n in numeros}), \
-                 patch("revisiones.views.render", side_effect=lambda r, t, c: c):
+                 patch("revisiones.vistas.bandeja.render", side_effect=lambda r, t, c: c):
                 context = views.bandeja(req)
             self.assertEqual({o.numero for o in context["registros"]}, expected)
 
@@ -127,7 +127,7 @@ class EstadoModificacionTests(TestCase):
     def enviar(self, estado="EN_PROCESO"):
         req = self.factory.post("/", {"numero": "10", "estado": estado})
         req.user = self.user
-        with patch("revisiones.views.coordinador_visible", return_value=True):
+        with patch("revisiones.vistas.operaciones_odt.coordinador_visible", return_value=True):
             return views.cambiar_estado_correccion(req)
 
     def test_procesada_y_actualizada_solo_al_coincidir_ambos_campos(self):
@@ -156,7 +156,7 @@ class EstadoModificacionTests(TestCase):
     def test_otro_coordinador_denegado(self):
         req = self.factory.post("/", {"numero": "10", "estado": "EN_PROCESO"})
         req.user = self.user
-        with patch("revisiones.views.coordinador_visible", return_value=False):
+        with patch("revisiones.vistas.operaciones_odt.coordinador_visible", return_value=False):
             with self.assertRaises(PermissionDenied):
                 views.cambiar_estado_correccion(req)
 
@@ -198,7 +198,7 @@ class AsignacionCoordinadorTests(TestCase):
     def test_admin_y_juan_autorizados(self):
         from .models import AsignacionCoordinadorODT
         for user in (self.admin, self.juan):
-            with patch("revisiones.views.identificar_coordinador_softguard", return_value={"identificado": False}):
+            with patch("revisiones.vistas.operaciones_odt.identificar_coordinador_softguard", return_value={"identificado": False}):
                 self.assertEqual(self.asignar(user).status_code, 200)
             asignacion = AsignacionCoordinadorODT.objects.get(odt=self.odt)
             self.assertEqual(asignacion.usuario_coordinador, "rsilva")
@@ -211,16 +211,16 @@ class AsignacionCoordinadorTests(TestCase):
 
     def test_identificada_y_fallo_sql_no_permiten_asignar(self):
         from .models import AsignacionCoordinadorODT
-        with patch("revisiones.views.identificar_coordinador_softguard", return_value={"identificado": True}):
+        with patch("revisiones.vistas.operaciones_odt.identificar_coordinador_softguard", return_value={"identificado": True}):
             self.assertEqual(self.asignar(self.admin).status_code, 409)
-        with patch("revisiones.views.identificar_coordinador_softguard", side_effect=RuntimeError):
+        with patch("revisiones.vistas.operaciones_odt.identificar_coordinador_softguard", side_effect=RuntimeError):
             self.assertEqual(self.asignar(self.admin).status_code, 503)
         self.assertFalse(AsignacionCoordinadorODT.objects.exists())
 
     def test_asignacion_persistente_filtra_por_usuario_y_no_se_reasigna(self):
         from .coordinadores_softguard import identificar_coordinador_odt
         from .acceso_coordinadores import limitar_odts_coordinador
-        with patch("revisiones.views.identificar_coordinador_softguard", return_value={"identificado": False}):
+        with patch("revisiones.vistas.operaciones_odt.identificar_coordinador_softguard", return_value={"identificado": False}):
             self.assertEqual(self.asignar(self.juan).status_code, 200)
             self.assertEqual(self.asignar(self.admin, "jtapia").status_code, 409)
         self.assertEqual(identificar_coordinador_odt(77)["usuario"], "rsilva")

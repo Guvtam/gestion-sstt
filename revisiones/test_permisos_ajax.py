@@ -19,7 +19,7 @@ class PermisosContratistasAjaxTests(TestCase):
 
     def test_sesion_sin_permiso_no_expone_contratistas(self):
         self.client.force_login(self.user)
-        with patch("revisiones.views.opciones_contratistas") as consulta:
+        with patch("revisiones.vistas.bandeja.opciones_contratistas") as consulta:
             self.assertEqual(self.client.get(self.url).status_code, 403)
         consulta.assert_not_called()
 

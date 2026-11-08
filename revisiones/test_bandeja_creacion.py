@@ -27,7 +27,7 @@ class BandejaCreacionTests(TestCase):
         return request
 
     def contexto(self, creacion):
-        with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
+        with patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c), \
              patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             return (views.bandeja_creacion if creacion else views.bandeja)(self.request())
 
@@ -68,13 +68,13 @@ class BandejaCreacionTests(TestCase):
         ODT.objects.create(numero=3, contratista="", tecnico="", servicio="MARCHA BLANCA",
             estado_softguard="Pendiente", fecha_creacion=timezone.make_aware(datetime(2026,10,25)))
         request = self.request(estado="")
-        with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
+        with patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c), \
              patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             c = views.bandeja_creacion(request)
         self.assertEqual({o.numero for o in c["registros"]}, {1,3})
         self.assertIn(views.SIN_TECNICO_FILTRO,c["contratistas_seleccionados"])
         request = self.request(estado="", contratista=[views.SIN_TECNICO_FILTRO], contratistas_filtrados="1")
-        with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
+        with patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c), \
              patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             c = views.bandeja_creacion(request)
         self.assertEqual([o.numero for o in c["registros"]],[3])
@@ -85,13 +85,13 @@ class BandejaCreacionTests(TestCase):
         from unittest.mock import patch
         request = self.factory.get("/")
         request.user = self.user
-        with patch("revisiones.views.render", side_effect=lambda r,t,c:c), \
+        with patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c), \
              patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=lambda numeros: {n: {'identificado': False} for n in numeros}):
             c = views.bandeja_creacion(request)
         self.assertEqual(c["filtros"]["estado"],"")
         self.assertEqual(c["servicios_seleccionados"],[])
 
     def test_deseleccionar_todo_sigue_sin_mostrar_filas(self):
-        with patch("revisiones.views.render", side_effect=lambda r,t,c:c):
+        with patch("revisiones.vistas.bandeja.render", side_effect=lambda r,t,c:c):
             c = views.bandeja_creacion(self.request(contratistas_filtrados="1"))
         self.assertEqual(list(c["registros"]),[])

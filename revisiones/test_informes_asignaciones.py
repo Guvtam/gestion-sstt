@@ -263,7 +263,7 @@ class InformesAsignacionesTests(TestCase):
     def test_http_asignacion_preserva_respuesta_y_conflicto(self):
         self.client.force_login(self.admin)
         datos = {"numero": 1, "coordinador": self.datos[0]["usuario"]}
-        with patch("revisiones.views.identificar_coordinador_softguard", return_value={"identificado": False}):
+        with patch("revisiones.vistas.operaciones_odt.identificar_coordinador_softguard", return_value={"identificado": False}):
             r = self.client.post(reverse("asignar_coordinador"), datos)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json(), {"ok": True, "coordinador": self.datos[0]["nombre"]})
