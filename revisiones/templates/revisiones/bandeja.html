@@ -404,25 +404,9 @@
   <select name="coordinador">
     <option value="">Todos</option>
 
-    <option value="jtapia"
-      {% if filtros.coordinador == 'jtapia' %}selected{% endif %}>
-      Josué Tapia
-    </option>
-
-    <option value="jbicz"
-      {% if filtros.coordinador == 'jbicz' %}selected{% endif %}>
-      Jurguen Bicz
-    </option>
-
-    <option value="yramirez"
-      {% if filtros.coordinador == 'yramirez' %}selected{% endif %}>
-      Yasna Ramírez
-    </option>
-
-    <option value="rsilva"
-      {% if filtros.coordinador == 'rsilva' %}selected{% endif %}>
-      Romina Silva
-    </option>
+    {% for responsable in coordinadores_asignables %}
+    <option value="{{ responsable.usuario }}" {% if filtros.coordinador == responsable.usuario %}selected{% endif %}>{{ responsable.nombre }}</option>
+    {% endfor %}
 
     <option value="SIN_IDENTIFICAR"
       {% if filtros.coordinador == 'SIN_IDENTIFICAR' %}selected{% endif %}>

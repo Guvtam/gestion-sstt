@@ -35,3 +35,5 @@ La función principal de bandeja sigue siendo grande. Extraer su construcción
 de filtros, consultas y contexto es una etapa posterior con sus propios
 contratos y pruebas. También siguen pendientes partes de exportación PDF.
 Separar archivos no implica que toda la arquitectura haya quedado terminada.
+
+Etapa posterior aplicada: [filtros e indicadores de bandeja](BANDEJA_MODULAR.md). La paginación y el enriquecimiento siguen en la vista.

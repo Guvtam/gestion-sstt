@@ -15,7 +15,7 @@ la fotografía técnica de cada entrega.
 | Componentes visuales compartidos | Base común, opciones de servicios y errores de filtro compartidos; resto de filtros, tablas y mensajes pendiente |
 | Rendimiento de índices, exportaciones y concurrencia | Pendiente de medir en entorno representativo |
 | Usuarios y responsables configurables | Vínculos de login (0013) y catálogo de nuevos responsables (0014) administrables |
-| División de módulos | views.py dividido por responsabilidad y con fachada compatible; calendario y primitivas PDF extraídos. Construcción de bandeja y PDF restante pendientes |
+| División de módulos | Vistas separadas; selección, filtros e indicadores de bandeja extraídos. Paginación/enriquecimiento y PDF restante pendientes |
 | Configuración de despliegue y traslado corporativo | Pendiente de validar en el servidor real |
 | Protección de datos y verificación de respaldos | Etapa final aplazada por decisión de la usuaria |
 
@@ -23,3 +23,5 @@ Las pruebas aisladas no certifican la capacidad de la Raspberry ni la recuperaci
 de sus datos. Los cambios del repositorio no se instalan automáticamente allí.
 
 Ver [detalle de la evolución operativa](EVOLUCION_OPERATIVA.md) para los límites de vigencia y la conciliación del calendario.
+
+La [bandeja modular](BANDEJA_MODULAR.md) separa selección y agregaciones y actualiza el selector de coordinadores al catálogo administrable.
