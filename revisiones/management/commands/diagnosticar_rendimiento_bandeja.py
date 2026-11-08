@@ -12,15 +12,32 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import connections
 from django.test import RequestFactory
 
+from revisiones.integraciones.medicion_etapas import instrumentar_etapas
 from revisiones.dominio.servicios import SERVICIOS_PRINCIPALES
 from revisiones.vistas.bandeja import bandeja
+
+
+ETAPAS = {
+    "Opciones de contratistas": "revisiones.vistas.bandeja.opciones_contratistas",
+    "Alcance del coordinador": "revisiones.vistas.bandeja.limitar_odts_coordinador",
+    "Catálogo de responsables": "revisiones.vistas.bandeja.catalogo_coordinadores",
+    "Indicadores financieros": "revisiones.vistas.bandeja.indicadores_financieros",
+    "Indicadores operativos": "revisiones.vistas.bandeja.indicadores_operativos",
+    "Paginación y preventivos": "revisiones.vistas.bandeja.paginar_filas",
+    "Responsables de filas": "revisiones.vistas.bandeja.coordinadores_para_mostrar",
+    "Complementos de filas": "revisiones.vistas.bandeja.cargar_complementos",
+    "Preparación de filas": "revisiones.vistas.bandeja.preparar_filas",
+    "Catálogo de servicios": "revisiones.vistas.bandeja.servicios_disponibles",
+    "Renderizado": "revisiones.vistas.bandeja.render",
+    "SQL Server directo": "revisiones.servicios_sql._consultar",
+}
 
 
 class SoloLecturaRequerida(RuntimeError):
     pass
 
 
-def medir_peticion(request, *, por_creacion=False):
+def medir_peticion(request, *, por_creacion=False, trazar_memoria=True, detalle=False):
     consultas = 0
     tiempo_sql = 0.0
 
@@ -35,12 +52,14 @@ def medir_peticion(request, *, por_creacion=False):
         finally:
             tiempo_sql += perf_counter() - inicio
 
-    traza_propia = not tracemalloc.is_tracing()
+    traza_previa = tracemalloc.is_tracing()
+    traza_propia = trazar_memoria and not traza_previa
     if traza_propia:
         tracemalloc.start()
     try:
         inicio = perf_counter()
         with ExitStack() as stack:
+            etapas = instrumentar_etapas(stack, ETAPAS) if detalle else {}
             for conexion in connections.all():
                 stack.enter_context(conexion.execute_wrapper(observar))
             # Evita mezclar los prints diagnósticos de la vista con este informe.
@@ -54,6 +73,8 @@ def medir_peticion(request, *, por_creacion=False):
             "estado": respuesta.status_code, "segundos": segundos,
             "consultas": consultas, "segundos_sql": tiempo_sql,
             "pico_python_bytes": pico, "respuesta_bytes": len(respuesta.content),
+            "etapas": etapas, "traza_memoria_solicitada": trazar_memoria,
+            "traza_previa_activa": traza_previa,
         }
     finally:
         if traza_propia:
@@ -64,6 +85,8 @@ class Command(BaseCommand):
     help = "Mide una lectura de bandeja; no simula Nginx, red ni concurrencia"
 
     def add_arguments(self, parser):
+        parser.add_argument("--sin-traza-memoria", action="store_true", help="No inicia tracemalloc; evita su sobrecarga")
+        parser.add_argument("--detalle", action="store_true", help="Desglosa etapas y lecturas directas del origen")
         parser.add_argument("--usuario", required=True)
         parser.add_argument("--fecha-desde", required=True)
         parser.add_argument("--fecha-hasta", required=True)
@@ -108,7 +131,10 @@ class Command(BaseCommand):
             request.session = {}
             request._messages = FallbackStorage(request)
             try:
-                resultado = medir_peticion(request, por_creacion=options["por_creacion"])
+                resultado = medir_peticion(
+                    request, por_creacion=options["por_creacion"],
+                    trazar_memoria=not options["sin_traza_memoria"], detalle=options["detalle"],
+                )
             except PermissionDenied:
                 raise CommandError("El usuario no tiene acceso a la bandeja solicitada.") from None
             except Exception as error:
@@ -117,12 +143,23 @@ class Command(BaseCommand):
                     "No se imprime HTML, SQL ni información de conexión."
                 ) from None
             pico = resultado["pico_python_bytes"]
-            memoria = f"{pico / 1024**2:.2f} MiB" if pico is not None else "No disponible: traza previa activa"
+            memoria = (f"{pico / 1024**2:.2f} MiB" if pico is not None else
+                       "No disponible: traza previa activa" if resultado["traza_previa_activa"] else "Desactivada")
             self.stdout.write(
                 f"Medición {n}: HTTP {resultado['estado']} | Tiempo: {resultado['segundos']:.3f} s | "
                 f"Consultas Django: {resultado['consultas']} | Tiempo SQL Django: {resultado['segundos_sql']:.3f} s\n"
                 f"Pico de asignaciones Python: {memoria} | Respuesta: {resultado['respuesta_bytes']} bytes"
             )
+            if options["detalle"]:
+                for nombre, dato in resultado["etapas"].items():
+                    self.stdout.write(
+                        f"  {nombre}: {dato['segundos']:.3f} s | "
+                        f"Llamadas: {dato['llamadas']} | Fallos: {dato['fallos']}"
+                    )
+                self.stdout.write(
+                    "Las etapas son inclusivas: SQL Server directo puede estar dentro de responsables o alcance; "
+                    "no sumar sus tiempos como si fueran independientes."
+                )
         self.stdout.write(
             "Incluye sobrecarga de instrumentación. No mide RAM total, Nginx, navegador ni concurrencia. "
             "Las consultas pyodbc no se cuentan como consultas Django."
