@@ -27,8 +27,9 @@ seguridad ni rendimiento del despliegue.
 ## Límites y trabajo restante
 
 La reorganización principal no implica que todos los adaptadores sean mínimos.
-El cambio de estado de modificación todavía contiene lógica transaccional en
-su adaptador. La eliminación de facturación conserva su operación anterior:
+El cambio de estado de modificación se trasladó posteriormente a un caso de
+uso con autorización y auditoría transaccional (GESTION_CORRECCIONES.md).
+La eliminación de facturación conserva su operación anterior:
 la anulación auditable exige definir reglas de negocio.
 
 Otros módulos de lectura de análisis/preventivos conservan consultas propias.
@@ -45,3 +46,5 @@ Pendientes de entorno:
 Esta entrega no cambia configuración, servicios, base ni programación remota.
 La guía PRUEBA_SERVIDOR.md define la comprobación del entorno real.
 No requiere nuevas migraciones ni sincronización adicional.
+
+Actualización de esta revisión: la suite posterior de gestión de correcciones tiene 410 pruebas aprobadas.
