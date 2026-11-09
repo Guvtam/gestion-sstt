@@ -1,5 +1,5 @@
 {% extends "revisiones/base_operativa.html" %}
-{% load static %}
+{% load static formato_sstt %}
 {% block titulo %}Análisis de ODT · SSTT{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
@@ -114,9 +114,9 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 {% for t in tendencia %}<a class="tendencia-col" href="{{ t.url }}" title="{{ t.etiqueta }}: {{ t.cantidad }} ODT"><b>{{ t.cantidad }}</b><em style="height:{{ t.alto }}%"></em><span>{{ t.etiqueta }}</span></a>{% empty %}<p class="vacio-grafico">Sin registros con fecha disponible.</p>{% endfor %}
 </div></div></section>
 </div>
-<section class="hist-panel"><details class="dashboard-detalle" {% if vista != "todas" %}open{% endif %}><summary>Detalle de ODT · {{ pagina.paginator.count }} — abrir / cerrar</summary><div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>ODT</th><th>Cuenta</th><th>Técnico / contratista</th><th>Estado</th><th>Incidencias cuenta / contratista · 90 días</th><th>Incidencias cuenta · 90 días</th><th>SLA</th><th>Último preventivo</th></tr></thead><tbody>
-{% for o in pagina %}<tr><td><a href="{% url 'bandeja' %}?numero_odt={{ o.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ o.numero|stringformat:'d' }}</a></td><td>{{ o.cuenta_completa|default:"Sin cuenta" }}</td><td>{{ o.tecnico|default:o.contratista|default:"Sin técnico / contratista" }}</td><td>{{ o.estado_softguard }}</td><td>{{ o.cantidad_incidencias }}</td><td>{{ o.incidencias_cuenta_90 }}</td><td>{% if o.estado_sla == 'CUMPLE' %}Cumple{% elif o.estado_sla == 'NO_CUMPLE' %}No cumple{% elif o.estado_sla == 'PENDIENTE' %}Pendiente{% else %}Revisar fechas{% endif %}</td><td>{{ o.fecha_ultimo_preventivo|date:"d/m/Y H:i"|default:"Sin preventivo" }}</td></tr>
-{% empty %}<tr><td colspan="8">No hay ODT para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
+<section class="hist-panel"><details class="dashboard-detalle" {% if vista != "todas" %}open{% endif %}><summary>Detalle de ODT · {{ pagina.paginator.count }} — abrir / cerrar</summary><p class="chart-nota">Servicio y monto efectivos, incluidas las correcciones registradas en SSTT.</p><div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>ODT</th><th>Cuenta</th><th>Técnico / contratista</th><th>Servicio</th><th>Monto CLP</th><th>Estado</th><th>Incidencias cuenta / contratista · 90 días</th><th>Incidencias cuenta · 90 días</th><th>SLA</th><th>Último preventivo</th></tr></thead><tbody>
+{% for o in pagina %}<tr><td><a href="{% url 'bandeja' %}?numero_odt={{ o.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ o.numero|stringformat:'d' }}</a></td><td>{{ o.cuenta_completa|default:"Sin cuenta" }}</td><td>{{ o.tecnico|default:o.contratista|default:"Sin técnico / contratista" }}</td><td>{{ o.servicio_efectivo|default:"Sin servicio" }}</td><td class="right" style="white-space:nowrap">${{ o.monto_efectivo|clp }}</td><td>{{ o.estado_softguard }}</td><td>{{ o.cantidad_incidencias }}</td><td>{{ o.incidencias_cuenta_90 }}</td><td>{% if o.estado_sla == 'CUMPLE' %}Cumple{% elif o.estado_sla == 'NO_CUMPLE' %}No cumple{% elif o.estado_sla == 'PENDIENTE' %}Pendiente{% else %}Revisar fechas{% endif %}</td><td>{{ o.fecha_ultimo_preventivo|date:"d/m/Y H:i"|default:"Sin preventivo" }}</td></tr>
+{% empty %}<tr><td colspan="10">No hay ODT para estos filtros.</td></tr>{% endfor %}</tbody></table></div>
 {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring only %}
 </details></section></main><script>
 (() => {

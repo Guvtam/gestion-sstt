@@ -242,3 +242,31 @@ class AnalisisODTTests(TestCase):
         self.assertIn("2 ODT", html)
         self.assertIn('aria-label="FIR-100: 2 incidencias. Filtrar cuenta"', html)
         self.assertEqual(self.consultar(desde="fecha-invalida")["ranking_cuentas"], [])
+
+
+    def test_detalle_muestra_servicio_y_monto_efectivos_en_clp(self):
+        from decimal import Decimal
+        ODT.objects.filter(numero=1).update(valor_pago_tecnico=12345)
+        ODT.objects.filter(numero=2).update(valor_pago_tecnico=9000, valor_pago_editado=25000,
+                                          servicio_editado="MANTENIMIENTO PREVENTIVO")
+        contexto = self.consultar()
+        montos = {o.numero: o.monto_efectivo for o in contexto["pagina"]}
+        self.assertEqual(montos, {1: Decimal("12345"), 2: Decimal("25000")})
+        with self.assertNumQueries(0), patch("django.urls.reverse", return_value="/test/"):
+            html = engines["django"].get_template("revisiones/analisis_odt.html").render(contexto)
+        self.assertIn("<th>Servicio</th><th>Monto CLP</th>", html)
+        self.assertIn("$12.345", html)
+        self.assertIn("$25.000", html)
+        self.assertIn("MANTENIMIENTO PREVENTIVO", html)
+        self.assertNotIn("$9.000", html)
+
+    def test_detalle_respeta_monto_editado_cero_y_vacio_diez_columnas(self):
+        ODT.objects.filter(numero=1).update(valor_pago_tecnico=50000, valor_pago_editado=0)
+        contexto = self.consultar()
+        self.assertEqual(next(o.monto_efectivo for o in contexto["pagina"] if o.numero == 1), 0)
+        with patch("django.urls.reverse", return_value="/test/"):
+            html = engines["django"].get_template("revisiones/analisis_odt.html").render(contexto)
+            vacio = engines["django"].get_template("revisiones/analisis_odt.html").render(self.consultar(q="inexistente"))
+        self.assertIn("$0", html)
+        self.assertNotIn("$50.000", html)
+        self.assertIn('colspan="10"', vacio)

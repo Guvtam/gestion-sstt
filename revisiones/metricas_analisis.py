@@ -6,6 +6,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from .consultas.preventivos import asignar_ultimos_preventivos
+from .consultas.pagos import importe_efectivo
 from .dominio.cuentas import normalizar_codigo_cuenta
 from .dominio.indicadores import estado_sla
 from .dominio.servicios import servicio_efectivo
@@ -35,7 +36,7 @@ def cargar_metricas(queryset):
         if codigo:
             incidencias_cuenta[codigo] += grupo["total"]
 
-    filas = list(queryset.only(
+    filas = list(queryset.annotate(monto_efectivo=importe_efectivo()).only(
         "numero", "cuenta_completa", "contratista", "tecnico", "servicio",
         "servicio_editado", "fecha_creacion", "fecha_finalizacion", "estado_softguard",
     ))
