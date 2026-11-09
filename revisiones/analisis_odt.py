@@ -10,6 +10,7 @@ from django.views.decorators.http import require_GET
 from .models import ODT
 from .metricas_analisis import cargar_metricas
 from .dominio.servicios import SERVICIOS_PRINCIPALES
+from .dominio.ranking_cuentas import ranking_cuentas
 
 
 @login_required
@@ -46,6 +47,9 @@ def analisis_odt(request):
     servicios_seleccionados = (request.GET.getlist("servicios") if "servicios_filtrados" in request.GET or "servicios" in request.GET
                               else list(SERVICIOS_PRINCIPALES))
     filas = [o for o in filas if o.servicio_efectivo in servicios_seleccionados]
+    cuenta=request.GET.get("cuenta", "").strip()
+    if cuenta:
+        filas = [o for o in filas if o.clave_cuenta_analisis == cuenta]
     servicio=request.GET.get("servicio","")
     sla=request.GET.get("sla","")
     preventivo=request.GET.get("preventivo","")
@@ -73,6 +77,11 @@ def analisis_odt(request):
         for k,v in cambios.items():
             parametros[k]=v
         return "?" + parametros.urlencode() + "#dashboard"
+
+    ranking = ranking_cuentas(filas)
+    for fila in ranking:
+        fila["url"] = enlace("cuenta", fila["cuenta"])
+        fila["activo"] = cuenta == fila["cuenta"]
 
     resumen={
         "total":len(filas),
@@ -147,13 +156,13 @@ def analisis_odt(request):
         g["ancho"]=f'{g["cantidad"]*100/max_cuentas:.2f}'
 
     tarjetas = [
-        {"nombre":"ODT analizadas","valor":resumen["total"],"url":enlace(estado="",servicio="",sla="",preventivo="",recurrencia="",incidencias_cuenta=""),"nota":"Quitar selecciones de gráficos","color":"azul"},
+        {"nombre":"ODT analizadas","valor":resumen["total"],"url":enlace(estado="",servicio="",sla="",preventivo="",recurrencia="",incidencias_cuenta="",cuenta=""),"nota":"Quitar selecciones de gráficos","color":"azul"},
         {"nombre":"Cumplimiento SLA","valor":str(resumen["porcentaje_sla"])+" %" if evaluables else "—","url":enlace("sla","CUMPLE"),"nota":f"{evaluables} ODT evaluables","color":"verde"},
         {"nombre":"ODT con atenciones repetidas","valor":resumen["recurrentes"],"url":enlace("recurrencia","con"),"nota":"2 o más finalizadas · misma cuenta y contratista · últimos 90 días","color":"naranja"},
         {"nombre":"Sin preventivo registrado","valor":resumen["sin_preventivo"],"url":enlace("preventivo","sin"),"nota":"Antecedentes disponibles por cuenta","color":"violeta"},
     ]
     filtros_activos=[]
-    for clave,titulo in (("servicio","Servicio"),("sla","SLA"),("preventivo","Preventivo"),("recurrencia","Recurrencia"),("incidencias_cuenta","Incidencias por cuenta")):
+    for clave,titulo in (("cuenta","Cuenta"),("servicio","Servicio"),("sla","SLA"),("preventivo","Preventivo"),("recurrencia","Recurrencia"),("incidencias_cuenta","Incidencias por cuenta")):
         valor=request.GET.get(clave)
         if valor:
             etiquetas = {"CUMPLE":"Cumple","NO_CUMPLE":"No cumple","PENDIENTE":"Pendiente","REVISAR":"Revisar fechas",
@@ -174,6 +183,7 @@ def analisis_odt(request):
     params = request.GET.copy()
     params.pop("page",None)
     return render(request,"revisiones/analisis_odt.html",{
+        "cuenta":cuenta, "ranking_cuentas":ranking,
         "incidencias_cuenta":incidencias_cuenta,"incidencias_grafico":incidencias_grafico,
         "cuentas_repetidas":sum(g["cantidad"] for g in incidencias_grafico),
         "url_revisar_fechas":enlace("sla","REVISAR"),
@@ -183,7 +193,7 @@ def analisis_odt(request):
         "tendencia":tendencia,"tendencia_mensual":mensual,"filtros_activos":filtros_activos,
         "servicios_disponibles":servicios_disponibles,"servicios_seleccionados":servicios_seleccionados,
         "servicio":servicio,"sla":sla,"preventivo":preventivo,"recurrencia":recurrencia,
-        "quitar_selecciones":enlace(estado="",servicio="",sla="",preventivo="",recurrencia="",incidencias_cuenta=""),
+        "quitar_selecciones":enlace(estado="",servicio="",sla="",preventivo="",recurrencia="",incidencias_cuenta="",cuenta=""),
         "resumen":resumen,"por_estado":por_estado,"por_servicio":por_servicio,"pagina":pagina,
         "desde":desde,"hasta":hasta,"campo":campo,"estado":estado,"q":q,"vista":vista,
         "errores":errores,"querystring":params.urlencode(),

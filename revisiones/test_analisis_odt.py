@@ -185,3 +185,60 @@ class AnalisisODTTests(TestCase):
         self.assertEqual(c["incidencias_grafico"][0]["cantidad"],1)
         self.assertEqual({o.incidencias_cuenta_90 for o in c["pagina"]},{2})
         self.assertEqual({o.cantidad_incidencias for o in c["pagina"]},{0})
+
+    def test_ranking_agrupa_codigo_cuenta_y_cuenta_solo_periodo_filtrado(self):
+        ODT.objects.create(numero=600, cuenta_completa="FIR-100 - Nombre actualizado", contratista="Otro",
+            servicio="MANTENCION CORRECTIVA CON COBRO", estado_softguard="Finalizado",
+            fecha_creacion=self.base, fecha_finalizacion=self.base+timedelta(hours=4))
+        ODT.objects.create(numero=601, cuenta_completa="", servicio="MANTENCION CORRECTIVA CON COBRO",
+            estado_softguard="Finalizado", fecha_finalizacion=self.base)
+        contexto = self.consultar()
+        self.assertEqual([(r["cuenta"], r["cantidad"]) for r in contexto["ranking_cuentas"]], [("FIR-100", 3)])
+        self.assertEqual(contexto["ranking_cuentas"][0]["ancho"], "100.00")
+        # La preventiva histórica de esta cuenta queda fuera del período.
+        self.assertEqual(contexto["resumen"]["total"], 4)
+
+    def test_ranking_top_diez_y_empates_estables(self):
+        for i in range(12):
+            ODT.objects.create(numero=700+i, cuenta_completa=f"FIR-{300+i}",
+                servicio="MANTENCION CORRECTIVA CON COBRO", estado_softguard="Finalizado",
+                fecha_creacion=self.base, fecha_finalizacion=self.base+timedelta(hours=4))
+        ranking = self.consultar()["ranking_cuentas"]
+        self.assertEqual(len(ranking), 10)
+        self.assertEqual(ranking[0]["cuenta"], "FIR-100")
+        self.assertEqual([r["cuenta"] for r in ranking[1:]], [f"FIR-{300+i}" for i in range(9)])
+        self.assertEqual([r["posicion"] for r in ranking], list(range(1, 11)))
+
+    def test_ranking_seleccion_exacta_chip_y_limpieza_conservan_multiservicio(self):
+        from urllib.parse import parse_qs, urlsplit
+        ODT.objects.create(numero=800, cuenta_completa="FIR-1000", servicio="MANTENCION CORRECTIVA CON COBRO",
+            estado_softguard="Finalizado", fecha_creacion=self.base, fecha_finalizacion=self.base+timedelta(hours=4))
+        servicios = ["MANTENCION CORRECTIVA CON COBRO", "MANTENIMIENTO PREVENTIVO"]
+        contexto = self.consultar(cuenta="FIR-100", servicios=servicios, page="2", servicios_filtrados="1")
+        self.assertEqual(contexto["resumen"]["total"], 2)
+        self.assertEqual({o.numero for o in contexto["pagina"]}, {1, 2})
+        self.assertTrue(contexto["ranking_cuentas"][0]["activo"])
+        params = parse_qs(urlsplit(contexto["ranking_cuentas"][0]["url"]).query)
+        self.assertNotIn("cuenta", params)
+        self.assertNotIn("page", params)
+        self.assertEqual(params["servicios"], servicios)
+        self.assertTrue(any(f["nombre"] == "Cuenta: FIR-100" for f in contexto["filtros_activos"]))
+        self.assertNotIn("cuenta", parse_qs(urlsplit(contexto["quitar_selecciones"]).query))
+        self.assertEqual(self.consultar(cuenta="FIR-inexistente")["ranking_cuentas"], [])
+
+    def test_ranking_respeta_servicio_efectivo_sla_y_detalle_no_modifica_ranking(self):
+        ODT.objects.filter(numero=2).update(servicio_editado="MANTENIMIENTO PREVENTIVO")
+        contexto = self.consultar(servicios_filtrados="1", servicios=["MANTENCION CORRECTIVA CON COBRO"])
+        self.assertEqual(contexto["ranking_cuentas"][0]["cantidad"], 1)
+        self.assertEqual(self.consultar(sla="NO_CUMPLE")["ranking_cuentas"][0]["cantidad"], 1)
+        self.assertEqual(self.consultar(vista="sla")["ranking_cuentas"][0]["cantidad"], 2)
+
+    def test_ranking_plantilla_y_estado_vacio(self):
+        contexto = self.consultar(cuenta="FIR-100")
+        with patch("django.urls.reverse", return_value="/test/"):
+            html = engines["django"].get_template("revisiones/analisis_odt.html").render(contexto)
+        self.assertIn("Ranking de cuentas con más incidencias", html)
+        self.assertIn('name="cuenta" value="FIR-100"', html)
+        self.assertIn("2 ODT", html)
+        self.assertIn('aria-label="FIR-100: 2 incidencias. Filtrar cuenta"', html)
+        self.assertEqual(self.consultar(desde="fecha-invalida")["ranking_cuentas"], [])
