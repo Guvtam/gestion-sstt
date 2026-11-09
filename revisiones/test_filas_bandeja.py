@@ -162,3 +162,34 @@ class FilasBandejaTests(TestCase):
         })
         self.assertEqual(html.count('class=" odt-monto-cero"'), 1)
         self.assertIn('class="monto-cero-marca">Monto $0</span>', html)
+
+    def test_localiza_odt_guardada_aunque_cambie_de_pagina(self):
+        self.assertEqual(paginar_filas(ODT.objects.all(), 1, 1).number, 2)
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=1), estado="PENDIENTE", corrige_monto=True)
+        pagina = paginar_filas(ODT.objects.all(), 2, 1)
+        self.assertEqual(pagina.number, 1)
+        self.assertEqual(pagina.object_list[0].numero, 1)
+
+    def test_localizacion_respeta_filtros_y_no_expone_odt_ajena(self):
+        pagina = paginar_filas(ODT.objects.filter(numero__gte=20), 1, 1)
+        self.assertEqual(pagina.paginator.count, 41)
+        self.assertNotIn(1, [o.numero for o in pagina])
+        for numero in ("invalida", "1 OR 1=1", "9"*100, None):
+            self.assertEqual(paginar_filas(ODT.objects.all(), 1, numero).number, 1)
+
+    def test_vista_ubica_odt_y_limpia_parametro_de_la_paginacion(self):
+        from unittest.mock import patch
+        from django.contrib.auth.models import User
+        from django.test import RequestFactory
+        from .vistas.bandeja import bandeja
+        usuario = User.objects.create_superuser("admin", password="prueba")
+        request = RequestFactory().get("/", {"page":"1", "ubicar_odt":"1", "estado":"",
+                                              "fecha_desde":"", "fecha_hasta":""})
+        request.user = usuario
+        with patch("revisiones.vistas.bandeja.coordinadores_para_mostrar",
+                   side_effect=lambda r, numeros: {n:{"nombre":"Responsable", "usuario":"jtapia", "identificado":True} for n in numeros}), \
+             patch("revisiones.vistas.bandeja.render", side_effect=lambda r, t, contexto: contexto):
+            contexto = bandeja(request)
+        self.assertEqual(contexto["pagina"].number, 2)
+        self.assertIn(1, [o.numero for o in contexto["registros"]])
+        self.assertNotIn("ubicar_odt", contexto["querystring"])

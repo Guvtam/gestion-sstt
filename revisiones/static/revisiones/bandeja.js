@@ -342,68 +342,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // CONSERVAR POSICIÓN DE LA TABLA AL GUARDAR
   // =====================================================
 
-  const CLAVE_SCROLL_TABLA = "sstt_bandeja_scroll";
-
-  function guardarPosicionTabla() {
-    const tabla = document.getElementById(
-      "tablaScrollPrincipal"
-    );
-
-    if (!tabla) return;
-
-    sessionStorage.setItem(
-      CLAVE_SCROLL_TABLA,
-      JSON.stringify({
-        ruta: window.location.pathname + window.location.search,
-        horizontal: tabla.scrollLeft,
-        vertical: window.scrollY
-      })
-    );
-  }
-
-  function restaurarPosicionTabla() {
-    const guardado = sessionStorage.getItem(
-      CLAVE_SCROLL_TABLA
-    );
-
-    if (!guardado) return;
-
-    sessionStorage.removeItem(CLAVE_SCROLL_TABLA);
-
-    try {
-      const posicion = JSON.parse(guardado);
-
-      const rutaActual =
-        window.location.pathname + window.location.search;
-
-      if (posicion.ruta !== rutaActual) return;
-
-      const tabla = document.getElementById(
-        "tablaScrollPrincipal"
-      );
-
-      if (!tabla) return;
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          tabla.scrollLeft = posicion.horizontal || 0;
-          window.scrollTo(0, posicion.vertical || 0);
-        });
-      });
-
-    } catch (error) {
-      console.warn(
-        "No se pudo restaurar la posición de la tabla."
-      );
+  function recargarTrasGuardar(fila) {
+    if (window.SSTTPosicionBandeja) {
+      window.SSTTPosicionBandeja.recargar(fila);
+    } else {
+      window.location.reload();
     }
   }
-
-  window.addEventListener(
-    "load",
-    restaurarPosicionTabla,
-    { once: true }
-  );
-
 
   // =====================================================
   // EDICIÓN INDIVIDUAL DE ODT
@@ -530,8 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
           estado.dataset.saved = nuevo;
 
           // Actualizar indicadores y bloqueos.
-          guardarPosicionTabla();
-          window.location.reload();
+          recargarTrasGuardar(fila);
 
         } catch (ex) {
           estado.value = anterior;
@@ -565,6 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
           );
 
           informe.dataset.saved = nuevo;
+          window.SSTTPosicionBandeja?.marcar(fila);
 
         } catch (ex) {
           informe.value = anterior;
@@ -766,8 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
             datos
           );
 
-          guardarPosicionTabla();
-          window.location.reload();
+          recargarTrasGuardar(fila);
 
         } catch (ex) {
           error.textContent = ex.message;
