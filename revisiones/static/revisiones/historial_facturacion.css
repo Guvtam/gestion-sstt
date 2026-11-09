@@ -943,127 +943,6 @@ body {
     font-size: 11px;
 }
 
-/* BOTÓN HISTORIAL */
-
-.btn-historial-odt {
-    background: transparent;
-    border: none;
-    color: var(--hist-azul-claro);
-    padding: 4px 2px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: normal;
-}
-
-.btn-historial-odt:hover {
-    color: #0b467f;
-    text-decoration: underline;
-}
-
-.btn-historial-odt:focus-visible {
-    outline: 2px solid #1765ad;
-    outline-offset: 3px;
-}
-
-/* =========================================================
-   MODAL DE HISTORIAL DE ODT
-   ========================================================= */
-
-#modalHistorial {
-    box-sizing: border-box;
-    width: min(900px, 92vw);
-    max-width: 92vw;
-    max-height: 85vh;
-    padding: 24px;
-    border: 1px solid var(--hist-borde);
-    border-radius: 10px;
-    background: var(--hist-blanco);
-    color: var(--hist-azul);
-    overflow-y: auto;
-}
-
-#modalHistorial::backdrop {
-    background: rgba(9, 26, 48, .65);
-}
-
-#modalHistorial .historial-encabezado {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
-}
-
-#modalHistorial .historial-encabezado h2 {
-    margin: 0 0 8px;
-    font-size: 19px;
-}
-
-#modalHistorial .historial-evento {
-    padding: 15px;
-    margin-bottom: 12px;
-    border: 1px solid var(--hist-borde);
-    border-radius: 7px;
-    background: #f8fbff;
-}
-
-#modalHistorial .historial-evento-cabecera {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-#modalHistorial .historial-fecha {
-    font-weight: 700;
-}
-
-#modalHistorial .historial-usuario {
-    color: var(--hist-muted);
-    font-size: 12px;
-}
-
-#modalHistorial .historial-estados {
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-#modalHistorial .historial-cambios {
-    margin-top: 8px;
-}
-
-#modalHistorial .historial-cambio {
-    font-size: 12px;
-    line-height: 1.6;
-    overflow-wrap: anywhere;
-    white-space: pre-wrap;
-}
-
-#modalHistorial .historial-total {
-    margin-bottom: 14px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-#modalHistorial .historial-vacio {
-    padding: 25px;
-    text-align: center;
-    color: var(--hist-muted);
-}
-
-#modalHistorial .historial-firma {
-    display: block;
-    max-width: 100%;
-    max-height: 350px;
-    object-fit: contain;
-    margin-top: 12px;
-    border: 1px solid var(--hist-borde);
-    border-radius: 5px;
-}
-
 /* =========================================================
    DISEÑO RESPONSIVO
    ========================================================= */
@@ -1111,10 +990,6 @@ body {
     }
 
     .tabla-odt-resumida {
-        font-size: 10px;
-    }
-
-    .btn-historial-odt {
         font-size: 10px;
     }
 }
@@ -1196,21 +1071,6 @@ body {
     .hist-resumen-odt strong,
     .hist-tarjeta-resumen strong {
         font-size: 17px;
-    }
-
-    #modalHistorial {
-        width: 95vw;
-        max-width: 95vw;
-        max-height: 90vh;
-        padding: 14px;
-    }
-
-    #modalHistorial .historial-encabezado h2 {
-        font-size: 16px;
-    }
-
-    #modalHistorial .historial-evento {
-        padding: 10px;
     }
 }
 

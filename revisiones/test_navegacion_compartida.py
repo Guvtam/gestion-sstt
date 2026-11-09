@@ -4,13 +4,14 @@ import re
 
 from django.core.paginator import Paginator
 from django.template.loader import render_to_string
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, RequestFactory
+from django.contrib.auth.models import AnonymousUser
 from .templatetags.navegacion_sstt import enlace_pagina
 
 
 class NavegacionCompartidaTests(SimpleTestCase):
     def render(self, pagina=2, **opciones):
-        datos={"pagina":Paginator(range(120),50).get_page(pagina),
+        datos={"pagina":pagina if hasattr(pagina, "paginator") else Paginator(range(120),50).get_page(pagina),
                "querystring":"servicios=A&servicios=B&contratista=Uno&contratista=Dos&q=cuenta"}
         datos.update(opciones)
         return render_to_string("revisiones/componentes/paginacion.html",datos)
@@ -83,3 +84,62 @@ class NavegacionCompartidaTests(SimpleTestCase):
         html=render_to_string("revisiones/componentes/paginacion.html",{"pagina":pagina})
         numeros=[parse_qs(urlsplit(url).query)["page"][0] for url in self.enlaces(html)]
         self.assertEqual(numeros,["999","1001"])
+
+    def test_numerada_muestra_primera_todos_los_numeros_y_pagina_actual(self):
+        pagina = Paginator(range(350), 50).get_page(4)
+        html = self.render(pagina=pagina, numerada=True)
+        self.assertIn("Primera página", html)
+        self.assertIn('aria-current="page"', html)
+        self.assertIn('aria-label="Página 4 actual"', html)
+        for numero in (1, 2, 3, 5, 6, 7):
+            self.assertIn(f'aria-label="Ir a página {numero}"', html)
+        for url in self.enlaces(html):
+            parametros = parse_qs(urlsplit(url).query)
+            self.assertEqual(parametros["servicios"], ["A", "B"])
+            self.assertEqual(parametros["contratista"], ["Uno", "Dos"])
+            self.assertEqual(len(parametros["page"]), 1)
+
+    def test_numerada_acota_listados_grandes_y_no_enlaza_paginas_invalidas(self):
+        from .templatetags.navegacion_sstt import paginas_numeradas
+        for actual in (1, 500, 1000):
+            pagina = Paginator(range(50000), 50).get_page(actual)
+            numeros = paginas_numeradas(pagina)
+            self.assertLessEqual(len(numeros), 9)
+            self.assertIn(actual, numeros)
+            html = self.render(pagina=pagina, numerada=True)
+            destinos = [int(parse_qs(urlsplit(url).query)["page"][0]) for url in self.enlaces(html)]
+            self.assertTrue(all(1 <= numero <= 1000 for numero in destinos))
+        html = self.render(pagina=Paginator(range(350),50).get_page(1), numerada=True)
+        self.assertIn('aria-disabled="true">Primera página', html)
+
+    def test_bandeja_navegacion_arriba_y_abajo_conserva_multiseleccion(self):
+        from django.test import override_settings
+        pagina = Paginator(range(350), 50).get_page(3)
+        request = RequestFactory().get("/")
+        request.user = AnonymousUser()
+        # Renderiza la estructura sin consultar ODT ni resolver coordinadores.
+        with override_settings(ROOT_URLCONF="config.urls"):
+            html = render_to_string("revisiones/bandeja.html", {
+                "pagina": pagina, "querystring": "servicios=A&servicios=B&contratista=Uno&contratista=Dos",
+                "registros": [], "filtros": {}, "bandeja_url":"bandeja", "request":request,
+            })
+        self.assertIn('aria-label="Paginación superior de ODT"', html)
+        self.assertIn('aria-label="Paginación inferior de ODT"', html)
+        self.assertEqual(html.count('aria-current="page"'), 2)
+        self.assertLess(html.index('aria-label="Paginación superior de ODT"'), html.index('id="tablaScrollSuperior"'))
+        self.assertGreater(html.index('aria-label="Paginación inferior de ODT"'), html.index('</table>'))
+
+    def test_estilos_historial_compartidos_en_pantallas_operativas(self):
+        for plantilla in ("bandeja", "analisis_odt", "detalle_facturacion"):
+            with self.subTest(plantilla=plantilla):
+                # Solo verificamos la carga única del estilo común del layout.
+                if plantilla == "detalle_facturacion":
+                    from types import SimpleNamespace
+                    datos = {"facturacion": SimpleNamespace(periodo_id=1), "items": []}
+                else:
+                    datos = {"registros": [], "filtros": {}, "bandeja_url":"bandeja", "vista": "todas"}
+                request = RequestFactory().get("/")
+                request.user = AnonymousUser()
+                datos["request"] = request
+                html = render_to_string(f"revisiones/{plantilla}.html", datos)
+                self.assertEqual(html.count("historial_modal.css"), 1)
