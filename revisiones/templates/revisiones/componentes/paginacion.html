@@ -1,6 +1,32 @@
 {% load navegacion_sstt %}
+{% if pagina.paginator %}
 {% if pagina.has_other_pages or siempre %}
-{% if agrupada %}
+{% if numerada %}
+<nav class="pagination paginacion-numerada" aria-label="{{ etiqueta|default:'Páginas del listado' }}">
+    <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    <div class="paginacion-enlaces">
+        {% if pagina.has_previous %}
+        {% enlace_pagina querystring 1 parametro|default:"page" ancla as primera %}
+        <a class="btn alt" href="{{ primera }}">Primera página</a>
+        {% enlace_pagina querystring pagina.previous_page_number parametro|default:"page" ancla as anterior %}
+        <a class="btn alt" href="{{ anterior }}">Anterior</a>
+        {% else %}<span class="btn alt paginacion-inactiva" aria-disabled="true">Primera página</span>{% endif %}
+        {% paginas_numeradas pagina as numeros %}
+        {% for numero in numeros %}
+            {% if numero == pagina.paginator.ELLIPSIS %}<span class="paginacion-puntos">…</span>
+            {% elif numero == pagina.number %}<span class="btn paginacion-actual" aria-current="page" aria-label="Página {{ numero }} actual">{{ numero }}</span>
+            {% else %}
+            {% enlace_pagina querystring numero parametro|default:"page" ancla as destino %}
+            <a class="btn alt" href="{{ destino }}" aria-label="Ir a página {{ numero }}">{{ numero }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if pagina.has_next %}
+        {% enlace_pagina querystring pagina.next_page_number parametro|default:"page" ancla as siguiente %}
+        <a class="btn alt" href="{{ siguiente }}">Siguiente</a>
+        {% endif %}
+    </div>
+</nav>
+{% elif agrupada %}
 <div class="{{ clase|default:'pagination' }}" role="navigation" aria-label="{{ etiqueta|default:'Páginas del listado' }}">
     <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
     <div>
@@ -27,4 +53,6 @@
     {% endif %}
 </nav>
 {% endif %}
+{% endif %}
+
 {% endif %}

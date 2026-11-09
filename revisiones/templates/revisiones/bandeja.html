@@ -489,6 +489,8 @@
         {% endif %}
       </p>
 
+      {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True etiqueta="Paginación superior de ODT" %}
+
       <!-- BARRA HORIZONTAL SUPERIOR -->
 
       <p class="tabla-ayuda">
@@ -1110,7 +1112,7 @@
 
                       <button
                         type="button"
-                        class="history-row alt"
+                        class="history-row btn-historial-odt alt"
                         data-url="{% url 'historial_odt' r.numero %}"
                       >
                         Historial
@@ -1144,7 +1146,7 @@
 
       <!-- PAGINACIÓN -->
 
-      {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring agrupada=True clase_enlace="btn alt" only %}
+      {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True etiqueta="Paginación inferior de ODT" %}
 
     </section>
 

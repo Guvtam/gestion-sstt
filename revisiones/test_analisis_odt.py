@@ -283,7 +283,7 @@ class AnalisisODTTests(TestCase):
         self.assertContains(respuesta, "<td>1</td>")
         self.assertNotContains(respuesta, "numero_odt=")
         self.assertContains(respuesta, "<th>Historial</th>")
-        self.assertContains(respuesta, 'class="historial-enlace btn-historial-odt"', count=2)
+        self.assertContains(respuesta, 'class="btn-historial-odt alt"', count=2)
         self.assertContains(respuesta, f'data-url="{reverse("historial_odt", args=[1])}"')
         for identificador in ("modalHistorial", "historialNumero", "historialContenido", "cerrarHistorial"):
             self.assertContains(respuesta, f'id="{identificador}"', count=1)
@@ -302,4 +302,4 @@ class AnalisisODTTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, "Sin permiso")
         self.assertNotContains(respuesta, 'id="modalHistorial"')
-        self.assertNotContains(respuesta, 'class="historial-enlace btn-historial-odt"')
+        self.assertNotContains(respuesta, 'class="btn-historial-odt alt"')
