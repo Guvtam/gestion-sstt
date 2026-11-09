@@ -3,7 +3,7 @@ from django.test import TestCase
 from .consultas.filas_bandeja import paginar_filas, cargar_complementos
 from .presentacion.filas_bandeja import preparar_filas
 from .facturacion_models import FacturacionContratista, FacturacionODT, PeriodoFacturacion
-from .models import ODT, CatalogoCuenta, Revision
+from .models import ODT, CatalogoCuenta, Revision, CorreccionODT
 
 
 class FilasBandejaTests(TestCase):
@@ -96,3 +96,39 @@ class FilasBandejaTests(TestCase):
         self.assertEqual(filas[0].tipo_cliente_catalogo,"B2C")
         self.assertEqual(filas[0].ceco_catalogo,"")
         self.assertFalse(filas[0].cuenta_en_catalogo)
+
+
+    def test_correcciones_primero_antes_de_paginar_y_conserva_total(self):
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=1), estado="PENDIENTE", corrige_monto=True)
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=2), estado="EN_PROCESO", corrige_servicio=True)
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=3), estado="ACTUALIZADA", corrige_monto=True)
+        ODT.objects.filter(numero=3).update(valor_pago_editado=25)
+        primera = paginar_filas(ODT.objects.all(), "1")
+        segunda = paginar_filas(ODT.objects.all(), "2")
+        numeros = [o.numero for o in primera] + [o.numero for o in segunda]
+        self.assertEqual(numeros, [1, 2] + list(range(60, 2, -1)))
+        self.assertEqual(primera.paginator.count, 60)
+        self.assertEqual(len(set(numeros)), 60)
+
+    def test_ediciones_antiguas_sin_seguimiento_tambien_primero(self):
+        ODT.objects.filter(numero=1).update(valor_pago_editado=0)
+        ODT.objects.filter(numero=2).update(servicio_editado="")
+        pagina = paginar_filas(ODT.objects.all(), "1")
+        self.assertEqual([o.numero for o in pagina][:3], [2, 1, 60])
+
+    def test_prioridad_no_amplia_alcance_autorizado_y_respeta_orden_interno(self):
+        for numero in (1, 2, 3):
+            CorreccionODT.objects.create(odt=ODT.objects.get(numero=numero), estado="PENDIENTE", corrige_monto=True)
+        pagina = paginar_filas(ODT.objects.filter(numero__in=[2, 3, 60]), "1")
+        self.assertEqual([o.numero for o in pagina], [3, 2, 60])
+        self.assertEqual(pagina.paginator.count, 3)
+
+    def test_mas_de_una_pagina_de_pendientes_se_muestran_antes_del_resto(self):
+        CorreccionODT.objects.bulk_create([
+            CorreccionODT(odt=o, estado="PENDIENTE", corrige_servicio=True)
+            for o in ODT.objects.filter(numero__lte=55)
+        ])
+        primera = paginar_filas(ODT.objects.all(), "1")
+        segunda = paginar_filas(ODT.objects.all(), "2")
+        self.assertEqual([o.numero for o in primera], list(range(55, 5, -1)))
+        self.assertEqual([o.numero for o in segunda], [5, 4, 3, 2, 1, 60, 59, 58, 57, 56])

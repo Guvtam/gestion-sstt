@@ -1,6 +1,7 @@
 """Lectura acotada de filas sobre un queryset previamente autorizado."""
 from dataclasses import dataclass
 from django.core.paginator import Paginator
+from django.db.models import Case, When, Value, IntegerField, Q
 from ..cuentas_utils import cargar_catalogo_cuentas
 from ..facturacion_models import FacturacionODT
 from .preventivos import asignar_ultimos_preventivos
@@ -16,7 +17,17 @@ class ComplementosFilas:
 
 
 def paginar_filas(registros, numero_pagina):
-    ids = registros.order_by(*ORDEN_BANDEJA).values_list("pk", flat=True)
+    # Priorizar antes de paginar: no solo las correcciones de la página visible.
+    # La ausencia de seguimiento conserva el estado pendiente de ediciones antiguas.
+    pendientes = Q(seguimiento_correccion__estado="PENDIENTE") | (
+        Q(seguimiento_correccion__isnull=True)
+        & (Q(servicio_editado__isnull=False) | Q(valor_pago_editado__isnull=False))
+    )
+    ids = registros.alias(prioridad_correccion=Case(
+        When(pendientes, then=Value(0)),
+        When(seguimiento_correccion__estado="EN_PROCESO", then=Value(1)),
+        default=Value(2), output_field=IntegerField(),
+    )).order_by("prioridad_correccion", *ORDEN_BANDEJA).values_list("pk", flat=True)
     pagina = Paginator(ids, TAMANO_PAGINA).get_page(numero_pagina)
     ids_pagina = list(pagina.object_list)
     filas = list(registros.filter(pk__in=ids_pagina).select_related("revision", "seguimiento_correccion"))
