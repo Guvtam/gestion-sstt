@@ -1156,39 +1156,7 @@
 
   <!-- MODAL HISTORIAL -->
 
-  <dialog id="modalHistorial" class="historial-modal">
-
-    <div class="historial-encabezado">
-
-      <div>
-        <h2>
-          Historial de ODT
-          <span id="historialNumero"></span>
-        </h2>
-
-        <p class="hint">
-          Registro de modificaciones realizadas
-          durante el proceso de revisión de pagos.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        id="cerrarHistorial"
-        class="alt"
-      >
-        Cerrar
-      </button>
-
-    </div>
-
-    <div id="historialContenido">
-      <p class="hint">
-        Cargando historial...
-      </p>
-    </div>
-
-  </dialog>
+  {% include "revisiones/componentes/modal_historial.html" %}
 
   <!-- CONFIRMACIÓN DE CAMBIO DE MONTO -->
 
