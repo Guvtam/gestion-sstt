@@ -68,12 +68,18 @@ def _aplicar_lote(lote, simular):
         odt = existentes.get(numero)
         if odt is None:
             nuevos.append(ODT(numero=numero, contratista=datos["tecnico"][:150], **datos))
-        elif any(getattr(odt, campo) != valor for campo, valor in datos.items()):
-            for campo, valor in datos.items():
-                setattr(odt, campo, valor)
-            cambios.append(odt)
         else:
-            conteos.sin_cambios += 1
+            # Completar asignaciones ausentes incluso si el origen no cambió.
+            # Una asignación existente pertenece a SSTT y se conserva.
+            completar_contratista = not (odt.contratista or "").strip() and bool(datos["tecnico"].strip())
+            if completar_contratista or any(getattr(odt, campo) != valor for campo, valor in datos.items()):
+                for campo, valor in datos.items():
+                    setattr(odt, campo, valor)
+                if completar_contratista:
+                    odt.contratista = datos["tecnico"][:150]
+                cambios.append(odt)
+            else:
+                conteos.sin_cambios += 1
     conteos.creadas = len(nuevos)
     conteos.actualizadas = len(cambios)
     if simular:
@@ -82,8 +88,8 @@ def _aplicar_lote(lote, simular):
 
     ODT.objects.bulk_create(nuevos, batch_size=250)
     if cambios:
-        # Solo campos originales y clasificación proyectada; ningún campo manual.
-        campos = list(next(iter(validos.values())))
+        # Los contratistas existentes conservan su valor; solo se completan vacíos.
+        campos = [*next(iter(validos.values())), "contratista"]
         ODT.objects.bulk_update(cambios, campos, batch_size=250)
     for codigo in sorted(codigos_nuevos):
         _, creada = CatalogoCuenta.objects.get_or_create(codigo_cuenta=codigo, defaults={
