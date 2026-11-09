@@ -69,6 +69,39 @@ class SincronizacionTests(TestCase):
         self.assertEqual(EventoCorreccionODT.objects.count(), 0)
         self.assertFalse(any(q["sql"].startswith('UPDATE "revisiones_odt"') for q in capturadas))
 
+    def test_completa_contratista_aunque_origen_no_cambie_y_es_idempotente(self):
+        datos = registro(78781, Tecnico="T. EXTERNO - Técnico")
+        self.ejecutar([datos])
+        ODT.objects.filter(numero=78781).update(contratista="")
+        resultado = self.ejecutar([datos])
+        self.assertEqual(resultado.actualizadas, 1)
+        self.assertEqual(ODT.objects.get(numero=78781).contratista, datos["Tecnico"])
+        self.assertEqual(self.ejecutar([datos]).sin_cambios, 1)
+
+    def test_completa_contratista_cuando_se_asigna_tecnico_despues(self):
+        self.ejecutar([registro(1, Tecnico=None)])
+        resultado = self.ejecutar([registro(1, Tecnico="Técnico nuevo")])
+        self.assertEqual(resultado.actualizadas, 1)
+        odt = ODT.objects.get(numero=1)
+        self.assertEqual((odt.tecnico, odt.contratista), ("Técnico nuevo", "Técnico nuevo"))
+
+    def test_sin_tecnico_no_inventa_contratista_y_conserva_asignacion(self):
+        self.ejecutar([registro(1, Tecnico=None), registro(2)])
+        ODT.objects.filter(numero=2).update(contratista="Asignación local")
+        self.ejecutar([registro(1, Tecnico=None), registro(2, Tecnico=None)])
+        self.assertEqual(ODT.objects.get(numero=1).contratista, "")
+        self.assertEqual(ODT.objects.get(numero=2).contratista, "Asignación local")
+
+    def test_simular_informa_reparacion_sin_escribir(self):
+        datos = registro(1)
+        self.ejecutar([datos])
+        ODT.objects.filter(numero=1).update(contratista="")
+        with CaptureQueriesContext(connection) as consultas:
+            resultado = self.ejecutar([datos], simular=True)
+        self.assertEqual(resultado.actualizadas, 1)
+        self.assertEqual(ODT.objects.get(numero=1).contratista, "")
+        self.assertFalse(any(q["sql"].split()[0] in {"INSERT", "UPDATE", "DELETE"} for q in consultas))
+
     def test_lote_grande_respeta_limites_sqlite_y_actualiza_ambos_extremos(self):
         self.ejecutar((registro(n) for n in range(1, 1001)), tamano_lote=1000)
         segunda = self.ejecutar((registro(n, ValorPagoTecnico=250) for n in range(1, 1001)), tamano_lote=1000)
