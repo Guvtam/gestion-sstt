@@ -57,7 +57,8 @@ class AnalisisODTTests(TestCase):
         with patch("django.urls.reverse",return_value="/test/"):
             html=engines["django"].get_template("revisiones/analisis_odt.html").render(self.consultar())
         self.assertIn("Gestión de pagos",html)
-        self.assertIn("numero_odt=1",html)
+        self.assertIn("<td>1</td>",html)
+        self.assertNotIn("numero_odt=",html)
         self.assertIn("Cumplimiento SLA",html)
         self.assertNotIn("Distribución de ODT por estado",html)
 
@@ -260,7 +261,7 @@ class AnalisisODTTests(TestCase):
         self.assertIn("MANTENIMIENTO PREVENTIVO", html)
         self.assertNotIn("$9.000", html)
 
-    def test_detalle_respeta_monto_editado_cero_y_vacio_diez_columnas(self):
+    def test_detalle_respeta_monto_editado_cero_y_vacio_once_columnas(self):
         ODT.objects.filter(numero=1).update(valor_pago_tecnico=50000, valor_pago_editado=0)
         contexto = self.consultar()
         self.assertEqual(next(o.monto_efectivo for o in contexto["pagina"] if o.numero == 1), 0)
@@ -269,4 +270,36 @@ class AnalisisODTTests(TestCase):
             vacio = engines["django"].get_template("revisiones/analisis_odt.html").render(self.consultar(q="inexistente"))
         self.assertIn("$0", html)
         self.assertNotIn("$50.000", html)
-        self.assertIn('colspan="10"', vacio)
+        self.assertIn('colspan="11"', vacio)
+
+
+    def test_detalle_odt_texto_y_historial_con_modal_compartido(self):
+        from django.urls import reverse
+        self.client.force_login(self.user)
+        respuesta = self.client.get(reverse("analisis_odt"), {
+            "desde": (self.base-timedelta(days=1)).date().isoformat(),
+            "hasta": timezone.localdate().isoformat(),
+        })
+        self.assertContains(respuesta, "<td>1</td>")
+        self.assertNotContains(respuesta, "numero_odt=")
+        self.assertContains(respuesta, "<th>Historial</th>")
+        self.assertContains(respuesta, 'class="historial-enlace btn-historial-odt"', count=2)
+        self.assertContains(respuesta, f'data-url="{reverse("historial_odt", args=[1])}"')
+        for identificador in ("modalHistorial", "historialNumero", "historialContenido", "cerrarHistorial"):
+            self.assertContains(respuesta, f'id="{identificador}"', count=1)
+        self.assertContains(respuesta, "historial_facturacion_odt.js")
+
+    def test_analisis_sin_permiso_historial_no_muestra_control_activo(self):
+        from django.contrib.auth.models import Permission
+        from django.contrib.contenttypes.models import ContentType
+        from django.urls import reverse
+        usuario = get_user_model().objects.create_user("revisor_sin_historial")
+        for codigo in ("ver_bandeja_sstt", "revisar_pago_sstt"):
+            permiso, _ = Permission.objects.get_or_create(content_type=ContentType.objects.get_for_model(ODT), codename=codigo)
+            usuario.user_permissions.add(permiso)
+        self.client.force_login(usuario)
+        respuesta = self.client.get(reverse("analisis_odt"), {"desde":"", "hasta":""})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Sin permiso")
+        self.assertNotContains(respuesta, 'id="modalHistorial"')
+        self.assertNotContains(respuesta, 'class="historial-enlace btn-historial-odt"')
