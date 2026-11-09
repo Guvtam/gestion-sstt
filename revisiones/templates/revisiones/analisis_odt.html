@@ -52,6 +52,7 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 {% block contenido %}
 <main class="hist-main" id="dashboard"><div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
+<input type="hidden" name="cuenta" value="{{ cuenta }}">
 <input type="hidden" name="incidencias_cuenta" value="{{ incidencias_cuenta }}"><input type="hidden" name="servicios_filtrados" value="1"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">
 <div class="field"><label for="desde">Finalización desde</label><input type="date" id="desde" name="desde" value="{{ desde }}"></div>
 <div class="field"><label for="hasta">Finalización hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta }}"></div>
@@ -96,6 +97,17 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 <div class="barra-fondo"><div class="barra-relleno" style="width:{{ g.ancho }}%;background:#9b7ccc"></div></div></a>
 {% endfor %}
 <p class="chart-nota">Cuentas presentes en las ODT filtradas. Para cada cuenta se cuentan todas sus ODT finalizadas en los últimos 90 días, con cualquier contratista o servicio, incluyendo la atención actual. Las cuentas con cero o una incidencia quedan fuera de estas categorías.</p>
+</section>
+<section class="chart-panel tendencia-panel" aria-labelledby="rankingCuentasTitulo">
+<h2 id="rankingCuentasTitulo">Ranking de cuentas con más incidencias</h2>
+<p class="chart-nota">Top 10 por cantidad de ODT finalizadas en el período y con los filtros activos. Selecciona una cuenta para filtrar sus KPI y el detalle; vuelve a seleccionarla para quitar el filtro.</p>
+{% for cuenta_ranking in ranking_cuentas %}
+<a class="grafico-barra {% if cuenta_ranking.activo %}activo{% endif %}" href="{{ cuenta_ranking.url }}" aria-label="{{ cuenta_ranking.cuenta }}: {{ cuenta_ranking.cantidad }} incidencias. Filtrar cuenta">
+<div class="barra-titulo"><span><strong>{{ cuenta_ranking.posicion }}. {{ cuenta_ranking.cuenta }}</strong>{% if cuenta_ranking.nombre != cuenta_ranking.cuenta %} · {{ cuenta_ranking.nombre }}{% endif %}</span><b>{{ cuenta_ranking.cantidad }} ODT</b></div>
+<div class="barra-fondo"><div class="barra-relleno" style="width:{{ cuenta_ranking.ancho }}%"></div></div>
+</a>
+{% empty %}<p class="vacio-grafico">No hay cuentas identificadas para estos filtros.</p>{% endfor %}
+<p class="chart-nota">Cada ODT finalizada cuenta como una incidencia operativa; no equivale a una falla confirmada. Agrupa por código de cuenta aunque cambie el nombre o el contratista. Incluye los servicios seleccionados y excluye las ODT sin cuenta. Este ranking usa el período elegido, no la ventana de 90 días de los otros indicadores.</p>
 </section>
 <section class="chart-panel tendencia-panel"><h2>Evolución de ODT por {% if tendencia_mensual %}mes{% else %}día{% endif %}</h2><p class="chart-nota">Según fecha de finalización. Selecciona una barra para explorar ese período. Días o meses sin registros no tienen barra.</p>
 <div class="tendencia-scroll"><div class="tendencia">
