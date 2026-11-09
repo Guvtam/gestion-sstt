@@ -132,3 +132,33 @@ class FilasBandejaTests(TestCase):
         segunda = paginar_filas(ODT.objects.all(), "2")
         self.assertEqual([o.numero for o in primera], list(range(55, 5, -1)))
         self.assertEqual([o.numero for o in segunda], [5, 4, 3, 2, 1, 60, 59, 58, 57, 56])
+
+
+    def test_monto_cero_segun_valor_efectivo_sin_consultas_adicionales(self):
+        ODT.objects.filter(numero=1).update(valor_pago_tecnico=0)
+        ODT.objects.filter(numero=2).update(valor_pago_tecnico=100, valor_pago_editado=0)
+        ODT.objects.filter(numero=3).update(valor_pago_tecnico=0, valor_pago_editado=200)
+        pagina = paginar_filas(ODT.objects.filter(numero__lte=4), "1")
+        datos = cargar_complementos(pagina.object_list)
+        with self.assertNumQueries(0):
+            filas = preparar_filas(pagina.object_list,
+                coordinadores_pagina=self.datos_coordinadores(pagina.object_list),
+                facturadas=datos.facturadas, catalogo=datos.catalogo,
+                puede_procesar=True, puede_asignar=False)
+        self.assertEqual({o.numero:o.monto_cero for o in filas}, {1:True, 2:True, 3:False, 4:False})
+
+    def test_bandeja_resalta_fila_cero_y_la_identifica_con_texto(self):
+        from types import SimpleNamespace
+        from django.contrib.auth.models import AnonymousUser
+        from django.template.loader import render_to_string
+        ODT.objects.filter(numero=1).update(valor_pago_tecnico=0)
+        pagina = paginar_filas(ODT.objects.filter(numero__lte=2), "1")
+        datos = cargar_complementos(pagina.object_list)
+        filas = preparar_filas(pagina.object_list, coordinadores_pagina=self.datos_coordinadores(pagina.object_list),
+            facturadas=datos.facturadas, catalogo=datos.catalogo, puede_procesar=False, puede_asignar=False)
+        html = render_to_string("revisiones/bandeja.html", {
+            "request":SimpleNamespace(user=AnonymousUser()), "bandeja_url":"bandeja", "filtros":{},
+            "registros":filas, "pagina":pagina, "querystring":"",
+        })
+        self.assertEqual(html.count('class=" odt-monto-cero"'), 1)
+        self.assertIn('class="monto-cero-marca">Monto $0</span>', html)

@@ -5,7 +5,7 @@
 {% block estilos %}
 <link
     rel="stylesheet"
-    href="{% static 'revisiones/bandeja.css' %}"
+    href="{% static 'revisiones/bandeja.css' %}?v=20261109-monto-cero"
   >
 {% endblock %}
 {% block atributos_body %}
@@ -491,6 +491,8 @@
 
       {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True etiqueta="Paginación superior de ODT" %}
 
+      <p class="hint"><span class="monto-cero-marca">Monto $0</span> Las filas naranjas tienen monto efectivo cero, incluidos los ajustes guardados.</p>
+
       <!-- BARRA HORIZONTAL SUPERIOR -->
 
       <p class="tabla-ayuda">
@@ -550,7 +552,7 @@
 
             {% for r in registros %}
 
-              <tr data-numero="{{ r.numero }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}">
+              <tr data-numero="{{ r.numero }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}{% if r.monto_cero %} odt-monto-cero{% endif %}">
 
                 <!-- NÚMERO ODT -->
 
@@ -906,6 +908,7 @@
                 <!-- MONTO PAGO TÉCNICO -->
 
                 <td class="amount">
+                  {% if r.monto_cero %}<span class="monto-cero-marca">Monto $0</span>{% endif %}
 
                   <input
                     type="text"

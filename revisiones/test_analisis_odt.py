@@ -303,3 +303,12 @@ class AnalisisODTTests(TestCase):
         self.assertContains(respuesta, "Sin permiso")
         self.assertNotContains(respuesta, 'id="modalHistorial"')
         self.assertNotContains(respuesta, 'class="btn-historial-odt alt"')
+
+
+    def test_detalle_siempre_visible_sin_desplegable(self):
+        with patch("django.urls.reverse", return_value="/test/"):
+            html = engines["django"].get_template("revisiones/analisis_odt.html").render(self.consultar())
+        self.assertIn('<div class="dashboard-detalle"><h2>Detalle de ODT', html)
+        self.assertNotIn('<details class="dashboard-detalle"', html)
+        self.assertNotIn("abrir / cerrar", html)
+        self.assertIn("<td>1</td>", html)
