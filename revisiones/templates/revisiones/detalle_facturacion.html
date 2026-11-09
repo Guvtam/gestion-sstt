@@ -223,6 +223,7 @@
 
                             <!-- HISTORIAL -->
                             <td>
+                                {% if perms.revisiones.ver_historial_sstt %}
                                 <button
                                     type="button"
                                     class="hist-link btn-historial-odt"
@@ -231,6 +232,9 @@
                                 >
                                     Ver historial
                                 </button>
+                                {% else %}
+                                    <span class="hist-sub">Sin permiso</span>
+                                {% endif %}
                             </td>
 
                         </tr>
@@ -254,6 +258,9 @@
         </section>
 
     </main>
+{% if perms.revisiones.ver_historial_sstt %}
+    {% include "revisiones/componentes/modal_historial.html" %}
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script
