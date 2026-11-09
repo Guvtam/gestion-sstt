@@ -5,6 +5,9 @@ from ..dominio.cuentas import normalizar_codigo_cuenta, tipo_cliente_cuenta
 def preparar_filas(filas, *, coordinadores_pagina, facturadas, catalogo, puede_procesar, puede_asignar):
     """Requiere relaciones revision y seguimiento_correccion precargadas."""
     for odt in filas:
+        monto_efectivo = (odt.valor_pago_editado if odt.valor_pago_editado is not None
+                          else odt.valor_pago_tecnico)
+        odt.monto_cero = monto_efectivo == 0
         seguimiento = getattr(odt, "seguimiento_correccion", None)
         odt.estado_modificacion = (
             seguimiento.estado if seguimiento else
