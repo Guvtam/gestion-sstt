@@ -6,14 +6,7 @@
     <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}">
 {% endblock %}
 {% block subtitulo %}Detalle de órdenes de trabajo facturadas{% endblock %}
-{% block acciones_encabezado %}
-<a
-                class="btn alt"
-                href="{% url 'historial_facturacion' %}?periodo={{ facturacion.periodo_id }}"
-            >
-                Volver a facturación
-            </a>
-{% endblock %}
+
 {% block contenido %}
 <main class="hist-main">
 

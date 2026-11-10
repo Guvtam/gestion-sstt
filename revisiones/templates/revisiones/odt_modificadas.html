@@ -66,19 +66,12 @@
 {% endblock %}
 {% block titulo_encabezado %}Seguimiento de cambios de ODT{% endblock %}
 {% block subtitulo %}Control de modificaciones manuales de servicio y pago técnico{% endblock %}
-{% block acciones_encabezado %}{% endblock %}
+
 {% block antes_encabezado %}
   {% endblock %}
 {% block contenido %}
   <main>
-    <div class="modificadas-acciones">
-      <a class="btn alt" href="{% url 'bandeja' %}">Volver a la bandeja</a>
-      {% if perms.revisiones.exportar_pagos_sstt %}<a class="btn alt" href="{% url 'historial_facturacion' %}">Facturación</a>{% endif %}
-      <a href="{% url 'estadisticas_correcciones' %}"
-        class="btn">
-          📊 Estadísticas de correcciones
-      </a>
-    </div>
+
     <section class="modificadas-resumen" aria-label="Estados de corrección">
       {% for tarjeta in tarjetas_estados %}<a href="{{ tarjeta.url }}" class="modificadas-kpi {% if tarjeta.activa %}estado-activo{% endif %}" {% if tarjeta.activa %}aria-current="true"{% endif %}><small>{{ tarjeta.nombre }}</small><strong>{{ tarjeta.cantidad }}</strong></a>{% endfor %}
     </section>

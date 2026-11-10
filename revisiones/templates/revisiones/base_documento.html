@@ -1,4 +1,4 @@
-<!doctype html>
+{% load static %}<!doctype html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
@@ -7,9 +7,11 @@
     {% block estilos_base %}{% endblock %}
     {% block estilos %}{% endblock %}
     {% block estilos_compartidos %}{% endblock %}
+    <link rel="stylesheet" href="{% static 'revisiones/navegacion.css' %}?v=20261110-1">
 </head>
 <body{% block atributos_body %}{% endblock %}>
 {% block cuerpo %}{% endblock %}
 {% block scripts %}{% endblock %}
+<script src="{% static 'revisiones/navegacion.js' %}?v=20261110-1" defer></script>
 </body>
 </html>

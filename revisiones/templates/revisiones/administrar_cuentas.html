@@ -1,4 +1,4 @@
-{% extends "revisiones/base_documento.html" %}
+{% extends "revisiones/base_operativa.html" %}
 {% load static %}
 {% block titulo %}Administración de cuentas SSTT{% endblock %}
 {% block estilos_base %}{% endblock %}
@@ -123,20 +123,13 @@
         }
     </style>
 {% endblock %}
-{% block cuerpo %}
+{% block titulo_encabezado %}Administración de cuentas SSTT{% endblock %}
+{% block subtitulo %}Clasificación de clientes y centros de costo{% endblock %}
+{% block contenido %}
 
 <main class="cuentas-contenedor">
 
-    <div class="cuentas-encabezado">
-        <div>
-            <h1>Administración de cuentas SSTT</h1>
-            <p>Clasificación de clientes y centros de costo</p>
-        </div>
 
-        <a class="btn alt" href="{% url 'bandeja' %}">
-            Volver a bandeja
-        </a>
-    </div>
 
     {% include "revisiones/componentes/mensajes.html" with messages=messages estilo="estandar" only %}
 

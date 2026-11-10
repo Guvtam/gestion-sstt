@@ -1,10 +1,11 @@
 {% extends "revisiones/base_documento.html" %}
-{% load static %}
+{% load static navegacion_sstt %}
 {% block titulo %}{% block title %}Contratistas SSTT{% endblock %}{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
 <link rel="stylesheet" href="{% static 'contratistas/contratistas.css' %}">
 {% endblock %}
 {% block cuerpo %}
-<header class="topbar"><div class="topbar-inner"><div><h1>Gestión de pagos SSTT</h1><p>Administración de contratistas y equivalencias SoftGuard</p></div><div class="top-actions"><div class="user-chip"><span class="avatar">{{ request.user.username|first|upper }}</span><span><small>Sesión iniciada</small><strong>{{ request.user.get_full_name|default:request.user.username }}</strong></span></div><form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="btn btn-light" type="submit">Cerrar sesión</button></form></div></div></header>
+<header class="header-sstt"><div class="header-contenido"><div class="header-titulo"><h1>Gestión de pagos SSTT</h1><p>Administración de contratistas y equivalencias SoftGuard</p></div>{% include "revisiones/componentes/sesion.html" %}</div></header>
+{% menu_sstt %}
 <main class="container">{% for message in messages %}<div class="alert {% if message.tags == 'error' %}alert-error{% endif %}">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>{% endblock %}

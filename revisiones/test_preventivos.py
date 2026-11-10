@@ -69,8 +69,11 @@ class PreventivosCuentasTests(TestCase):
             html = engines["django"].get_template("revisiones/mantenimientos_preventivos.html").render(self.consultar(cuenta="FIR-100"))
         self.assertIn("Preventivos de FIR-100", html)
         self.assertIn("numero_odt=2", html)
-        bandeja = engines["django"].get_template("revisiones/bandeja.html").template.source
-        self.assertLess(bandeja.index("Mantenimientos preventivos</a>"), bandeja.index("Análisis por coordinador"))
+        from .navegacion import datos_menu
+        request = self.factory.get("/")
+        request.user = self.user
+        nombres = [o["nombre"] for o in datos_menu(request, {})["opciones"]]
+        self.assertLess(nombres.index("mantenimientos_preventivos"), nombres.index("estadisticas_correcciones"))
 
     def test_proximo_seis_meses_calendario_y_fin_de_mes(self):
         from datetime import date
@@ -88,7 +91,9 @@ class PreventivosCuentasTests(TestCase):
 
     def test_calendario_separado_del_listado(self):
         with patch("django.urls.reverse", return_value="/calendario/"):
-            html = engines["django"].get_template("revisiones/mantenimientos_preventivos.html").render(self.consultar())
+            request = self.factory.get("/mantenimientos-preventivos/")
+            request.user = self.user
+            html = engines["django"].get_template("revisiones/mantenimientos_preventivos.html").render({**self.consultar(), "request":request})
         self.assertIn("Calendario de visitas", html)
         self.assertNotIn('class="calendario-grid"', html)
         self.assertNotIn("mesCalendario", html)

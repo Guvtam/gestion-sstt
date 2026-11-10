@@ -1,5 +1,5 @@
 {% extends "revisiones/base_documento.html" %}
-{% load static %}
+{% load static navegacion_sstt %}
 {% block estilos_base %}
     <link rel="stylesheet" href="{% static 'revisiones/bandeja.css' %}">
 {% endblock %}
@@ -14,8 +14,9 @@
             <h1>{% block titulo_encabezado %}Gestión de pagos SSTT{% endblock %}</h1>
             <p>{% block subtitulo %}{% endblock %}</p>
         </div>
-        {% block acciones_encabezado %}{% endblock %}
+        {% block acciones_encabezado %}{% include "revisiones/componentes/sesion.html" %}{% endblock %}
     </div>
 </header>
+{% menu_sstt %}
 {% block contenido %}{% endblock %}
 {% endblock %}
