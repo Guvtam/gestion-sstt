@@ -3,46 +3,26 @@ from decimal import Decimal
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
+from django.views.decorators.http import require_GET
 from django.shortcuts import render
 from ..acceso_coordinadores import coordinadores_en_peticion, coordinadores_para_mostrar
-from ..consultas.pagos import importe_efectivo
+from ..consultas.seguimiento_correcciones import consultar_correcciones, filtrar_tipo, contar_estados
 from ..coordinadores_softguard import catalogo_coordinadores
-from ..models import ODT
 
 
-@login_required
-@permission_required(
-    "revisiones.ver_bandeja_sstt",
-    raise_exception=True
-)
 @login_required
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
+@require_GET
 def odt_modificadas(request):
-    """Listado de cambios y comparación con la última sincronización SoftGuard."""
-    registros = (
-        ODT.objects.select_related("revision", "seguimiento_correccion")
-        .filter(
-            Q(seguimiento_correccion__isnull=False)
-            | Q(servicio_editado__isnull=False)
-            | Q(valor_pago_editado__isnull=False)
-        )
-        .order_by("-numero")
-    )
+    """Todas las correcciones registradas, sin restringir a un período por defecto."""
+    registros = consultar_correcciones()
 
     coordinador_seleccionado = request.GET.get("coordinador", "").strip()
     tipo = request.GET.get("tipo", "").strip()
     correccion = request.GET.get("correccion", "").strip()
     q = request.GET.get("q", "").strip()
 
-    if tipo == "MONTO":
-        registros = registros.filter(valor_pago_editado__isnull=False)
-    elif tipo == "SERVICIO":
-        registros = registros.filter(servicio_editado__isnull=False)
-    elif tipo == "AMBOS":
-        registros = registros.filter(
-            servicio_editado__isnull=False,
-            valor_pago_editado__isnull=False,
-        )
+    registros = filtrar_tipo(registros, tipo)
 
     if q:
         condicion = (
@@ -51,14 +31,9 @@ def odt_modificadas(request):
             | Q(cuenta_completa__icontains=q)
         )
         numero_buscado = q.replace(".", "").replace(" ", "")
-        if numero_buscado.isdigit():
+        if numero_buscado.isascii() and numero_buscado.isdigit() and len(numero_buscado) <= 10:
             condicion |= Q(numero=int(numero_buscado))
         registros = registros.filter(condicion)
-
-    # Filtrar por estado persistente (sin perder ODT actualizadas).
-    # Los registros anteriores se inicializan con el comando incluido.
-    if correccion in ("PENDIENTE", "EN_PROCESO", "ACTUALIZADA"):
-        registros = registros.filter(seguimiento_correccion__estado=correccion)
 
     if coordinador_seleccionado:
         responsables = coordinadores_en_peticion(
@@ -71,10 +46,25 @@ def odt_modificadas(request):
         ]
         registros = registros.filter(numero__in=numeros_filtrados)
 
+    # Las tarjetas conservan las cantidades de los otros estados para cambiar de vista.
+    estados = contar_estados(registros)
+    tarjetas_estados = []
+    for clave, nombre, cantidad in (("", "Todas", estados["total"]),
+            ("PENDIENTE", "Pendientes", estados["pendientes"]),
+            ("EN_PROCESO", "Procesadas", estados["procesadas"]),
+            ("ACTUALIZADA", "Actualizadas", estados["actualizadas"])):
+        parametros_tarjeta = request.GET.copy()
+        parametros_tarjeta.pop("page", None)
+        parametros_tarjeta["correccion"] = clave
+        tarjetas_estados.append({"nombre":nombre, "cantidad":cantidad,
+                                "url":"?"+parametros_tarjeta.urlencode(), "activa":correccion==clave})
+    if correccion in ("PENDIENTE", "EN_PROCESO", "ACTUALIZADA"):
+        registros = registros.filter(estado_seguimiento=correccion)
+
     resumen = registros.aggregate(
         cantidad=Count("pk"),
         monto_original=Sum("valor_pago_tecnico"),
-        monto_corregido=Sum(importe_efectivo()),
+        monto_corregido=Sum("monto_objetivo_efectivo"),
     )
     monto_original = resumen["monto_original"] or Decimal("0")
     monto_corregido = resumen["monto_corregido"] or Decimal("0")
@@ -101,8 +91,8 @@ def odt_modificadas(request):
         if seguimiento:
             cambio_monto = seguimiento.corrige_monto
             cambio_servicio = seguimiento.corrige_servicio
-            monto_actual = seguimiento.monto_objetivo
-            servicio_actual = seguimiento.servicio_objetivo
+            monto_actual = odt.monto_objetivo_efectivo
+            servicio_actual = seguimiento.servicio_objetivo if cambio_servicio else odt.servicio
 
         filas.append({
             "numero": odt.numero,
@@ -119,6 +109,7 @@ def odt_modificadas(request):
             "cambio_monto": cambio_monto,
             "cambio_servicio": cambio_servicio,
             "estado_correccion": estado_correccion,
+            "estado_correccion_nombre": {"PENDIENTE":"Pendiente", "EN_PROCESO":"Procesada", "ACTUALIZADA":"Actualizada"}.get(estado_correccion, estado_correccion),
         })
 
     parametros = request.GET.copy()
@@ -130,6 +121,7 @@ def odt_modificadas(request):
 
     return render(request, "revisiones/odt_modificadas.html", {
         "filas": filas,
+        "tarjetas_estados":tarjetas_estados,
         "pagina": pagina,
         "coordinadores": coordinadores,
         "coordinador_seleccionado": coordinador_seleccionado,

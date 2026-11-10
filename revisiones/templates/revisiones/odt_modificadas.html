@@ -1,8 +1,8 @@
 {% extends "revisiones/base_operativa.html" %}
-{% load static %}
+{% load static formato_sstt %}
 {% load l10n %}
 {% load humanize %}
-{% block titulo %}ODT modificadas | SSTT{% endblock %}
+{% block titulo %}Seguimiento de cambios | SSTT{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
 <link rel="stylesheet" href="{% static 'revisiones/bandeja.css' %}">
@@ -19,15 +19,8 @@
     .coordinador-identificado,.coordinador-sin-identificar,.estado-correccion{display:inline-block;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
     .coordinador-identificado,.estado-actualizada{background:#e8f4ed;color:#17633b}
     .coordinador-sin-identificar,.estado-pendiente{background:#fff3dc;color:#986000}
-    .history-row{cursor:pointer}
-    .historial-modal{width:min(850px,95vw);max-height:85vh;border:1px solid #dce5ef;border-radius:12px;padding:22px}
-    .historial-modal::backdrop{background:rgba(15,23,42,.55)}
-    .historial-encabezado{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}
-    .historial-lista{max-height:60vh;overflow:auto}
-    .historial-evento{padding:12px 4px;border-bottom:1px solid #e2e8f0;white-space:normal}
-    .historial-evento-cabecera{display:flex;gap:10px;flex-wrap:wrap;font-weight:600}
-    .historial-observacion{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:7px}
-    .historial-usuario{color:#64748b;font-size:12px;margin-top:4px}
+    .modificadas-kpi{text-decoration:none}.modificadas-kpi.estado-activo{border:2px solid #1765ad;background:#edf5ff}
+    .resumen-importes{grid-template-columns:repeat(3,minmax(0,1fr))}
     @media(max-width:850px){.modificadas-resumen{grid-template-columns:repeat(2,1fr)}}
   .selector-correccion{min-width:120px;padding:6px;border:1px solid #cbd5e1;border-radius:6px;background:#fff}
   
@@ -71,7 +64,7 @@
 
     </style>
 {% endblock %}
-{% block titulo_encabezado %}ODT modificadas{% endblock %}
+{% block titulo_encabezado %}Seguimiento de cambios de ODT{% endblock %}
 {% block subtitulo %}Control de modificaciones manuales de servicio y pago técnico{% endblock %}
 {% block acciones_encabezado %}{% endblock %}
 {% block antes_encabezado %}
@@ -86,11 +79,15 @@
           📊 Estadísticas de correcciones
       </a>
     </div>
-    <section class="modificadas-resumen">
-      <div class="modificadas-kpi"><small>ODT modificadas</small><strong>{{ cantidad|intcomma }}</strong></div>
-      <div class="modificadas-kpi"><small>Monto original</small><strong>${{ monto_original|floatformat:0|intcomma }}</strong></div>
-      <div class="modificadas-kpi"><small>Monto corregido</small><strong>${{ monto_corregido|floatformat:0|intcomma }}</strong></div>
-      <div class="modificadas-kpi"><small>Diferencia neta</small><strong>${{ diferencia_total|floatformat:0|intcomma }}</strong></div>
+    <section class="modificadas-resumen" aria-label="Estados de corrección">
+      {% for tarjeta in tarjetas_estados %}<a href="{{ tarjeta.url }}" class="modificadas-kpi {% if tarjeta.activa %}estado-activo{% endif %}" {% if tarjeta.activa %}aria-current="true"{% endif %}><small>{{ tarjeta.nombre }}</small><strong>{{ tarjeta.cantidad }}</strong></a>{% endfor %}
+    </section>
+    <p class="hint">Las tarjetas consideran coordinador, tipo y búsqueda. Selecciona un estado para ver sus órdenes. Pendiente: falta aplicar el cambio; Procesada: marcado como aplicado; Actualizada: coincide con la última sincronización de SoftGuard.</p>
+    <section class="modificadas-resumen resumen-importes">
+
+      <div class="modificadas-kpi"><small>Monto original</small><strong>${{ monto_original|clp }}</strong></div>
+      <div class="modificadas-kpi"><small>Monto corregido</small><strong>${{ monto_corregido|clp }}</strong></div>
+      <div class="modificadas-kpi"><small>Diferencia neta</small><strong>${{ diferencia_total|clp }}</strong></div>
     </section>
     <section class="panel">
       <h2>Filtros de modificaciones</h2>
@@ -107,8 +104,8 @@
         <div class="field"><label class="field-label">Tipo de modificación</label>
           <select name="tipo">
             <option value="">Todas</option>
-            <option value="MONTO" {% if tipo_seleccionado == 'MONTO' %}selected{% endif %}>Monto</option>
-            <option value="SERVICIO" {% if tipo_seleccionado == 'SERVICIO' %}selected{% endif %}>Servicio</option>
+            <option value="MONTO" {% if tipo_seleccionado == 'MONTO' %}selected{% endif %}>Monto (incluye mixtas)</option>
+            <option value="SERVICIO" {% if tipo_seleccionado == 'SERVICIO' %}selected{% endif %}>Servicio (incluye mixtas)</option>
             <option value="AMBOS" {% if tipo_seleccionado == 'AMBOS' %}selected{% endif %}>Monto y servicio</option>
           </select>
         </div>
@@ -116,7 +113,7 @@
           <select name="correccion">
             <option value="">Todos</option>
             <option value="PENDIENTE" {% if correccion_seleccionada == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
-            <option value="EN_PROCESO" {% if correccion_seleccionada == 'EN_PROCESO' %}selected{% endif %}>En proceso</option>
+            <option value="EN_PROCESO" {% if correccion_seleccionada == 'EN_PROCESO' %}selected{% endif %}>Procesada</option>
             <option value="ACTUALIZADA" {% if correccion_seleccionada == 'ACTUALIZADA' %}selected{% endif %}>Actualizada</option>
           </select>
         </div>
@@ -126,55 +123,55 @@
         <div class="filter-actions"><button type="submit">Aplicar filtros</button><a class="btn alt" href="{% url 'odt_modificadas' %}">Limpiar</a></div>
       </form>
     </section>
-    <section class="panel"><h2>Listado de ODT modificadas</h2>
-      <p class="hint">ODT con correcciones guardadas en servicio o monto técnico. El estado se calcula con los últimos valores sincronizados de SoftGuard. Hasta 50 por página.</p>
+    <section class="panel"><h2>Listado de cambios · {{ cantidad }} ODT</h2>
+      <p class="hint">ODT con correcciones guardadas en servicio o monto técnico. Incluye todos los períodos y conserva las ODT actualizadas. Se muestran primero las pendientes y luego las procesadas. Hasta 50 por página.</p>
+      {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True etiqueta="Paginación superior de cambios" %}
       <div class="table-scroll"><table class="modificadas-tabla">
         <thead><tr>
           <th>ODT</th><th>Coordinador</th><th>Contratista</th><th>Cuenta</th><th>Fecha finalización</th>
-          <th>Servicio SoftGuard</th><th>Servicio Real</th><th>Monto SoftGuard</th><th>Monto Real</th>
-          <th>Tipo cambio</th><th>Estado de corrección</th><th>Historial ODT</th>
+          <th>Servicio SoftGuard</th><th>Servicio solicitado</th><th>Monto SoftGuard</th><th>Monto solicitado</th>
+          <th>Tipo cambio</th><th>Estado de corrección</th><th>Acciones</th>
         </tr></thead>
         <tbody>
           {% for r in filas %}
             <tr data-numero="{{ r.numero|stringformat:'d' }}">
-              <td><a href="{% url 'detalle' r.numero %}">{{ r.numero }}</a></td>
+              <td>{{ r.numero|stringformat:'d' }}</td>
               <td>{% if r.coordinador_identificado %}<span class="coordinador-identificado">{{ r.coordinador }}</span>{% else %}<span class="coordinador-sin-identificar">{{ r.coordinador }}</span>{% endif %}</td>
               <td>{{ r.contratista|default:'—' }}</td>
               <td>{{ r.cuenta|default:'—' }}</td>
               <td>{{ r.fecha_finalizacion|date:'d-m-Y'|default:'—' }}</td>
               <td class="valor-anterior">{{ r.servicio_original|default:'—' }}</td>
               <td class="valor-nuevo">{{ r.servicio_actual|default:'—' }}</td>
-              <td class="valor-anterior">${{ r.monto_original|floatformat:0|intcomma }}</td>
-              <td class="valor-nuevo">${{ r.monto_actual|floatformat:0|intcomma }}</td>
-              <td>{% if r.cambio_monto and r.cambio_servicio %}Monto y servicio{% elif r.cambio_monto %}Monto{% else %}Servicio{% endif %}</td>
+              <td class="valor-anterior">${{ r.monto_original|clp }}</td>
+              <td class="valor-nuevo">${{ r.monto_actual|clp }}</td>
+              <td>{% if r.cambio_monto and r.cambio_servicio %}Monto y servicio{% elif r.cambio_monto %}Monto{% elif r.cambio_servicio %}Servicio{% else %}Sin cambio activo{% endif %}</td>
               <td>
                 {% if r.estado_correccion == 'ACTUALIZADA' %}
                   <span class="estado-correccion estado-actualizada">Actualizada</span>
                 {% elif perms.revisiones.editar_odt_sstt %}
                   <select class="selector-correccion" data-numero="{{ r.numero }}" aria-label="Estado de corrección ODT {{ r.numero }}">
                     <option value="PENDIENTE" {% if r.estado_correccion == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
-                    <option value="EN_PROCESO" {% if r.estado_correccion == 'EN_PROCESO' %}selected{% endif %}>En proceso</option>
+                    <option value="EN_PROCESO" {% if r.estado_correccion == 'EN_PROCESO' %}selected{% endif %}>Procesada</option>
                   </select>
                 {% else %}
-                  <span class="estado-correccion">{{ r.estado_correccion }}</span>
+                  <span class="estado-correccion">{{ r.estado_correccion_nombre }}</span>
                 {% endif %}
               </td>
-              <td>{% if perms.revisiones.ver_historial_sstt %}<button type="button" class="history-row alt" data-url="{% url 'historial_odt' r.numero %}">Historial</button>{% else %}—{% endif %}</td>
+              <td><a class="btn alt" href="{% url 'bandeja' %}?numero_odt={{ r.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=&amp;servicios_filtrados=1&amp;servicios={{ r.servicio_actual|urlencode }}">Ver en bandeja</a> {% if perms.revisiones.ver_historial_sstt %}<button type="button" class="btn-historial-odt alt" data-numero="{{ r.numero|stringformat:'d' }}" data-url="{% url 'historial_odt' r.numero %}">Historial</button>{% else %}—{% endif %}</td>
             </tr>
           {% empty %}
             <tr><td colspan="12">No existen ODT modificadas para los filtros seleccionados.</td></tr>
           {% endfor %}
         </tbody>
       </table></div>
-      {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring agrupada=True clase_enlace="btn alt" only %}
+      {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True etiqueta="Paginación inferior de cambios" %}
     </section>
   </main>
   <footer>Sistema SSTT · Control de modificaciones</footer>
-  <dialog id="modalHistorial" class="historial-modal">
-    <div class="historial-encabezado"><div><h2>Historial de ODT <span id="historialNumero"></span></h2><p class="hint">Registro operativo obtenido de SoftGuard.</p></div><button type="button" id="cerrarHistorial" class="alt">Cerrar</button></div>
-    <div id="historialContenido"><p class="hint">Cargando historial...</p></div>
-  </dialog>
-  <script src="{% static 'revisiones/odt_modificadas.js' %}?v=1"></script>
+  {% if perms.revisiones.ver_historial_sstt %}
+    {% include "revisiones/componentes/modal_historial.html" %}
+    <script src="{% static 'revisiones/historial_facturacion_odt.js' %}?v=2"></script>
+  {% endif %}
 <script>
   document.querySelectorAll('.selector-correccion').forEach(el => {
     el.dataset.anterior = el.value;
