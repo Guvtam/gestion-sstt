@@ -4,6 +4,12 @@ El menú se muestra debajo del encabezado, antes del contenido, en las pantallas
 de pagos, creación, análisis, seguimiento, calendario, preventivos, facturación,
 cuentas y contratistas. Login y administración nativa de Django mantienen su layout.
 El orden, estilos y opción activa se definen en un componente compartido.
+El menú agrupa Análisis (ODT y coordinador), Administración (cuentas y
+contratistas) y Visitas (calendario y preventivos). Los grupos sin opciones no
+aparecen; si solo hay un destino autorizado se muestra como acceso directo.
+Los desplegables funcionan con clic y teclado mediante details/summary nativos;
+JavaScript permite cerrar con Escape, clic exterior y abrir un grupo a la vez.
+En móvil se despliegan dentro de la franja para no desbordar la pantalla.
 Las acciones propias de una pantalla (guardar, facturar, buscar, crear contratista)
 siguen junto a su contenido; los enlaces globales dejan de repetirse allí.
 

@@ -7,6 +7,28 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .acceso_coordinadores import es_coordinador_sstt
 
 
+def agrupar_opciones(opciones):
+    por_nombre = {opcion["nombre"]: opcion for opcion in opciones}
+    secciones = []
+    for nombre, titulo, destinos in (
+        ("bandeja", "", ("bandeja",)),
+        ("bandeja_creacion", "", ("bandeja_creacion",)),
+        ("odt_modificadas", "", ("odt_modificadas",)),
+        ("visitas", "Visitas", ("calendario_servicios", "mantenimientos_preventivos")),
+        ("analisis", "Análisis", ("analisis_odt", "estadisticas_correcciones")),
+        ("historial_facturacion", "", ("historial_facturacion",)),
+        ("administracion", "Administración", ("contratistas:listado", "administrar_cuentas")),
+    ):
+        enlaces = [por_nombre[destino] for destino in destinos if destino in por_nombre]
+        if not enlaces:
+            continue
+        # Los accesos de un solo destino permanecen directos para perfiles limitados.
+        secciones.append({"nombre": nombre, "texto": titulo, "enlaces": enlaces,
+                          "desplegable": len(enlaces) > 1,
+                          "activa": any(enlace["activa"] for enlace in enlaces)})
+    return secciones
+
+
 def datos_menu(request, contexto):
     usuario = request.user
     if not usuario.is_authenticated:
@@ -58,6 +80,6 @@ def datos_menu(request, contexto):
             anterior = None
         if anterior in permitidas and partes.path != request.path:
             volver = partes.path + ("?" + partes.query if partes.query else "")
-    return {"opciones": opciones, "volver": volver,
+    return {"opciones": opciones, "secciones": agrupar_opciones(opciones), "volver": volver,
             "en_inicio": getattr(request, "path", "") == inicio and volver == inicio,
             "usuario_id": usuario.pk}

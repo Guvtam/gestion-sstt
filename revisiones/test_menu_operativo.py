@@ -39,6 +39,26 @@ class MenuOperativoTests(TestCase):
     def test_coordinador_solo_bandeja_y_calendario(self):
         menu = datos_menu(self.peticion("bandeja", self.coordinador), {})
         self.assertEqual([o["nombre"] for o in menu["opciones"]], ["bandeja", "calendario_servicios"])
+        self.assertFalse(any(seccion["desplegable"] for seccion in menu["secciones"]))
+
+    def test_agrupacion_no_duplica_destinos_y_reduce_opciones_visibles(self):
+        menu = datos_menu(self.peticion("bandeja"), {})
+        grupos = {s["nombre"]:s for s in menu["secciones"] if s["desplegable"]}
+        self.assertEqual(set(grupos), {"visitas", "analisis", "administracion"})
+        self.assertEqual([o["nombre"] for o in grupos["analisis"]["enlaces"]], ["analisis_odt", "estadisticas_correcciones"])
+        self.assertEqual([o["nombre"] for o in grupos["administracion"]["enlaces"]], ["contratistas:listado", "administrar_cuentas"])
+        destinos = [o["nombre"] for s in menu["secciones"] for o in s["enlaces"]]
+        self.assertCountEqual(destinos, [o["nombre"] for o in menu["opciones"]])
+        self.assertEqual(len(menu["secciones"]), 7)
+
+    def test_grupo_actual_destacado_y_desplegable_nativo_sin_javascript(self):
+        request = self.peticion("estadisticas_correcciones")
+        menu = datos_menu(request, {})
+        self.assertEqual([s["nombre"] for s in menu["secciones"] if s["activa"]], ["analisis"])
+        html = Template("{% load navegacion_sstt %}{% menu_sstt %}").render(Context({"request":request}))
+        self.assertEqual(html.count('<details class="sstt-menu-grupo"'), 3)
+        self.assertIn('es-actual">Análisis<span', html)
+        self.assertEqual(html.count('aria-current="page"'), 1)
 
     def test_perfil_calendario_no_recibe_opciones_de_pagos(self):
         menu = datos_menu(self.peticion("calendario_servicios", self.calendario), {})

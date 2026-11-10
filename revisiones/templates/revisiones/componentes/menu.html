@@ -3,7 +3,18 @@
   <div class="sstt-menu-interior">
     <a class="sstt-menu-volver" data-sstt-volver href="{{ volver }}"{% if en_inicio %} aria-disabled="true" tabindex="-1"{% endif %}>← Volver</a>
     <div class="sstt-menu-opciones">
-      {% for opcion in opciones %}<a class="sstt-menu-enlace{% if opcion.activa %} es-actual{% endif %}" href="{{ opcion.url }}" data-sstt-destino{% if opcion.activa %} aria-current="page"{% endif %}>{{ opcion.texto }}</a>{% endfor %}
+      {% for seccion in secciones %}
+        {% if seccion.desplegable %}
+        <details class="sstt-menu-grupo" data-sstt-grupo>
+          <summary class="sstt-menu-enlace{% if seccion.activa %} es-actual{% endif %}">{{ seccion.texto }}<span class="sstt-menu-flecha" aria-hidden="true">⌄</span></summary>
+          <div class="sstt-submenu" aria-label="{{ seccion.texto }}">
+            {% for opcion in seccion.enlaces %}<a class="sstt-submenu-enlace{% if opcion.activa %} es-actual{% endif %}" href="{{ opcion.url }}" data-sstt-destino{% if opcion.activa %} aria-current="page"{% endif %}>{{ opcion.texto }}</a>{% endfor %}
+          </div>
+        </details>
+        {% else %}
+          {% for opcion in seccion.enlaces %}<a class="sstt-menu-enlace{% if opcion.activa %} es-actual{% endif %}" href="{{ opcion.url }}" data-sstt-destino{% if opcion.activa %} aria-current="page"{% endif %}>{{ opcion.texto }}</a>{% endfor %}
+        {% endif %}
+      {% endfor %}
     </div>
   </div>
 </nav>
