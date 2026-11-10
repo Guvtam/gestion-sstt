@@ -46,7 +46,7 @@ def mantenimientos_preventivos(request):
             continue
         cuentas[codigo] = {
             "codigo": codigo, "nombre": cuenta.nombre_cuenta,
-            "tipo_cliente": tipo_cliente_cuenta(codigo, {codigo: cuenta}), "ceco": cuenta.ceco,
+            "tipo_cliente": tipo_cliente_cuenta(codigo, {codigo: cuenta}), "ceco": (cuenta.ceco or "").strip(),
             "cantidad": 0, "pendientes": 0, "ultimo": None,
         }
     # Incorporar cuentas que aún no estén registradas en el catálogo.

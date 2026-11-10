@@ -126,7 +126,8 @@ def bandeja(request, por_creacion=False):
 
     inicio_paginacion = tiempo.perf_counter()
 
-    pagina = paginar_filas(registros, request.GET.get("page"), request.GET.get("ubicar_odt"))
+    pagina = paginar_filas(registros, request.GET.get("page"), request.GET.get("ubicar_odt"),
+                           priorizar_correcciones=not por_creacion)
     filas = pagina.object_list
     coordinadores_pagina = coordinadores_para_mostrar(request, [odt.numero for odt in filas])
     complementos = cargar_complementos(filas)

@@ -35,7 +35,7 @@ def construir_documento_contratista(
 
     def ceco_pdf(odt):
         cuenta = catalogo_clientes.get(normalizar_codigo_cuenta(odt.cuenta_completa))
-        return (cuenta.ceco or "").strip() or "Revisar CECO" if cuenta else "Revisar CECO"
+        return (cuenta.ceco or "").strip() or "Asignar / revisar CECO" if cuenta else "Asignar / revisar CECO"
 
     buffer = BytesIO()
 

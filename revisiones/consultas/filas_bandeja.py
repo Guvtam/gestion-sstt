@@ -16,18 +16,23 @@ class ComplementosFilas:
     catalogo: dict
 
 
-def paginar_filas(registros, numero_pagina, numero_ancla=None):
+def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_correcciones=True):
     # Priorizar antes de paginar: no solo las correcciones de la página visible.
     # La ausencia de seguimiento conserva el estado pendiente de ediciones antiguas.
     pendientes = Q(seguimiento_correccion__estado="PENDIENTE") | (
         Q(seguimiento_correccion__isnull=True)
         & (Q(servicio_editado__isnull=False) | Q(valor_pago_editado__isnull=False))
     )
-    ids = registros.alias(prioridad_correccion=Case(
-        When(pendientes, then=Value(0)),
-        When(seguimiento_correccion__estado="EN_PROCESO", then=Value(1)),
-        default=Value(2), output_field=IntegerField(),
-    )).order_by("prioridad_correccion", *ORDEN_BANDEJA).values_list("pk", flat=True)
+    orden = ORDEN_BANDEJA
+    if priorizar_correcciones:
+        registros = registros.alias(prioridad_correccion=Case(
+            When(pendientes, then=Value(0)),
+            When(seguimiento_correccion__estado="EN_PROCESO", then=Value(1)),
+            default=Value(2), output_field=IntegerField(),
+        ))
+        orden = ("prioridad_correccion", *orden)
+    # En ODT por creación una edición no debe mover la fila a otra página.
+    ids = registros.order_by(*orden).values_list("pk", flat=True)
     # Buscar solo dentro del alcance autorizado y de los filtros vigentes.
     # Se recorre una proyección de IDs, sin cargar todas las ODT en memoria.
     ancla = str(numero_ancla or "")

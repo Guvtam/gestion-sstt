@@ -2,7 +2,8 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Value
+from django.db.models.functions import Coalesce, Trim
 from django.shortcuts import redirect, render
 from django.http import Http404
 from django.views.decorators.http import require_POST
@@ -18,8 +19,14 @@ def administrar_cuentas(request):
     busqueda = request.GET.get("q", "").strip()
     tipo = request.GET.get("tipo", "").strip()
     pendientes = request.GET.get("pendientes", "").strip()
+    estado_ceco = request.GET.get("estado_ceco", "").strip()
+    if estado_ceco not in ("sin", "con", "revisar"):
+        estado_ceco = ""
 
-    cuentas = CatalogoCuenta.objects.all()
+    catalogo = CatalogoCuenta.objects.annotate(ceco_limpio=Trim(Coalesce("ceco", Value(""))))
+    cuentas = catalogo.all()
+    sin_ceco = Q(ceco_limpio="")
+    por_revisar = sin_ceco | Q(requiere_revision_ceco=True)
 
     if busqueda:
         cuentas = cuentas.filter(
@@ -31,11 +38,17 @@ def administrar_cuentas(request):
     if tipo in ("B2B", "B2C", "SIN_CLASIFICAR"):
         cuentas = cuentas.filter(tipo_cliente=tipo)
 
+    if estado_ceco == "sin":
+        cuentas = cuentas.filter(sin_ceco)
+    elif estado_ceco == "con":
+        cuentas = cuentas.exclude(sin_ceco)
+    elif estado_ceco == "revisar":
+        cuentas = cuentas.filter(por_revisar)
+
     if pendientes == "1":
         cuentas = cuentas.filter(
             Q(tipo_cliente="SIN_CLASIFICAR")
-            | Q(requiere_revision_ceco=True)
-            | Q(ceco="")
+            | por_revisar
         )
 
     total_cuentas = CatalogoCuenta.objects.count()
@@ -44,9 +57,7 @@ def administrar_cuentas(request):
         tipo_cliente="SIN_CLASIFICAR"
     ).count()
 
-    revisar_ceco = CatalogoCuenta.objects.filter(
-        requiere_revision_ceco=True
-    ).count()
+    revisar_ceco = catalogo.filter(por_revisar).count()
 
     pagina = Paginator(
         cuentas.order_by("codigo_cuenta"),
@@ -65,6 +76,7 @@ def administrar_cuentas(request):
             "busqueda": busqueda,
             "tipo": tipo,
             "pendientes": pendientes,
+            "estado_ceco": estado_ceco,
             "total_cuentas": total_cuentas,
             "sin_clasificar": sin_clasificar,
             "revisar_ceco": revisar_ceco,

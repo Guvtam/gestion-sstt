@@ -47,7 +47,7 @@
 </tr></thead><tbody>
 {% for cuenta in pagina %}<tr>
 <td><strong>{{ cuenta.codigo }}</strong></td><td>{{ cuenta.nombre|default:"Sin nombre" }}</td>
-<td><span class="tipo-cliente" data-tipo="{{ cuenta.tipo_cliente }}">{% if cuenta.tipo_cliente == "SIN_CLASIFICAR" %}Sin clasificar{% else %}{{ cuenta.tipo_cliente }}{% endif %}</span></td><td>{{ cuenta.ceco|default:"Sin CECO" }}</td>
+<td><span class="tipo-cliente" data-tipo="{{ cuenta.tipo_cliente }}">{% if cuenta.tipo_cliente == "SIN_CLASIFICAR" %}Sin clasificar{% else %}{{ cuenta.tipo_cliente }}{% endif %}</span></td><td>{{ cuenta.ceco|default:"Asignar / revisar CECO" }}</td>
 <td>{% if cuenta.ultimo %}{{ cuenta.ultimo.fecha_finalizacion|date:"d/m/Y H:i" }}{% else %}Sin preventivo finalizado{% endif %}</td>
 <td>{% if cuenta.proximo %}{{ cuenta.proximo|date:"d/m/Y" }}{% if cuenta.vencido %}<span class="estado-vencido">Fecha cumplida</span>{% endif %}{% else %}Sin fecha base{% endif %}</td>
 <td>{% if cuenta.ultimo %}<a href="{% url 'bandeja' %}?numero_odt={{ cuenta.ultimo.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ cuenta.ultimo.numero|stringformat:'d' }}</a>{% else %}—{% endif %}</td>

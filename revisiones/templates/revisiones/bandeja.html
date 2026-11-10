@@ -601,19 +601,17 @@
 
                 <td class="ceco-catalogo">
 
-                  {% if r.ceco_requiere_revision %}
+                  {% if r.ceco_requiere_revision or not r.ceco_catalogo %}
                     <span
-                      title="Esta cuenta tiene CECO en conflicto; revisar en Cuentas SSTT"
+                      title="CECO pendiente de asignar o validar en Administración de cuentas SSTT"
                       style="color:#b45309;font-weight:600;"
                     >
-                      Revisar CECO
+                      Asignar / revisar CECO
                     </span>
 
                   {% elif r.ceco_catalogo %}
                     {{ r.ceco_catalogo }}
 
-                  {% else %}
-                    <span class="hint">Sin CECO</span>
                   {% endif %}
 
                 </td>
@@ -1148,7 +1146,7 @@
 
   <!-- JAVASCRIPT PRINCIPAL -->
 
-  <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=1"></script>
+  <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=20261110-creacion"></script>
   <script src="{% static 'revisiones/bandeja.js' %}?v=20261109-posicion"></script>
 
   <!-- FILTROS Y FACTURACIÓN -->
