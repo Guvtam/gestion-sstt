@@ -46,7 +46,7 @@ def detalle_facturacion(request, facturacion_id):
         item.odt.tipo_cliente_catalogo = tipo_cliente_cuenta(item.odt.cuenta_completa, catalogo)
 
         item.odt.ceco_catalogo = (
-            cuenta.ceco if cuenta else ""
+            (cuenta.ceco or "").strip() if cuenta else ""
         )
 
     from .consultas.resumen_facturacion import resumir_items

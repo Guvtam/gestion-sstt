@@ -54,10 +54,10 @@ def preparar_filas(filas, *, coordinadores_pagina, facturadas, catalogo, puede_p
         codigo = normalizar_codigo_cuenta(odt.cuenta_completa)
         cuenta = catalogo.get(codigo)
         odt.codigo_cuenta_catalogo = codigo
-        odt.ceco_catalogo = cuenta.ceco if cuenta else ""
+        odt.ceco_catalogo = (cuenta.ceco or "").strip() if cuenta else ""
         odt.tipo_cliente_catalogo = tipo_cliente_cuenta(odt.cuenta_completa, catalogo)
         odt.ceco_requiere_revision = (
-            cuenta.requiere_revision_ceco if cuenta else False
+            not odt.ceco_catalogo or bool(cuenta and cuenta.requiere_revision_ceco)
         )
         odt.cuenta_en_catalogo = cuenta is not None
 
