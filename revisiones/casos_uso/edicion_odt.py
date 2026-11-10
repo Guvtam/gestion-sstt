@@ -67,7 +67,8 @@ def editar_odt(usuario, *, numero, servicio, monto, confirmar_monto=False, comen
             odt=odt, estado_anterior=estado, estado_nuevo=estado,
             comentario=" | ".join(cambios), usuario=usuario,
         )
-        return ResultadoEdicion(monto, estado, True)
+        monto_efectivo = odt.valor_pago_tecnico if odt.valor_pago_editado is None else odt.valor_pago_editado
+        return ResultadoEdicion(monto_efectivo, estado, True)
 
 
 def _guardar_revision(odt, revision, estado, comentario, usuario):

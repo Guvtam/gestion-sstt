@@ -3,6 +3,7 @@ from django.db.models import Case, CharField, Count, DecimalField, F, IntegerFie
 from django.db.models.functions import Coalesce
 
 from ..models import ODT
+from ..dominio.conciliacion_correcciones import MARCA_MONTO
 from .pagos import importe_efectivo
 
 
@@ -13,6 +14,8 @@ def consultar_correcciones():
     ).annotate(
         estado_seguimiento=Coalesce("seguimiento_correccion__estado", Value("PENDIENTE"), output_field=CharField()),
         monto_objetivo_efectivo=Case(
+            When(seguimiento_correccion__estado="ACTUALIZADA", seguimiento_correccion__monto_objetivo=MARCA_MONTO,
+                 seguimiento_correccion__corrige_monto=True, valor_pago_editado__isnull=True, then=F("valor_pago_tecnico")),
             When(seguimiento_correccion__corrige_monto=True, then=F("seguimiento_correccion__monto_objetivo")),
             When(seguimiento_correccion__isnull=True, then=importe_efectivo()),
             default=F("valor_pago_tecnico"), output_field=DecimalField(max_digits=14, decimal_places=2),

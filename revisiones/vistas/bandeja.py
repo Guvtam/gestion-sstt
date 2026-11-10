@@ -204,6 +204,8 @@ def bandeja(request, por_creacion=False):
 
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
+            "destacar_monto_cero": (not es_coordinador and request.user.has_perm("revisiones.revisar_pago_sstt")
+                                     and (request.user.is_superuser or request.user.groups.filter(name="Supervisor").exists())),
             "coordinador_sesion": coordinador_sesion,
             "coordinadores_asignables": list(catalogo.values()),
             "servicios_principales": SERVICIOS_PRINCIPALES,

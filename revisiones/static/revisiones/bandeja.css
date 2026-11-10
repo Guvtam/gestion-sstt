@@ -1186,17 +1186,19 @@ tr.odt-bloqueada .row-input {
 @media(max-width:650px) {.paginacion-enlaces {justify-content:flex-start}}
 
 /* Monto efectivo cero: incluye columnas fijas y conserva marcas de edición. */
-#tablaScrollPrincipal table tbody tr.odt-monto-cero > td {
+#tablaScrollPrincipal table tbody tr.odt-monto-cero > td,
+#tablaScrollPrincipal table tbody tr.odt-correccion-pendiente > td {
     background-color:#fff0dc !important;
 }
-#tablaScrollPrincipal table tbody tr.odt-monto-cero:hover > td {
+#tablaScrollPrincipal table tbody tr.odt-monto-cero:hover > td,
+#tablaScrollPrincipal table tbody tr.odt-correccion-pendiente:hover > td {
     background-color:#ffe3bd !important;
 }
-.monto-cero-marca {
+.monto-cero-marca, .correccion-pendiente-marca {
     display:inline-block;background:#ffdfb5;color:#874000;border:1px solid #edb46d;
     border-radius:5px;padding:3px 6px;font-size:11px;font-weight:600;
 }
-td.amount .monto-cero-marca {display:block;width:fit-content;margin-bottom:5px}
+td.amount .monto-cero-marca, .correccion-pendiente-marca {display:block;width:fit-content;margin-bottom:5px}
 
 /* Identificar la última ODT guardada sin alterar el fondo ni mover las filas. */
 #tablaScrollPrincipal table tbody tr.odt-reciente > td {
@@ -1207,3 +1209,5 @@ td.amount .monto-cero-marca {display:block;width:fit-content;margin-bottom:5px}
 #tablaScrollPrincipal td.service .edited-mark {
     white-space:normal;overflow-wrap:anywhere;line-height:1.45;
 }
+
+td.service .correccion-pendiente-marca {margin-bottom:5px}
