@@ -97,11 +97,14 @@ class VinculosCoordinadoresTests(TestCase):
                    return_value={1: dict(self.responsables[1], identificado=True)}):
             self.assertFalse(coordinador_visible(request, 1))
 
-    def test_vinculo_inactivo_bloquea_bandeja(self):
+    def test_vinculo_inactivo_permite_bandeja_vacia_con_permiso(self):
         self.vinculo.activo = False
         self.vinculo.save()
+        permiso, _ = Permission.objects.get_or_create(
+            codename="ver_bandeja_sstt", content_type=ContentType.objects.get(app_label="revisiones", model="odt"))
+        self.usuario.user_permissions.add(permiso)
         self.client.force_login(self.usuario)
-        self.assertEqual(self.client.get(reverse("bandeja")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("bandeja")).status_code, 200)
 
     def test_formulario_no_acepta_identidades_desconocidas(self):
         form = VinculoCoordinadorForm(data={"usuario":self.usuario.pk,

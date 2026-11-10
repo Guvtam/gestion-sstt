@@ -27,7 +27,7 @@
 {% block titulo_encabezado %}Calendario de visitas{% endblock %}
 {% block subtitulo %}Visitas realizadas, abiertas y atrasadas por cuenta{% endblock %}
 {% block acciones_encabezado %}
-<div class="filtro-acciones">{% if not es_coordinador %}<a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a>{% endif %}<a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a></div>
+<div class="filtro-acciones">{% if puede_ver_bandeja and not es_coordinador %}<a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a>{% endif %}{% if puede_ver_bandeja %}<a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a>{% else %}<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn alt">Cerrar sesión</button></form>{% endif %}</div>
 {% endblock %}
 {% block antes_encabezado %}
 {% endblock %}
@@ -49,7 +49,8 @@
 </form>
 {% include "revisiones/componentes/errores_filtro.html" %}
 <p class="hist-sub" role="status">{{ disponibles_mes }} visitas disponibles en la base local para este mes; {{ cantidad }} visibles con los filtros actuales.</p>
-{% if es_coordinador %}<p class="hist-sub">Se muestran únicamente las visitas de las ODT asignadas a tu responsable.</p>
+{% if coordinador_sin_vinculo %}<p class="hist-sub" role="status">Tu usuario no tiene un responsable activo vinculado. El calendario permanecerá vacío hasta configurarlo.</p>
+{% elif es_coordinador %}<p class="hist-sub">Se muestran únicamente las visitas de las ODT asignadas a tu responsable.</p>
 {% elif ultima_sincronizacion %}
 <p class="hist-sub">Último intento de sincronización: {{ ultima_sincronizacion.iniciada_en|date:"d/m/Y H:i" }} · {{ ultima_sincronizacion.get_estado_display }} · {{ ultima_sincronizacion.omitidas }} ODT omitidas.</p>
 {% else %}<p class="hist-sub">No hay sincronizaciones registradas en esta instalación. Si faltan visitas, verifica la carga de datos.</p>{% endif %}
@@ -71,8 +72,8 @@
 <div class="calendario-dia {% if not dia.del_mes %}fuera-mes{% endif %} {% if dia.hoy %}es-hoy{% endif %}">
 <time datetime="{{ dia.fecha|date:'Y-m-d' }}">{{ dia.fecha|date:"j" }}</time>
 {% for evento in dia.eventos %}
-<a class="calendario-evento visita-{{ evento.categoria }}" href="{% url 'bandeja' %}?numero_odt={{ evento.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">
-<b>{{ evento.codigo }}</b><span class="visita-etiqueta">{{ evento.etiqueta }} · {{ evento.estado }}</span><span>{{ evento.nombre }}</span><span>ODT {{ evento.numero|stringformat:'d' }} · {{ evento.servicio|default:"Sin servicio" }}</span><span>{{ evento.tecnico }}</span></a>
+{% if puede_ver_bandeja %}<a class="calendario-evento visita-{{ evento.categoria }}" href="{% url 'bandeja' %}?numero_odt={{ evento.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{% else %}<div class="calendario-evento visita-{{ evento.categoria }}">{% endif %}
+<b>{{ evento.codigo }}</b><span class="visita-etiqueta">{{ evento.etiqueta }} · {{ evento.estado }}</span><span>{{ evento.nombre }}</span><span>ODT {{ evento.numero|stringformat:'d' }} · {{ evento.servicio|default:"Sin servicio" }}</span><span>{{ evento.tecnico }}</span>{% if puede_ver_bandeja %}</a>{% else %}</div>{% endif %}
 {% endfor %}</div>
 {% endfor %}{% endfor %}
 </div></div>

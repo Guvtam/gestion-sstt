@@ -51,7 +51,7 @@ class DiagnosticoUsuariosTests(TestCase):
         info = self.informe()[0]
         self.assertTrue(info["perfil_coordinador"])
         self.assertIsNone(info["responsable_softguard"])
-        self.assertTrue(any("acceso operativo bloqueado" in aviso for aviso in info["avisos"]))
+        self.assertTrue(any("calendario vacíos" in aviso for aviso in info["avisos"]))
         self.assertTrue(any("sigue restringiendo" in aviso for aviso in info["avisos"]))
 
     def test_historico_y_superusuario_se_distinguen(self):

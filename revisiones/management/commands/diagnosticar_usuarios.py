@@ -32,9 +32,11 @@ class Command(BaseCommand):
             if not usuario.is_active:
                 avisos.append("Usuario inactivo: no puede iniciar sesión.")
             if usuario.is_active and not usuario.has_perm("revisiones.ver_bandeja_sstt"):
-                avisos.append("Sin permiso para abrir la bandeja.")
+                avisos.append("Consulta de calendario: sin acceso a gestión de pagos."
+                              if usuario.has_perm("revisiones.ver_calendario_sstt")
+                              else "Sin permiso para abrir la bandeja.")
             if coordinador and responsable is None:
-                avisos.append("Coordinador sin identidad activa: acceso operativo bloqueado.")
+                avisos.append("Coordinador sin identidad activa: bandeja y calendario vacíos; operaciones sobre ODT bloqueadas.")
             if vinculo and not coordinador:
                 avisos.append("Vínculo de coordinador sin restricción de perfil: revisar excepción de administrador o superusuario.")
             if coordinador and any(p in permisos for p in (

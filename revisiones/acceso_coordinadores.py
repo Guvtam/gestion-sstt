@@ -103,7 +103,7 @@ def limitar_odts_coordinador(request, registros):
         return registros
     datos = datos_coordinador(request.user)
     if datos is None:
-        raise PermissionDenied("El usuario del coordinador no está vinculado a SoftGuard.")
+        return registros.none()
     responsables = coordinadores_en_peticion(
         request, registros.order_by().values_list("numero", flat=True).iterator(),
     )
@@ -119,16 +119,20 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
         return None
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        if not es_coordinador_sstt(request.user):
-            return None
         nombre = request.resolver_match.url_name
+        if not es_coordinador_sstt(request.user):
+            if (nombre == "bandeja" and request.method in ("GET", "HEAD")
+                    and request.user.is_authenticated and request.user.is_active
+                    and request.user.has_perm("revisiones.ver_calendario_sstt")
+                    and not request.user.has_perm("revisiones.ver_bandeja_sstt")):
+                return redirect("calendario_servicios")
+            return None
         if nombre in ("login", "logout"):
             return None
-        if datos_coordinador(request.user) is None:
-            raise PermissionDenied(
-                "El vínculo de coordinador no está activo o no está configurado. Contacta a administración.")
         if nombre in ("bandeja", "contratistas_disponibles_ajax", "calendario_servicios"):
             return None
+        if datos_coordinador(request.user) is None:
+            raise PermissionDenied("El usuario no tiene un responsable activo para operar sobre ODT.")
         # Operaciones internas de la bandeja, no páginas adicionales.
         if nombre in ("historial_odt", "actualizar_informe", "cambiar_estado_correccion"):
             try:

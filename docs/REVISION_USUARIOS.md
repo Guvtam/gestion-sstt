@@ -22,8 +22,8 @@ administración cuando corresponda, pero no concede los permisos SSTT.
 
 Los permisos enumerados son los que devuelve el sistema de autenticación Django.
 No constituyen una promesa de acceso: el middleware y los casos de uso también
-restringen las páginas y el alcance de coordinador. Un vínculo inactivo no libera
-esas restricciones. Los superusuarios y las excepciones de administrador definidas
+restringen las páginas y el alcance de coordinador. Un vínculo ausente o inactivo permite abrir bandeja y calendario vacíos, pero no
+autoriza operaciones sobre ninguna ODT. Los superusuarios y las excepciones de administrador definidas
 en el sistema deben revisarse por separado. El informe no verifica la pertenencia
 de ninguna ODT ni la conectividad al origen.
 
@@ -38,7 +38,7 @@ No modificar pagos ni facturar órdenes reales para comprobar acceso.
 | Activo sin permiso de bandeja | No puede abrir la bandeja ni consultar sus opciones AJAX. |
 | Staff sin permisos SSTT | No obtiene acceso operativo por ser staff. |
 | Coordinador vinculado | La bandeja muestra solo sus ODT, incluso manipulando el filtro de coordinador. |
-| Coordinador con vínculo inactivo | El acceso operativo queda bloqueado. |
+| Coordinador sin vínculo activo | Puede entrar a bandeja y calendario, ambos vacíos. Historial, informes y gestión sobre ODT siguen bloqueados. |
 | Coordinador | Accede a bandeja y calendario de sus ODT; no accede a otras páginas ni a operaciones financieras, aunque reciba permisos adicionales. |
 | Coordinador: calendario y selector de servicios | Solo muestra visitas y opciones de sus ODT; no muestra órdenes ajenas ni sin responsable identificado. |
 | Coordinador: historial, informe y correcciones | Solo funcionan sobre sus ODT identificadas y con el permiso correspondiente. |
@@ -53,3 +53,21 @@ sigue siendo necesaria: el repositorio no contiene las bases de cada instalació
 
 No otorgar permisos automáticamente para eliminar avisos. Revisar primero el
 rol esperado de cada persona; conservar los permisos mínimos para su función.
+
+## Usuarios para consulta de calendario
+
+Ejecutar `python manage.py configurar_perfiles` en la instalación que se esté
+probando para crear el permiso `revisiones.ver_calendario_sstt` y el grupo
+**Calendario de visitas**. El comando no crea usuarios ni contraseñas.
+
+Crear la cuenta desde administración y asignarla solo a ese grupo, activa, sin
+staff ni superusuario. Tras iniciar sesión se redirige al calendario. Puede ver
+las visitas de todas las cuentas y usar sus filtros; no recibe permisos para
+montos, historial de ODT, gestión de pagos ni edición. Los eventos no enlazan a
+la bandeja para este perfil. Los permisos que se asignen por otros grupos o de
+forma directa se acumulan: revisar el diagnóstico antes de ampliar accesos.
+
+El grupo **Coordinador** conserva el alcance propio. Si falta su identidad activa,
+puede iniciar sesión y consultar pantallas vacías con un mensaje de configuración.
+Cuando se configure un vínculo válido, las siguientes peticiones mostrarán solo
+sus ODT. No se asignan órdenes sin responsable automáticamente al nuevo usuario.

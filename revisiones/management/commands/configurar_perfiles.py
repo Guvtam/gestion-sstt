@@ -8,6 +8,7 @@ from revisiones.models import ODT
 
 
 PERMISOS_SSTT = {
+    "ver_calendario_sstt": "Consultar calendario de visitas SSTT",
     "ver_bandeja_sstt": "Ver bandeja de ODT SSTT",
     "ver_historial_sstt": "Consultar historial de ODT",
     "ver_montos_sstt": "Ver montos de pago",
@@ -19,6 +20,7 @@ PERMISOS_SSTT = {
 }
 
 PERMISOS_COORDINADOR = [
+    "ver_calendario_sstt",
     "ver_bandeja_sstt",
     "ver_historial_sstt",
     "ver_montos_sstt",
@@ -78,6 +80,10 @@ class Command(BaseCommand):
                     f"Perfil {nombre} configurado."
                 )
             )
+
+        calendario, _ = Group.objects.get_or_create(name="Calendario de visitas")
+        calendario.permissions.set([permisos["ver_calendario_sstt"]])
+        self.stdout.write(self.style.SUCCESS("Perfil Calendario de visitas configurado (solo consulta)."))
 
         self.stdout.write(
             self.style.SUCCESS(
