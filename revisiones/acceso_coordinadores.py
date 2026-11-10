@@ -1,4 +1,4 @@
-"""Acceso de coordinadores: bandeja y operaciones de sus ODT."""
+"""Acceso de coordinadores: bandeja, calendario propio y operaciones de sus ODT."""
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import redirect
@@ -127,7 +127,7 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
         if datos_coordinador(request.user) is None:
             raise PermissionDenied(
                 "El vínculo de coordinador no está activo o no está configurado. Contacta a administración.")
-        if nombre in ("bandeja", "contratistas_disponibles_ajax"):
+        if nombre in ("bandeja", "contratistas_disponibles_ajax", "calendario_servicios"):
             return None
         # Operaciones internas de la bandeja, no páginas adicionales.
         if nombre in ("historial_odt", "actualizar_informe", "cambiar_estado_correccion"):
@@ -144,4 +144,4 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
             return None
         if request.method in ("GET", "HEAD"):
             return redirect("bandeja")
-        raise PermissionDenied("El perfil Coordinador solo tiene acceso a la bandeja.")
+        raise PermissionDenied("El perfil Coordinador solo tiene acceso a la bandeja y su calendario de visitas.")

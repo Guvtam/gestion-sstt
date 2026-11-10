@@ -193,3 +193,23 @@ class FilasBandejaTests(TestCase):
         self.assertEqual(contexto["pagina"].number, 2)
         self.assertIn(1, [o.numero for o in contexto["registros"]])
         self.assertNotIn("ubicar_odt", contexto["querystring"])
+
+    def test_servicio_editado_muestra_original_y_coordinador_tiene_boton_calendario(self):
+        from types import SimpleNamespace
+        from django.contrib.auth.models import AnonymousUser
+        from django.template.loader import render_to_string
+        from django.urls import reverse
+        original = 'SERVICIO ANTERIOR <script>no ejecutar</script>'
+        ODT.objects.filter(numero=1).update(servicio=original, servicio_editado="MANTENIMIENTO PREVENTIVO")
+        pagina = paginar_filas(ODT.objects.filter(numero=1), 1)
+        datos = cargar_complementos(pagina.object_list)
+        filas = preparar_filas(pagina.object_list, coordinadores_pagina=self.datos_coordinadores(pagina.object_list),
+            facturadas=datos.facturadas, catalogo=datos.catalogo, puede_procesar=True, puede_asignar=False)
+        html = render_to_string("revisiones/bandeja.html", {
+            "request":SimpleNamespace(user=AnonymousUser()), "bandeja_url":"bandeja", "filtros":{},
+            "registros":filas, "pagina":pagina, "querystring":"", "es_coordinador":True,
+        })
+        self.assertIn("Servicio editado · Original: SERVICIO ANTERIOR &lt;script&gt;", html)
+        self.assertNotIn("<script>no ejecutar</script>", html)
+        self.assertIn(f'href="{reverse("calendario_servicios")}"', html)
+        self.assertNotIn('>Seguimiento de cambios</a>', html)

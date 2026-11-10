@@ -122,3 +122,53 @@ class CalendarioServiciosTests(TestCase):
         ODT.objects.filter(numero=1).update(servicio="")
         c=self.consultar(servicios_filtrados="1",servicios=["__SIN_SERVICIO__"])
         self.assertEqual([e["numero"] for e in self.eventos(c)],[1])
+
+    def preparar_coordinador(self):
+        from django.contrib.auth.models import Permission
+        from django.contrib.contenttypes.models import ContentType
+        usuario = get_user_model().objects.create_user("rsilva", password="prueba")
+        permiso, _ = Permission.objects.get_or_create(
+            content_type=ContentType.objects.get_for_model(ODT), codename="ver_bandeja_sstt")
+        usuario.user_permissions.add(permiso)
+        self.client.force_login(usuario)
+        self.user = usuario
+        return usuario
+
+    @staticmethod
+    def responsables_propios(numeros):
+        return {n:{"nombre":"Romina" if n in (1,3) else "Otro", "identificado":n!=5,
+                   "usuario":"rsilva" if n in (1,3) else "jtapia" if n!=5 else None}
+                for n in numeros}
+
+    def test_coordinador_ve_solo_visitas_propias_y_totales_restringidos(self):
+        self.preparar_coordinador()
+        with patch("revisiones.acceso_coordinadores.identificar_coordinadores_odt", side_effect=self.responsables_propios):
+            contexto = self.consultar(coordinador="jtapia")
+        self.assertEqual({e["numero"] for e in self.eventos(contexto)}, {1,3})
+        self.assertEqual(contexto["disponibles_mes"], 2)
+        self.assertEqual(contexto["cantidad"], 2)
+        self.assertEqual(set(contexto["servicios"]), {"MANTENIMIENTO PREVENTIVO", "PREVENTIVO"})
+        self.assertTrue(contexto["es_coordinador"])
+
+    def test_coordinador_accede_por_middleware_y_ajax_no_filtra_servicios_ajenos(self):
+        from django.urls import reverse
+        self.preparar_coordinador()
+        with patch("revisiones.acceso_coordinadores.identificar_coordinadores_odt", side_effect=self.responsables_propios):
+            respuesta = self.client.get(reverse("calendario_servicios"), {"mes":"2026-11"})
+            opciones = self.client.get(reverse("calendario_servicios"), {"mes":"2026-11", "formato":"servicios"})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "FIR-1")
+        self.assertContains(respuesta, "FIR-3")
+        self.assertNotContains(respuesta, "FIR-2")
+        self.assertNotContains(respuesta, "FIR-5")
+        self.assertNotContains(respuesta, reverse("mantenimientos_preventivos"))
+        self.assertEqual(set(opciones.json()["servicios"]), {"MANTENIMIENTO PREVENTIVO", "PREVENTIVO"})
+
+    def test_coordinador_no_obtiene_calendario_si_no_se_puede_verificar_alcance(self):
+        from django.urls import reverse
+        from .coordinadores_softguard import CoordinadoresNoDisponibles
+        self.preparar_coordinador()
+        with patch("revisiones.acceso_coordinadores.identificar_coordinadores_odt", side_effect=CoordinadoresNoDisponibles()):
+            respuesta = self.client.get(reverse("calendario_servicios"), {"mes":"2026-11"})
+        self.assertEqual(respuesta.status_code, 503)
+        self.assertNotContains(respuesta, "FIR-2", status_code=503)
