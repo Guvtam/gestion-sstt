@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import EjecucionSincronizacion
 from .consultas.calendario import visitas_del_mes
+from .acceso_coordinadores import es_coordinador_sstt, limitar_odts_coordinador
 from .cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta
 from .dominio.fechas import sumar_meses
 
@@ -28,7 +29,8 @@ def calendario_servicios(request):
         errores.append("El mes no es válido.")
     q = request.GET.get("q", "").strip()
     servicio = request.GET.get("servicio", "").strip()
-    periodo = visitas_del_mes(mes)
+    es_coordinador = es_coordinador_sstt(request.user)
+    periodo = limitar_odts_coordinador(request, visitas_del_mes(mes))
     disponibles_mes = periodo.count()
     valores = list(periodo.order_by("servicio_efectivo").values_list("servicio_efectivo",flat=True).distinct())
     servicios = sorted({v or "__SIN_SERVICIO__" for v in valores})
@@ -91,8 +93,9 @@ def calendario_servicios(request):
     anterior = "?" + parametros.urlencode()
     parametros["mes"] = sumar_meses(mes, 1).strftime("%Y-%m")
     return render(request, "revisiones/calendario_servicios.html", {
+        "es_coordinador": es_coordinador,
         "disponibles_mes": disponibles_mes,
-        "ultima_sincronizacion": EjecucionSincronizacion.objects.first(),
+        "ultima_sincronizacion": None if es_coordinador else EjecucionSincronizacion.objects.first(),
         "totales":totales,
         "mes": mes.strftime("%Y-%m"), "mes_titulo": mes, "semanas": semanas, "errores": errores,
         "q": q, "servicio": servicio, "servicios": servicios, "servicios_seleccionados":seleccionados, "cantidad": len(odts),

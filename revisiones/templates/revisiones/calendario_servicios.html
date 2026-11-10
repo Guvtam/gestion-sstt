@@ -27,7 +27,7 @@
 {% block titulo_encabezado %}Calendario de visitas{% endblock %}
 {% block subtitulo %}Visitas realizadas, abiertas y atrasadas por cuenta{% endblock %}
 {% block acciones_encabezado %}
-<div class="filtro-acciones"><a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a><a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a></div>
+<div class="filtro-acciones">{% if not es_coordinador %}<a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a>{% endif %}<a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a></div>
 {% endblock %}
 {% block antes_encabezado %}
 {% endblock %}
@@ -49,7 +49,8 @@
 </form>
 {% include "revisiones/componentes/errores_filtro.html" %}
 <p class="hist-sub" role="status">{{ disponibles_mes }} visitas disponibles en la base local para este mes; {{ cantidad }} visibles con los filtros actuales.</p>
-{% if ultima_sincronizacion %}
+{% if es_coordinador %}<p class="hist-sub">Se muestran únicamente las visitas de las ODT asignadas a tu responsable.</p>
+{% elif ultima_sincronizacion %}
 <p class="hist-sub">Último intento de sincronización: {{ ultima_sincronizacion.iniciada_en|date:"d/m/Y H:i" }} · {{ ultima_sincronizacion.get_estado_display }} · {{ ultima_sincronizacion.omitidas }} ODT omitidas.</p>
 {% else %}<p class="hist-sub">No hay sincronizaciones registradas en esta instalación. Si faltan visitas, verifica la carga de datos.</p>{% endif %}
 <p class="hist-sub">ODT asignadas, pendientes, en proceso y finalizadas con fecha de visita. Las canceladas quedan excluidas. Incluye todos los servicios; se muestra el servicio corregido cuando existe. Datos de la última sincronización.</p>

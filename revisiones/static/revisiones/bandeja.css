@@ -954,9 +954,9 @@ dialog::backdrop {
 
     /* Anchos de las seis columnas */
     --ancho-odt: 90px;
-    --ancho-cuenta: 230px;
+    --ancho-cuenta: 190px;
     --ancho-localidad: 150px;
-    --ancho-contratista: 230px;
+    --ancho-contratista: 175px;
     --ancho-servicio: 230px;
     --ancho-observaciones: 320px;
 }
@@ -1203,3 +1203,7 @@ td.amount .monto-cero-marca {display:block;width:fit-content;margin-bottom:5px}
     box-shadow:inset 0 2px #1765ad,inset 0 -2px #1765ad;
 }
 #estadoPosicionBandeja:empty {display:none}
+
+#tablaScrollPrincipal td.service .edited-mark {
+    white-space:normal;overflow-wrap:anywhere;line-height:1.45;
+}

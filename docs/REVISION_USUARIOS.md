@@ -39,7 +39,8 @@ No modificar pagos ni facturar órdenes reales para comprobar acceso.
 | Staff sin permisos SSTT | No obtiene acceso operativo por ser staff. |
 | Coordinador vinculado | La bandeja muestra solo sus ODT, incluso manipulando el filtro de coordinador. |
 | Coordinador con vínculo inactivo | El acceso operativo queda bloqueado. |
-| Coordinador | No accede a páginas adicionales ni a operaciones financieras, aunque reciba permisos adicionales. |
+| Coordinador | Accede a bandeja y calendario de sus ODT; no accede a otras páginas ni a operaciones financieras, aunque reciba permisos adicionales. |
+| Coordinador: calendario y selector de servicios | Solo muestra visitas y opciones de sus ODT; no muestra órdenes ajenas ni sin responsable identificado. |
 | Coordinador: historial, informe y correcciones | Solo funcionan sobre sus ODT identificadas y con el permiso correspondiente. |
 | Sin responsable verificable | No se autoriza una ODT por fallo de SQL Server. |
 | Revisor o administrador | Cada acción requiere su permiso; tener uno no concede los demás. |
