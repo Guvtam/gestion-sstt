@@ -7,11 +7,12 @@
     {% block estilos_base %}{% endblock %}
     {% block estilos %}{% endblock %}
     {% block estilos_compartidos %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'revisiones/navegacion.css' %}?v=20261110-1">
+    <link rel="stylesheet" href="{% static 'revisiones/navegacion.css' %}?v=20261110-grupos">
 </head>
 <body{% block atributos_body %}{% endblock %}>
 {% block cuerpo %}{% endblock %}
 {% block scripts %}{% endblock %}
 <script src="{% static 'revisiones/navegacion.js' %}?v=20261110-1" defer></script>
+<script src="{% static 'revisiones/menu_desplegable.js' %}?v=20261110-1" defer></script>
 </body>
 </html>

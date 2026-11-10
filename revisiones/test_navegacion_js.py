@@ -21,3 +21,6 @@ class NavegacionJSTests(SimpleTestCase):
 
     def test_barras_sincronizadas_y_redimensionado(self):
         self.comprobar("tablas_desplazables")
+
+    def test_desplegables_cierran_con_escape_clic_exterior_y_cambio_de_grupo(self):
+        self.comprobar("menu_desplegable")
