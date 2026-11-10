@@ -158,7 +158,7 @@ class FilasBandejaTests(TestCase):
             facturadas=datos.facturadas, catalogo=datos.catalogo, puede_procesar=False, puede_asignar=False)
         html = render_to_string("revisiones/bandeja.html", {
             "request":SimpleNamespace(user=AnonymousUser()), "bandeja_url":"bandeja", "filtros":{},
-            "registros":filas, "pagina":pagina, "querystring":"",
+            "registros":filas, "pagina":pagina, "querystring":"", "destacar_monto_cero":True,
         })
         self.assertEqual(html.count('class=" odt-monto-cero"'), 1)
         self.assertIn('class="monto-cero-marca">Monto $0</span>', html)

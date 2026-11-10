@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.core.paginator import Paginator
 from .models import CorreccionODT
+from .dominio.conciliacion_correcciones import monto_seguimiento
 from .acceso_coordinadores import coordinadores_en_peticion
 
 
@@ -44,7 +45,7 @@ def estadisticas_correcciones(request):
         if coordinador_filtro and coordinador_filtro != usuario:
             continue
         monto_original = odt.valor_pago_tecnico if odt.valor_pago_tecnico is not None else Decimal('0')
-        monto_corregido = seguimiento.monto_objetivo if seguimiento.corrige_monto else monto_original
+        monto_corregido = monto_seguimiento(odt, seguimiento)
         detalle.append({
             "numero": odt.numero,
             "coordinador": nombre,

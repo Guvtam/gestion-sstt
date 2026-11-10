@@ -29,16 +29,32 @@ Un intento rechazado por coincidencia con SoftGuard no deja un seguimiento
 nuevo ni su evento confirmados. Antes el retorno 409 dentro de atomic podía
 confirmar esas escrituras preliminares. El rechazo ahora revierte el intento.
 
-ACTUALIZADA no es un estado manual. La coincidencia con el origen conserva su
-política en sincronización. No se cambian servicios, montos ni facturación.
+ACTUALIZADA no es un estado manual. La sincronización confirma los objetivos:
+servicio solicitado coincidente (normalizando espacios, mayúsculas y acentos), y
+monto exacto cuando es una cantidad concreta. La marca local $2 tiene una regla
+especial: el monto original SoftGuard debe ser estrictamente mayor que $2.
+Si se solicitaron ambos cambios, deben cumplirse ambas condiciones.
+
+Al confirmar una solicitud con marca $2 se retira únicamente valor_pago_editado
+si todavía contiene esa marca. Así tarjetas, exportaciones y nuevas facturaciones
+usan el monto real de SoftGuard. El objetivo $2 y los eventos se conservan; el
+historial de la ODT muestra la solicitud y su confirmación junto a SoftGuard.
+Los importes ya facturados conservan su instantánea. La sincronización posterior
+es idempotente y sigue usando el monto real aunque cambie en el origen.
+
+Las filas con monto efectivo cero se destacan en naranja para Supervisor y
+superusuarios. Para coordinadores se destacan solo las correcciones PENDIENTE;
+no se destacan filas únicamente por tener monto cero.
 
 ## Validación y aplicación
 
-410 pruebas correctas; check y comprobación de migraciones sin incidencias.
+489 pruebas correctas; check y comprobación de migraciones sin incidencias.
 Nuevas regresiones: autor/fecha/evento, idempotencia, rol y alcance, origen caído,
 invocación directa, usuario inactivo, rollback de estado y seguimiento nuevo,
 coincidencia, entrada numérica, ODT ausente y monto cero.
 
-Sin nuevas migraciones, estáticos o sincronización adicional.
+Sin nuevas migraciones. Sincronizar ODT tras actualizar para reevaluar las
+solicitudes existentes y retirar marcas $2 confirmadas. Actualizar los estáticos
+del despliegue al publicar el cambio visual de la bandeja.
 No se modificaron datos del despliegue ni se probó el servidor.
 Se conservan las limitaciones de bloqueo por fila de SQLite.
