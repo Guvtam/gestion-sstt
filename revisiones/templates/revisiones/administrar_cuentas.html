@@ -220,6 +220,8 @@
 
         <h2>Catálogo de cuentas</h2>
 
+        {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True clase="cuentas-paginacion" etiqueta="Paginación superior de cuentas" only %}
+
         <div class="cuentas-tabla-contenedor">
 
             <table class="cuentas-tabla">
@@ -318,7 +320,7 @@
 
         </div>
 
-        {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring agrupada=True siempre=True clase="cuentas-paginacion" clase_enlace="btn alt" only %}
+        {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True clase="cuentas-paginacion" etiqueta="Paginación inferior de cuentas" only %}
 
     </section>
 

@@ -1,5 +1,5 @@
 {% extends "revisiones/base_operativa.html" %}
-{% load static %}
+{% load static formato_sstt %}
 {% block titulo %}{% if por_creacion %}ODT por creación | SSTT{% else %}Gestión de pagos SSTT{% endif %}{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
@@ -820,11 +820,11 @@
 
                     {% endif %}
 
-                    {% if r.duracion_sla and r.estado_sla != "ERROR_FECHAS" %}
+                    {% if r.duracion_sla != None and r.estado_sla != "ERROR_FECHAS" %}
                       <div
                         class="sla-tiempo"
-                        data-segundos="{{ r.duracion_sla.total_seconds|stringformat:'.0f' }}"
-                      ></div>
+                        title="Horas corridas desde creación hasta finalización"
+                      >{{ r.duracion_sla|tiempo_sla }}</div>
                     {% endif %}
 
                   </td>
@@ -1147,7 +1147,7 @@
   <!-- JAVASCRIPT PRINCIPAL -->
 
   <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=20261110-creacion"></script>
-  <script src="{% static 'revisiones/bandeja.js' %}?v=20261109-posicion"></script>
+  <script src="{% static 'revisiones/bandeja.js' %}?v=20261110-sla-dias"></script>
 
   <!-- FILTROS Y FACTURACIÓN -->
 
