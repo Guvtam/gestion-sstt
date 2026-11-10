@@ -5,7 +5,7 @@
 {% block estilos %}
 <link
     rel="stylesheet"
-    href="{% static 'revisiones/bandeja.css' %}?v=20261110-correcciones-perfil"
+    href="{% static 'revisiones/bandeja.css' %}?v=20261110-barra-fija"
   >
 {% endblock %}
 {% block atributos_body %}
@@ -436,6 +436,9 @@
       <div
         class="table-scroll-top"
         id="tablaScrollSuperior"
+        tabindex="0"
+        role="region"
+        aria-label="Desplazamiento horizontal de órdenes de trabajo"
       >
         <div id="tablaScrollAncho"></div>
       </div>
