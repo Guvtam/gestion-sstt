@@ -1,7 +1,8 @@
 """Calendario de visitas reales de las ODT sincronizadas."""
 import calendar
 from datetime import date
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -9,15 +10,17 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import EjecucionSincronizacion
 from .consultas.calendario import visitas_del_mes
-from .acceso_coordinadores import es_coordinador_sstt, limitar_odts_coordinador
+from .acceso_coordinadores import datos_coordinador, es_coordinador_sstt, limitar_odts_coordinador
 from .cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta
 from .dominio.fechas import sumar_meses
 
 
 @login_required
-@permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
 @require_GET
 def calendario_servicios(request):
+    puede_ver_bandeja = request.user.has_perm("revisiones.ver_bandeja_sstt")
+    if not (puede_ver_bandeja or request.user.has_perm("revisiones.ver_calendario_sstt")):
+        raise PermissionDenied("No tienes permiso para consultar el calendario.")
     hoy = timezone.localdate()
     errores = []
     try:
@@ -94,6 +97,8 @@ def calendario_servicios(request):
     parametros["mes"] = sumar_meses(mes, 1).strftime("%Y-%m")
     return render(request, "revisiones/calendario_servicios.html", {
         "es_coordinador": es_coordinador,
+        "puede_ver_bandeja": puede_ver_bandeja,
+        "coordinador_sin_vinculo": es_coordinador and datos_coordinador(request.user) is None,
         "disponibles_mes": disponibles_mes,
         "ultima_sincronizacion": None if es_coordinador else EjecucionSincronizacion.objects.first(),
         "totales":totales,

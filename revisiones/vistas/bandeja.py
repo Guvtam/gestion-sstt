@@ -77,7 +77,7 @@ def bandeja(request, por_creacion=False):
     )
 
     if es_coordinador:
-        filtros["coordinador"] = coordinador_sesion["usuario"]
+        filtros["coordinador"] = coordinador_sesion["usuario"] if coordinador_sesion else ""
         registros = limitar_odts_coordinador(request, registros)
 
     coordinador_seleccionado = filtros["coordinador"]

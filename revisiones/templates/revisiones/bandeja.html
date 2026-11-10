@@ -482,6 +482,7 @@
     <section class="panel">
 
       <h2>Órdenes de trabajo</h2>
+      {% if es_coordinador and not coordinador_sesion %}<p class="hint" role="status">Tu usuario todavía no tiene un responsable activo vinculado. Puedes acceder, pero no se mostrarán ODT hasta configurarlo.</p>{% endif %}
       <p id="estadoPosicionBandeja" class="hint" role="status" aria-live="polite"></p>
 
       <p class="hint">

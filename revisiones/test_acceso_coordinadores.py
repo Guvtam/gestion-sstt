@@ -81,11 +81,13 @@ class AccesoCoordinadoresTests(TestCase):
         with patch('revisiones.acceso_coordinadores.identificar_coordinadores_odt', side_effect=RuntimeError):
             self.assertEqual(self.middleware(self.request("historial_odt"), {"numero": 1}).status_code, 503)
 
-    def test_usuario_sin_vinculo_denegado(self):
+    def test_usuario_sin_vinculo_puede_abrir_vistas_pero_no_operar(self):
         self.user.username = "desconocido"
         self.user.save()
+        self.assertIsNone(self.middleware(self.request()))
+        self.assertIsNone(self.middleware(self.request("calendario_servicios")))
         with self.assertRaises(PermissionDenied):
-            self.middleware(self.request())
+            self.middleware(self.request("historial_odt"), {"numero":1})
 
     def test_superusuario_sin_restriccion(self):
         self.user.is_superuser = True
