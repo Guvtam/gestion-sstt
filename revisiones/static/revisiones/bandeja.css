@@ -765,6 +765,12 @@ dialog::backdrop {
    ===================================================== */
 
 .table-scroll-top {
+    /* Se mantiene al alcance mientras se recorre el panel de órdenes. */
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: #fff;
+    box-shadow: 0 2px 5px #193b5e1a;
     width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
