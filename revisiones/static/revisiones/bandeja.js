@@ -79,24 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // =====================================================
-  // FORMATO DE DURACIÓN SLA
-  // =====================================================
-
-  document.querySelectorAll(".sla-tiempo").forEach(elemento => {
-    const segundos = Number(elemento.dataset.segundos);
-
-    if (!Number.isFinite(segundos) || segundos < 0) {
-      elemento.textContent = "";
-      return;
-    }
-
-    const horas = Math.floor(segundos / 3600);
-    const minutos = Math.floor((segundos % 3600) / 60);
-
-    elemento.textContent = `${horas} h ${minutos} min`;
-  });
-
-  // =====================================================
   // FILTRO MÚLTIPLE DE SERVICIOS
   // =====================================================
 

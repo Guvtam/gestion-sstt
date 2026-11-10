@@ -2,7 +2,7 @@
 {% if pagina.paginator %}
 {% if pagina.has_other_pages or siempre %}
 {% if numerada %}
-<nav class="pagination paginacion-numerada" aria-label="{{ etiqueta|default:'Páginas del listado' }}">
+<nav class="pagination paginacion-numerada{% if clase %} {{ clase }}{% endif %}" aria-label="{{ etiqueta|default:'Páginas del listado' }}">
     <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
     <div class="paginacion-enlaces">
         {% if pagina.has_previous %}
