@@ -55,7 +55,9 @@ class AnalisisODTTests(TestCase):
 
     def test_plantilla_y_enlaces(self):
         with patch("django.urls.reverse",return_value="/test/"):
-            html=engines["django"].get_template("revisiones/analisis_odt.html").render(self.consultar())
+            request = RequestFactory().get("/analisis-odt/")
+            request.user = self.user
+            html=engines["django"].get_template("revisiones/analisis_odt.html").render({**self.consultar(), "request": request})
         self.assertIn("Gestión de pagos",html)
         self.assertIn("<td>1</td>",html)
         self.assertNotIn("numero_odt=",html)

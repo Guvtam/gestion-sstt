@@ -1,0 +1,17 @@
+.header-sstt{background:#193b5e;color:#fff;padding:20px 28px;box-sizing:border-box}
+.header-sstt .header-contenido{max-width:1600px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.header-sstt .header-titulo h1{font:700 24px/1.25 Arial,sans-serif;margin:0 0 6px;color:#fff}
+.header-sstt .header-titulo p{font:400 12px/1.5 Arial,sans-serif;margin:0;color:#e8eff7}
+.sstt-sesion{display:flex;align-items:center;gap:18px;font:600 12px Arial,sans-serif}.sstt-sesion form{margin:0}
+.sstt-sesion-salir{border:0;background:#e9f0f8;color:#193b5e;border-radius:6px;padding:10px 14px;font:400 12px Arial,sans-serif;cursor:pointer}
+.sstt-menu{background:#fff;border-bottom:1px solid #d8e4f1;color:#193b5e;font:400 12px/1.4 Arial,sans-serif}
+.sstt-menu-interior{max-width:1600px;margin:0 auto;padding:14px 24px;display:flex;align-items:flex-start;gap:16px;box-sizing:border-box}
+.sstt-menu-opciones{display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+.sstt-menu .sstt-menu-enlace,.sstt-menu .sstt-menu-volver{display:inline-flex;align-items:center;min-height:36px;padding:9px 12px;box-sizing:border-box;border:1px solid transparent;border-radius:6px;background:#eaf0f7;color:#193b5e;text-decoration:none;font:400 12px/1.4 Arial,sans-serif;white-space:nowrap}
+.sstt-menu .sstt-menu-volver{flex-shrink:0;background:#fff;border-color:#c9d8e9;font-weight:600}
+.sstt-menu .sstt-menu-enlace:hover,.sstt-menu .sstt-menu-volver:hover{background:#dce9f7}
+.sstt-menu .sstt-menu-enlace.es-actual{background:#1765ad;color:#fff;font-weight:600}
+.sstt-menu [aria-disabled=true]{opacity:.45;pointer-events:none}
+.sstt-menu a:focus-visible,.sstt-sesion-salir:focus-visible{outline:3px solid #edaa36;outline-offset:3px}
+@media(max-width:700px){.header-sstt{padding:18px 16px}.header-sstt .header-contenido{align-items:flex-start;flex-wrap:wrap}.sstt-menu-interior{padding:12px;gap:10px;flex-direction:column}.sstt-sesion{gap:10px}.sstt-menu-opciones{width:100%}.sstt-menu .sstt-menu-enlace{white-space:normal}}
+@media print{.sstt-menu,.sstt-sesion{display:none}}

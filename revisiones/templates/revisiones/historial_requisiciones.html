@@ -10,7 +10,7 @@
 <main class="hist-main">
     <div class="hist-top">
         <div><h2>Historial de requisición</h2><p class="hist-sub">{{ contratista }} · {{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}</p></div>
-        <a class="btn alt" href="{% url 'historial_facturacion' %}{% if factura %}?periodo={{ factura.periodo_id }}&amp;contratista={{ factura.id }}{% endif %}">Volver al historial</a>
+
     </div>
     <section class="hist-panel">
         <h3>Requisición {% if factura %}actual{% else %}del último cambio registrado{% endif %}</h3>

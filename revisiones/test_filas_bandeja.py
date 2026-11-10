@@ -196,7 +196,8 @@ class FilasBandejaTests(TestCase):
 
     def test_servicio_editado_muestra_original_y_coordinador_tiene_boton_calendario(self):
         from types import SimpleNamespace
-        from django.contrib.auth.models import AnonymousUser
+        from django.contrib.auth.models import User, Permission
+        from django.test import RequestFactory
         from django.template.loader import render_to_string
         from django.urls import reverse
         original = 'SERVICIO ANTERIOR <script>no ejecutar</script>'
@@ -205,8 +206,14 @@ class FilasBandejaTests(TestCase):
         datos = cargar_complementos(pagina.object_list)
         filas = preparar_filas(pagina.object_list, coordinadores_pagina=self.datos_coordinadores(pagina.object_list),
             facturadas=datos.facturadas, catalogo=datos.catalogo, puede_procesar=True, puede_asignar=False)
+        usuario = User.objects.create_user("coordinador_menu")
+        from django.contrib.contenttypes.models import ContentType
+        permiso, _ = Permission.objects.get_or_create(codename="ver_bandeja_sstt", content_type=ContentType.objects.get_for_model(ODT))
+        usuario.user_permissions.add(permiso)
+        request = RequestFactory().get("/")
+        request.user = usuario
         html = render_to_string("revisiones/bandeja.html", {
-            "request":SimpleNamespace(user=AnonymousUser()), "bandeja_url":"bandeja", "filtros":{},
+            "request":request, "bandeja_url":"bandeja", "filtros":{},
             "registros":filas, "pagina":pagina, "querystring":"", "es_coordinador":True,
         })
         self.assertIn("Servicio editado · Original: SERVICIO ANTERIOR &lt;script&gt;", html)

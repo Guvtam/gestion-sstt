@@ -6,6 +6,13 @@ from urllib.parse import urlunsplit
 register = template.Library()
 
 
+@register.inclusion_tag("revisiones/componentes/menu.html", takes_context=True)
+def menu_sstt(context):
+    from ..navegacion import datos_menu
+    request = context.get("request")
+    return datos_menu(request, context) if request is not None else {}
+
+
 @register.simple_tag
 def enlace_pagina(querystring, numero, parametro="page", ancla=""):
     if parametro not in ("page", "page_detalle"):

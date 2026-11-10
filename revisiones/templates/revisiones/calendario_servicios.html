@@ -26,9 +26,7 @@
 {% block atributos_body %} class="preventivos-page"{% endblock %}
 {% block titulo_encabezado %}Calendario de visitas{% endblock %}
 {% block subtitulo %}Visitas realizadas, abiertas y atrasadas por cuenta{% endblock %}
-{% block acciones_encabezado %}
-<div class="filtro-acciones">{% if puede_ver_bandeja and not es_coordinador %}<a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a>{% endif %}{% if puede_ver_bandeja %}<a class="btn alt" href="{% url 'bandeja' %}">Bandeja</a>{% else %}<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn alt">Cerrar sesión</button></form>{% endif %}</div>
-{% endblock %}
+
 {% block antes_encabezado %}
 {% endblock %}
 {% block contenido %}

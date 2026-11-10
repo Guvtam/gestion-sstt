@@ -6,11 +6,7 @@
     <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}?v=20261105-seleccion">
 {% endblock %}
 {% block subtitulo %}Historial de facturación y requisiciones{% endblock %}
-{% block acciones_encabezado %}
-<a class="btn alt" href="{% url 'bandeja' %}">
-            Volver a bandeja
-        </a>
-{% endblock %}
+
 {% block contenido %}
 <main class="hist-main">
 
@@ -33,15 +29,7 @@
             </p>
         </div>
 
-        <nav class="hist-nav" aria-label="Navegación">
-            <a class="hist-tab" href="{% url 'bandeja' %}">
-                Bandeja
-            </a>
-            <span class="hist-tab active"
-                  aria-current="page">
-                Historial
-            </span>
-        </nav>
+
     </div>
 
 

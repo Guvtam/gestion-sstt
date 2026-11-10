@@ -1,0 +1,10 @@
+{% if opciones %}
+<nav class="sstt-menu" aria-label="Menú principal SSTT" data-sstt-menu data-usuario="{{ usuario_id }}">
+  <div class="sstt-menu-interior">
+    <a class="sstt-menu-volver" data-sstt-volver href="{{ volver }}"{% if en_inicio %} aria-disabled="true" tabindex="-1"{% endif %}>← Volver</a>
+    <div class="sstt-menu-opciones">
+      {% for opcion in opciones %}<a class="sstt-menu-enlace{% if opcion.activa %} es-actual{% endif %}" href="{{ opcion.url }}" data-sstt-destino{% if opcion.activa %} aria-current="page"{% endif %}>{{ opcion.texto }}</a>{% endfor %}
+    </div>
+  </div>
+</nav>
+{% endif %}

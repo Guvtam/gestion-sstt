@@ -21,33 +21,7 @@
           Bandeja de revisión y aprobación
           de órdenes de trabajo
         {% endblock %}
-{% block acciones_encabezado %}
 
-      <div class="header-usuario">
-        <div class="usuario-info">
-
-          <div class="usuario-avatar">
-            {{ request.user.username|first|upper }}
-          </div>
-
-          <div class="usuario-datos">
-            <span>Sesión iniciada</span>
-            <strong>
-              {{ request.user.get_full_name|default:request.user.username }}
-            </strong>
-          </div>
-
-        </div>
-
-        <form method="post" action="{% url 'logout' %}">
-          {% csrf_token %}
-          <button type="submit" class="btn-cerrar-sesion">
-            Cerrar sesión
-          </button>
-        </form>
-      </div>
-
-    {% endblock %}
 {% block antes_encabezado %}
 
   <div id="csrf-container" hidden>
@@ -179,57 +153,6 @@
 
     <section class="panel">
 
-      {% if es_coordinador %}
-      <div class="filter-actions" style="margin-bottom:12px;">
-        <a class="btn alt" href="{% url 'calendario_servicios' %}">Calendario de visitas</a>
-      </div>
-      {% endif %}
-      {% if not es_coordinador %}
-      <div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-
-        {% if perms.revisiones.ver_bandeja_sstt %}
-          <a class="btn alt" style="margin-right:auto;" href="{% url 'calendario_servicios' %}">
-            Calendario de visitas
-          </a>
-          {% if perms.revisiones.revisar_pago_sstt %}<a class="btn alt" href="{% url 'analisis_odt' %}">Análisis de ODT</a>{% endif %}
-          {% if por_creacion %}
-          <a class="btn alt" href="{% url 'bandeja' %}">Gestión de pagos</a>
-          {% else %}
-          <a class="btn alt" href="{% url 'bandeja_creacion' %}">ODT por creación</a>
-          {% endif %}
-          <a class="btn alt" href="{% url 'odt_modificadas' %}">Seguimiento de cambios</a>
-          <a class="btn alt" href="{% url 'mantenimientos_preventivos' %}">Mantenimientos preventivos</a>
-          <a class="btn alt"
-            href="{% url 'estadisticas_correcciones' %}">
-            Análisis por coordinador
-          </a>
-        {% endif %}
-
-
-        {% if perms.revisiones.exportar_pagos_sstt and not es_coordinador %}
-          <a class="btn alt"
-             href="{% url 'historial_facturacion' %}">
-            Facturación
-          </a>
-        {% endif %}
-
-        {% if perms.contratistas.gestionar_contratistas_sstt %}
-          <a class="btn alt"
-             href="{% url 'contratistas:listado' %}">
-            Administrar contratistas
-          </a>
-        {% endif %}
-
-        {% if perms.revisiones.administrar_cuentas_sstt %}
-          <a class="btn alt"
-             href="{% url 'administrar_cuentas' %}">
-            Administrar cuentas SSTT
-          </a>
-        {% endif %}
-
-      </div>
-
-      {% endif %}
       <h2>Filtros de ODT</h2>
 
       <form

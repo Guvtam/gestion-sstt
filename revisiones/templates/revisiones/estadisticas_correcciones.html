@@ -1,20 +1,14 @@
-{% extends "revisiones/base_documento.html" %}
+{% extends "revisiones/base_operativa.html" %}
 {% load humanize static %}
 {% block titulo %}Análisis por coordinador · SSTT{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
-<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261103-2">
+<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261110-scroll">
 {% endblock %}
-{% block cuerpo %}
-<header class="stats-header">
-    <div class="stats-container stats-header-inner">
-        <div>
-            <h1>Análisis por coordinador</h1>
-            <p>Correcciones de servicio y pago técnico agrupadas por coordinador · Sistema SSTT</p>
-        </div>
-        <a class="stats-btn stats-btn-header" href="{% url 'bandeja' %}">Volver a la bandeja</a>
-    </div>
-</header>
+{% block titulo_encabezado %}Análisis por coordinador{% endblock %}
+{% block subtitulo %}Correcciones de servicio y pago técnico agrupadas por coordinador{% endblock %}
+{% block contenido %}
+
 <main class="stats-container stats-main">
     <section class="stats-panel stats-filtros" aria-label="Filtros de estadísticas">
         <form method="get" class="stats-filter-grid">
@@ -138,7 +132,9 @@
                 <p>Montos y estados de las ODT según los filtros aplicados</p>
             </div>
         </div>
-        <div class="stats-table-wrap">
+        <div class="stats-desplazable" data-tabla-desplazable>
+          <div class="stats-scroll-superior" data-scroll-superior tabindex="0" role="region" aria-label="Desplazamiento horizontal superior de tabla"><div></div></div>
+          <div class="stats-table-wrap" data-scroll-tabla tabindex="0" role="region" aria-label="Tabla desplazable horizontalmente">
             <table>
                 <thead><tr>
                     <th>Coordinador</th><th class="num">ODT</th><th class="num">Solo monto</th><th class="num">Solo servicio</th><th class="num">Ambos</th><th class="num">Pendiente</th><th class="num">En proceso</th><th class="num">Actualizada</th><th class="num">Monto SoftGuard</th><th class="num">Monto corregido</th><th class="num">Diferencia</th>
@@ -151,6 +147,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+          </div>
         </div>
         <p class="stats-footnote">Cada ODT se cuenta una vez. Las estadísticas reflejan el seguimiento actual, no el total de eventos históricos.</p>
     </section>
@@ -163,7 +160,9 @@
             </div>
             <span class="stats-count">{{ pagina_detalle.paginator.count }} ODT</span>
         </div>
-        <div class="stats-table-wrap">
+        <div class="stats-desplazable" data-tabla-desplazable>
+          <div class="stats-scroll-superior" data-scroll-superior tabindex="0" role="region" aria-label="Desplazamiento horizontal superior de tabla"><div></div></div>
+          <div class="stats-table-wrap" data-scroll-tabla tabindex="0" role="region" aria-label="Tabla desplazable horizontalmente">
             <table>
                 <thead><tr>
                     <th>ODT</th><th>Coordinador</th><th>Contratista / técnico</th><th>Cuenta</th>
@@ -188,6 +187,7 @@
                 {% endfor %}
                 </tbody>
             </table>
+          </div>
         </div>
         <p class="stats-footnote">SoftGuard corresponde a la última sincronización guardada. El valor corregido es el objetivo de la corrección; al actualizarse pueden coincidir. Ver ODT abre la bandeja con sus acciones e historial según tus permisos.</p>
         {% if pagina_detalle.has_other_pages %}
@@ -200,3 +200,5 @@
     </section>
 </main>
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'revisiones/tablas_desplazables.js' %}?v=20261110-1" defer></script>{% endblock %}

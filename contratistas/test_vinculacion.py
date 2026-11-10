@@ -8,6 +8,7 @@ from .vinculacion import propuestas_vinculacion, guardar_propuesta, aplicar_exac
 
 urlpatterns = [
     path("contratistas/", include("contratistas.urls")),
+    path("", include("revisiones.urls")),
     path("logout/", lambda r: HttpResponse(), name="logout"),
 ]
 

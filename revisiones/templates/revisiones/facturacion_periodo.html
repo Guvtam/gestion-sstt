@@ -7,12 +7,7 @@
 {% endblock %}
 {% block subtitulo %}Facturación y requisiciones
                 de contratistas{% endblock %}
-{% block acciones_encabezado %}
-<a class="btn alt"
-           href="{% url 'bandeja' %}">
-            Volver a bandeja
-        </a>
-{% endblock %}
+
 {% block contenido %}
 <main class="fact-main">
 
@@ -29,25 +24,7 @@
             </p>
         </div>
 
-        <nav class="fact-nav"
-             aria-label="Secciones de facturación">
 
-            <span class="fact-tab active"
-                  aria-current="page">
-                Facturar período
-            </span>
-
-            <a class="fact-tab"
-               href="{% url 'historial_facturacion' %}">
-                Historial
-            </a>
-
-            <span class="fact-tab future"
-                  title="Disponible en una próxima etapa">
-                Vista por contratista · Próximamente
-            </span>
-
-        </nav>
     </div>
 
     <!-- MENSAJES -->
