@@ -5,10 +5,11 @@
 {% block estilos %}
 <link
     rel="stylesheet"
-    href="{% static 'revisiones/bandeja.css' %}?v=20261109-monto-cero"
+    href="{% static 'revisiones/bandeja.css' %}?v=20261109-posicion"
   >
 {% endblock %}
 {% block atributos_body %}
+  data-pagina-actual="{{ pagina.number }}"
   data-puede-editar="{% if perms.revisiones.editar_odt_sstt %}1{% else %}0{% endif %}"
   data-puede-revisar="{% if perms.revisiones.revisar_pago_sstt %}1{% else %}0{% endif %}"
   data-guardar-url="{% if perms.revisiones.editar_odt_sstt %}{% url 'guardar_fila' %}{% endif %}"
@@ -475,6 +476,7 @@
     <section class="panel">
 
       <h2>Órdenes de trabajo</h2>
+      <p id="estadoPosicionBandeja" class="hint" role="status" aria-live="polite"></p>
 
       <p class="hint">
         {{ total.cantidad }} ODT encontradas.
@@ -552,7 +554,7 @@
 
             {% for r in registros %}
 
-              <tr data-numero="{{ r.numero }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}{% if r.monto_cero %} odt-monto-cero{% endif %}">
+              <tr data-numero="{{ r.numero|stringformat:'d' }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}{% if r.monto_cero %} odt-monto-cero{% endif %}">
 
                 <!-- NÚMERO ODT -->
 
@@ -1212,7 +1214,8 @@
 
   <!-- JAVASCRIPT PRINCIPAL -->
 
-  <script src="{% static 'revisiones/bandeja.js' %}?v=20261102-bloqueo"></script>
+  <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=1"></script>
+  <script src="{% static 'revisiones/bandeja.js' %}?v=20261109-posicion"></script>
 
   <!-- FILTROS Y FACTURACIÓN -->
 
@@ -1733,6 +1736,7 @@ document.addEventListener("change", async function (event) {
     if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo guardar.");
     selector.value = "EN_PROCESO";
     selector.dataset.saved = "EN_PROCESO";
+    window.SSTTPosicionBandeja?.marcar(selector.closest("tr[data-numero]"));
   } catch (e) {
     selector.value = anterior;
     error.textContent = e.message || "No se pudo guardar.";
@@ -1763,7 +1767,8 @@ document.addEventListener("change", async function(event) {
     });
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo asignar.");
-    window.location.reload();
+    if (window.SSTTPosicionBandeja) window.SSTTPosicionBandeja.recargar(selector.closest("tr[data-numero]"));
+    else window.location.reload();
   } catch(e) {
     error.textContent = e.message || "No se pudo asignar.";
     selector.disabled = false;
