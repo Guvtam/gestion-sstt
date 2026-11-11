@@ -100,8 +100,8 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 </section>
 <section class="chart-panel tendencia-panel" aria-labelledby="rankingCuentasTitulo">
 <h2 id="rankingCuentasTitulo">Ranking de cuentas con más incidencias</h2>
-<p class="chart-nota">Top 20 por cantidad de ODT finalizadas en el período y con los filtros activos. Selecciona una cuenta para filtrar sus KPI y el detalle; vuelve a seleccionarla para quitar el filtro.</p>
-<div class="ranking-scroll" tabindex="0" role="region" aria-label="Top 20 de cuentas con más incidencias">
+<p class="chart-nota">Top 50 por cantidad de ODT finalizadas en el período y con los filtros activos. Selecciona una cuenta para filtrar sus KPI y el detalle; vuelve a seleccionarla para quitar el filtro.</p>
+<div class="ranking-scroll" tabindex="0" role="region" aria-label="Top 50 de cuentas con más incidencias">
 {% for cuenta_ranking in ranking_cuentas %}
 <a class="grafico-barra {% if cuenta_ranking.activo %}activo{% endif %}" href="{{ cuenta_ranking.url }}" aria-label="{{ cuenta_ranking.cuenta }}: {{ cuenta_ranking.cantidad }} incidencias. Filtrar cuenta">
 <div class="barra-titulo"><span><strong>{{ cuenta_ranking.posicion }}. {{ cuenta_ranking.cuenta }}</strong>{% if cuenta_ranking.nombre != cuenta_ranking.cuenta %} · {{ cuenta_ranking.nombre }}{% endif %}</span><b>{{ cuenta_ranking.cantidad }} ODT</b></div>
