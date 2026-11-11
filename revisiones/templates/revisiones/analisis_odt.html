@@ -26,6 +26,7 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 .leyenda{min-width:165px;flex:1}.leyenda-item{display:flex;gap:9px;align-items:center;color:#36516f;text-decoration:none;padding:10px;border-radius:7px;font-size:12px}.leyenda-item:hover,.leyenda-item.activo{background:#edf4fc}
 .leyenda-item b{margin-left:auto}.punto{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .chart-scroll{max-height:350px;overflow:auto;padding:0 5px 4px 0}.tendencia-panel{grid-column:1/-1}
+.ranking-scroll{max-height:600px;overflow-y:auto;scrollbar-gutter:stable;padding:3px 6px 3px 3px}.ranking-scroll:focus-visible{outline:3px solid #397ec8;outline-offset:3px}
 .tendencia-scroll{overflow-x:auto}.tendencia{display:flex;align-items:end;gap:8px;height:200px;min-width:100%;padding-top:24px;padding-bottom:28px;box-sizing:border-box}
 .tendencia-col{height:100%;min-width:34px;flex:1;text-decoration:none;display:flex;flex-direction:column;justify-content:flex-end;text-align:center;color:#6c8099;font-size:10px;position:relative}
 .tendencia-col em{background:#4b87cc;border-radius:5px 5px 0 0;display:block;min-height:2px;width:75%;margin:0 auto;transition:background .15s}
@@ -99,13 +100,15 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 </section>
 <section class="chart-panel tendencia-panel" aria-labelledby="rankingCuentasTitulo">
 <h2 id="rankingCuentasTitulo">Ranking de cuentas con más incidencias</h2>
-<p class="chart-nota">Top 10 por cantidad de ODT finalizadas en el período y con los filtros activos. Selecciona una cuenta para filtrar sus KPI y el detalle; vuelve a seleccionarla para quitar el filtro.</p>
+<p class="chart-nota">Top 20 por cantidad de ODT finalizadas en el período y con los filtros activos. Selecciona una cuenta para filtrar sus KPI y el detalle; vuelve a seleccionarla para quitar el filtro.</p>
+<div class="ranking-scroll" tabindex="0" role="region" aria-label="Top 20 de cuentas con más incidencias">
 {% for cuenta_ranking in ranking_cuentas %}
 <a class="grafico-barra {% if cuenta_ranking.activo %}activo{% endif %}" href="{{ cuenta_ranking.url }}" aria-label="{{ cuenta_ranking.cuenta }}: {{ cuenta_ranking.cantidad }} incidencias. Filtrar cuenta">
 <div class="barra-titulo"><span><strong>{{ cuenta_ranking.posicion }}. {{ cuenta_ranking.cuenta }}</strong>{% if cuenta_ranking.nombre != cuenta_ranking.cuenta %} · {{ cuenta_ranking.nombre }}{% endif %}</span><b>{{ cuenta_ranking.cantidad }} ODT</b></div>
 <div class="barra-fondo"><div class="barra-relleno" style="width:{{ cuenta_ranking.ancho }}%"></div></div>
 </a>
 {% empty %}<p class="vacio-grafico">No hay cuentas identificadas para estos filtros.</p>{% endfor %}
+</div>
 <p class="chart-nota">Cada ODT finalizada cuenta como una incidencia operativa; no equivale a una falla confirmada. Agrupa por código de cuenta aunque cambie el nombre o el contratista. Incluye los servicios seleccionados y excluye las ODT sin cuenta. Este ranking usa el período elegido, no la ventana de 90 días de los otros indicadores.</p>
 </section>
 <section class="chart-panel tendencia-panel"><h2>Evolución de ODT por {% if tendencia_mensual %}mes{% else %}día{% endif %}</h2><p class="chart-nota">Según fecha de finalización. Selecciona una barra para explorar ese período. Días o meses sin registros no tienen barra.</p>

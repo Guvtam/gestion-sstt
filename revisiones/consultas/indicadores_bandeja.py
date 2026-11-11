@@ -25,6 +25,7 @@ def indicadores_financieros(registros):
     condicion_mantenimiento_preventivo = Q(servicio_resumen__in=nombres_canonicos("preventivo"))
     condicion_acuerdo_comercial = Q(servicio_resumen__in=nombres_canonicos("acuerdo_comercial"))
     condicion_presupuesto = Q(servicio_resumen__in=nombres_canonicos("presupuesto"))
+    condicion_cruzverde = Q(servicio_resumen__in=nombres_canonicos("nueva_instalacion_cruzverde"))
 
     indicadores_sql = base_indicadores.aggregate(
         cantidad_total=Count("pk"),
@@ -120,6 +121,8 @@ def indicadores_financieros(registros):
         monto_acuerdo_comercial=Sum(importe_efectivo(), filter=condicion_acuerdo_comercial),
         cantidad_presupuesto=Count("pk", filter=condicion_presupuesto),
         monto_presupuesto=Sum(importe_efectivo(), filter=condicion_presupuesto),
+        cantidad_nueva_instalacion_cruzverde=Count("pk", filter=condicion_cruzverde),
+        monto_nueva_instalacion_cruzverde=Sum(importe_efectivo(), filter=condicion_cruzverde),
     )
 
     def construir_indicador(nombre):
@@ -162,6 +165,7 @@ def indicadores_financieros(registros):
         "mantenimiento_preventivo": mantenimiento_preventivo,
         "acuerdo_comercial": construir_indicador("acuerdo_comercial"),
         "presupuesto": construir_indicador("presupuesto"),
+        "nueva_instalacion_cruzverde": construir_indicador("nueva_instalacion_cruzverde"),
     }
 
 

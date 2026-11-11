@@ -201,16 +201,16 @@ class AnalisisODTTests(TestCase):
         # La preventiva histórica de esta cuenta queda fuera del período.
         self.assertEqual(contexto["resumen"]["total"], 4)
 
-    def test_ranking_top_diez_y_empates_estables(self):
-        for i in range(12):
+    def test_ranking_top_veinte_y_empates_estables(self):
+        for i in range(24):
             ODT.objects.create(numero=700+i, cuenta_completa=f"FIR-{300+i}",
                 servicio="MANTENCION CORRECTIVA CON COBRO", estado_softguard="Finalizado",
                 fecha_creacion=self.base, fecha_finalizacion=self.base+timedelta(hours=4))
         ranking = self.consultar()["ranking_cuentas"]
-        self.assertEqual(len(ranking), 10)
+        self.assertEqual(len(ranking), 20)
         self.assertEqual(ranking[0]["cuenta"], "FIR-100")
-        self.assertEqual([r["cuenta"] for r in ranking[1:]], [f"FIR-{300+i}" for i in range(9)])
-        self.assertEqual([r["posicion"] for r in ranking], list(range(1, 11)))
+        self.assertEqual([r["cuenta"] for r in ranking[1:]], [f"FIR-{300+i}" for i in range(19)])
+        self.assertEqual([r["posicion"] for r in ranking], list(range(1, 21)))
 
     def test_ranking_seleccion_exacta_chip_y_limpieza_conservan_multiservicio(self):
         from urllib.parse import parse_qs, urlsplit
