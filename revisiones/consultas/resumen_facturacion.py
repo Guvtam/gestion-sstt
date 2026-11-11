@@ -10,6 +10,8 @@ NOMBRES_CATEGORIAS = {
     "correctiva_sin_cobro": "Mantención correctiva sin cobro",
     "renovacion": "Mantención renovación",
     "preventivo": "Mantenimiento preventivo",
+    "acuerdo_comercial": "Mantenimiento acuerdo comercial",
+    "presupuesto": "Mantenimiento presupuesto",
     "otros": "Otros servicios",
 }
 

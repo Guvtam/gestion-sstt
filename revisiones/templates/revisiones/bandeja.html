@@ -5,7 +5,7 @@
 {% block estilos %}
 <link
     rel="stylesheet"
-    href="{% static 'revisiones/bandeja.css' %}?v=20261110-barra-fija"
+    href="{% static 'revisiones/bandeja.css' %}?v=20261111-servicios"
   >
 {% endblock %}
 {% block atributos_body %}
@@ -71,6 +71,8 @@
         <div class="hint">Pago rechazado, incluidos ajustes</div>
       </div>
 
+    </section>
+    <section class="kpis kpis-servicios" aria-label="Indicadores por servicio">
       <div class="kpi">
         <small>Mantención correctiva con cobro</small>
         <strong>{{ mantencion_con_cobro.cantidad }}</strong>
@@ -100,6 +102,20 @@
         <strong>{{ mantenimiento_preventivo.cantidad }}</strong>
         <b class="money-kpi"
            data-amount="{{ mantenimiento_preventivo.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento acuerdo comercial</small>
+        <strong>{{ acuerdo_comercial.cantidad }}</strong>
+        <b class="money-kpi" data-amount="{{ acuerdo_comercial.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento presupuesto</small>
+        <strong>{{ presupuesto.cantidad }}</strong>
+        <b class="money-kpi" data-amount="{{ presupuesto.monto|stringformat:'.2f' }}"></b>
         <div class="hint">Monto efectivo, incluidos ajustes</div>
       </div>
 

@@ -240,6 +240,8 @@ def bandeja(request, por_creacion=False):
             "mantencion_sin_cobro": financieros["mantencion_sin_cobro"],
             "renovacion": financieros["renovacion"],
             "mantenimiento_preventivo": financieros["mantenimiento_preventivo"],
+            "acuerdo_comercial": financieros["acuerdo_comercial"],
+            "presupuesto": financieros["presupuesto"],
         },
     )
 

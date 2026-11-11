@@ -3,7 +3,7 @@
 
 {% block titulo %}ODT facturadas · SSTT{% endblock %}
 {% block estilos %}
-    <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}">
+    <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}?v=20261111-servicios">
 {% endblock %}
 {% block subtitulo %}Detalle de órdenes de trabajo facturadas{% endblock %}
 
@@ -48,7 +48,7 @@
 
             <!-- INDICADORES -->
             
-<div class="hist-resumen-odt">
+<div class="hist-resumen-odt hist-resumen-servicios">
 
     <!-- TOTAL ODT -->
     <div class="hist-tarjeta-resumen">
@@ -91,6 +91,16 @@
                 </div>
 
                 <!-- MONTO TOTAL FACTURADO -->
+                <div class="hist-tarjeta-resumen">
+                    <small>Mantenimiento acuerdo comercial</small>
+                    <strong>${{ acuerdo_comercial.monto|clp }}</strong>
+                    <span class="hist-tarjeta-cantidad">{{ acuerdo_comercial.cantidad }} ODT</span>
+                </div>
+                <div class="hist-tarjeta-resumen">
+                    <small>Mantenimiento presupuesto</small>
+                    <strong>${{ presupuesto.monto|clp }}</strong>
+                    <span class="hist-tarjeta-cantidad">{{ presupuesto.cantidad }} ODT</span>
+                </div>
                 <div class="hist-tarjeta-resumen">
                     <small>Monto total facturado</small>
                     <strong>${{ monto_total|clp }}</strong>

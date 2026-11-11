@@ -45,7 +45,7 @@ def editar_odt(usuario, *, numero, servicio, monto, confirmar_monto=False, comen
         anterior_monto = odt.valor_pago_tecnico if odt.valor_pago_editado is None else odt.valor_pago_editado
         cambio_servicio, cambio_monto = servicio != anterior_servicio, monto != anterior_monto
         if cambio_servicio and servicio not in SERVICIOS_PRINCIPALES:
-            raise DatosODTInvalidos("Selecciona uno de los cuatro servicios principales.")
+            raise DatosODTInvalidos("Selecciona un servicio principal del catálogo.")
         if cambio_monto and confirmar_monto is not True:
             raise DatosODTInvalidos("Debes confirmar expresamente el cambio de monto.")
         if not (cambio_servicio or cambio_monto):
