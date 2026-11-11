@@ -30,6 +30,9 @@ def calendario_servicios(request):
     except ValueError:
         mes = hoy.replace(day=1)
         errores.append("El mes no es válido.")
+    categoria_filtro = request.GET.get("categoria", "")
+    if categoria_filtro not in ("realizadas", "abiertas", "atrasadas"):
+        categoria_filtro = ""
     q = request.GET.get("q", "").strip()
     servicio = request.GET.get("servicio", "").strip()
     es_coordinador = es_coordinador_sstt(request.user)
@@ -61,6 +64,7 @@ def calendario_servicios(request):
     catalogo = cargar_catalogo_cuentas(o.cuenta_completa for o in odts)
     eventos = {}
     totales = {"realizadas":0,"abiertas":0,"atrasadas":0}
+    odts_visibles = []
     for odt in odts:
         codigo = normalizar_codigo_cuenta(odt.cuenta_completa)
         cuenta = catalogo.get(codigo)
@@ -71,6 +75,9 @@ def calendario_servicios(request):
         else:
             categoria, etiqueta = "abiertas", "Abierta"
         totales[categoria] += 1
+        if categoria_filtro and categoria != categoria_filtro:
+            continue
+        odts_visibles.append(odt)
         eventos.setdefault(odt.fecha_visita, []).append({
             "categoria":categoria,"etiqueta":etiqueta,"estado":odt.estado_softguard.strip(),
             "codigo": codigo or "Sin código de cuenta",
@@ -92,6 +99,24 @@ def calendario_servicios(request):
         parametros["servicios_filtrados"]="1"
         parametros.setlist("servicios",seleccion)
 
+    parametros.pop("categoria", None)
+    filtros_categoria = []
+    for valor, texto, clase in (
+        ("", "Todas", "todas"),
+        ("realizadas", "Azul · Realizadas", "realizadas"),
+        ("abiertas", "Verde · Abiertas", "abiertas"),
+        ("atrasadas", "Amarillo · Atrasadas", "atrasadas"),
+    ):
+        enlace = parametros.copy()
+        if valor:
+            enlace["categoria"] = valor
+        filtros_categoria.append({
+            "url": "?" + enlace.urlencode(), "texto": texto, "clase": clase,
+            "activo": valor == categoria_filtro,
+            "cantidad": totales[valor] if valor else sum(totales.values()),
+        })
+    if categoria_filtro:
+        parametros["categoria"] = categoria_filtro
     parametros["mes"] = sumar_meses(mes, -1).strftime("%Y-%m")
     anterior = "?" + parametros.urlencode()
     parametros["mes"] = sumar_meses(mes, 1).strftime("%Y-%m")
@@ -101,9 +126,9 @@ def calendario_servicios(request):
         "coordinador_sin_vinculo": es_coordinador and datos_coordinador(request.user) is None,
         "disponibles_mes": disponibles_mes,
         "ultima_sincronizacion": None if es_coordinador else EjecucionSincronizacion.objects.first(),
-        "totales":totales,
+        "totales":totales, "filtros_categoria": filtros_categoria, "categoria_filtro": categoria_filtro,
         "mes": mes.strftime("%Y-%m"), "mes_titulo": mes, "semanas": semanas, "errores": errores,
-        "q": q, "servicio": servicio, "servicios": servicios, "servicios_seleccionados":seleccionados, "cantidad": len(odts),
-        "cuentas": len({normalizar_codigo_cuenta(o.cuenta_completa) or o.cuenta_completa for o in odts}),
+        "q": q, "servicio": servicio, "servicios": servicios, "servicios_seleccionados":seleccionados, "cantidad": len(odts_visibles),
+        "cuentas": len({normalizar_codigo_cuenta(o.cuenta_completa) or o.cuenta_completa for o in odts_visibles}),
         "url_mes_anterior": anterior, "url_mes_siguiente": "?" + parametros.urlencode(),
     })
