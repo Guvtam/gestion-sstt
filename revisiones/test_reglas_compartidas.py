@@ -172,7 +172,7 @@ class ResumenFacturacionCompartidoTests(TestCase):
         self.assertEqual(resumen["cantidad"], 0)
         self.assertEqual(resumen["total"], 0)
         self.assertEqual(set(resumen["categorias"]), {
-            "correctiva_con_cobro", "correctiva_sin_cobro", "renovacion", "preventivo", "otros"})
+            "correctiva_con_cobro", "correctiva_sin_cobro", "renovacion", "preventivo", "acuerdo_comercial", "presupuesto", "otros"})
 
     def test_tarjetas_bandeja_reconocen_aliases_y_servicio_editado(self):
         from . import views

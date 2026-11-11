@@ -6,6 +6,7 @@ from django.test import SimpleTestCase, TestCase, RequestFactory
 from django.utils import timezone
 from .consultas.catalogos_bandeja import servicios_disponibles, estados_disponibles, filtrar_opciones_ajax
 from .models import ODT
+from .dominio.servicios import SERVICIOS_PRINCIPALES
 
 
 class CatalogosBandejaTests(TestCase):
@@ -19,7 +20,7 @@ class CatalogosBandejaTests(TestCase):
 
     def test_union_ordenada_sin_vacios_ni_duplicados_en_dos_consultas(self):
         with self.assertNumQueries(2):
-            self.assertEqual(servicios_disponibles(),["Corregido","Original"])
+            self.assertEqual(servicios_disponibles(),sorted(set(SERVICIOS_PRINCIPALES) | {"Corregido","Original"}))
 
     def test_estados_conservan_orden_y_consulta_diferida(self):
         with self.assertNumQueries(0):

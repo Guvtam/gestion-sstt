@@ -1,6 +1,7 @@
 """Opciones auxiliares de bandeja, con la semántica previa de catálogo global."""
 from django.db.models import Q
 from ..models import ODT
+from ..dominio.servicios import SERVICIOS_PRINCIPALES
 
 
 def servicios_disponibles():
@@ -8,7 +9,7 @@ def servicios_disponibles():
                      .order_by().values_list("servicio", flat=True).distinct())
     editados = set(ODT.objects.exclude(servicio_editado__isnull=True).exclude(servicio_editado="")
                   .order_by().values_list("servicio_editado", flat=True).distinct())
-    return sorted(originales | editados)
+    return sorted(set(SERVICIOS_PRINCIPALES) | originales | editados)
 
 
 def estados_disponibles():

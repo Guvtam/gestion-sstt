@@ -30,7 +30,7 @@ class TarjetasServiciosFacturadosTests(TestCase):
             html = template.render(context)
         self.assertIn("Renovación", html)
         self.assertIn("Mantenimiento preventivo", html)
-        self.assertEqual(html.count("hist-tarjeta-resumen"), 6)
+        self.assertEqual(html.count("hist-tarjeta-resumen"), 8)
 
     def test_suma_valores_facturados_y_aliases(self):
         for n, servicio, monto in ((1, "MANTENIMIENTO RENOVACIÓN", 100), (2, "RENOVACION", 50),
