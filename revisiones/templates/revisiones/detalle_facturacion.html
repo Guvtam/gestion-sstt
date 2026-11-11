@@ -3,7 +3,7 @@
 
 {% block titulo %}ODT facturadas · SSTT{% endblock %}
 {% block estilos %}
-    <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}?v=20261111-servicios">
+    <link rel="stylesheet" href="{% static 'revisiones/historial_facturacion.css' %}?v=20261111-cruzverde">
 {% endblock %}
 {% block subtitulo %}Detalle de órdenes de trabajo facturadas{% endblock %}
 
@@ -100,6 +100,11 @@
                     <small>Mantenimiento presupuesto</small>
                     <strong>${{ presupuesto.monto|clp }}</strong>
                     <span class="hist-tarjeta-cantidad">{{ presupuesto.cantidad }} ODT</span>
+                </div>
+                <div class="hist-tarjeta-resumen">
+                    <small>Mantenimiento nueva instalación Cruzverde</small>
+                    <strong>${{ nueva_instalacion_cruzverde.monto|clp }}</strong>
+                    <span class="hist-tarjeta-cantidad">{{ nueva_instalacion_cruzverde.cantidad }} ODT</span>
                 </div>
                 <div class="hist-tarjeta-resumen">
                     <small>Monto total facturado</small>

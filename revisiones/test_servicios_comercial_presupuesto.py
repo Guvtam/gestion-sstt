@@ -41,7 +41,7 @@ class ServiciosComercialPresupuestoTests(TestCase):
         self.addCleanup(self.coordinadores.stop)
 
     def test_catalogo_y_filtro_siempre_incluyen_ambos_sin_registros(self):
-        self.assertEqual(SERVICIOS_PRINCIPALES[-2:], (COMERCIAL,PRESUPUESTO))
+        self.assertEqual(SERVICIOS_PRINCIPALES[4:6], (COMERCIAL,PRESUPUESTO))
         ODT.objects.all().delete()
         self.assertEqual(servicios_disponibles(), sorted(SERVICIOS_PRINCIPALES))
         respuesta = self.client.get(reverse("bandeja"))

@@ -74,5 +74,6 @@ def detalle_facturacion(request, facturacion_id):
             "monto_preventivo": preventivo["monto"],
             "acuerdo_comercial": resumen["categorias"]["acuerdo_comercial"],
             "presupuesto": resumen["categorias"]["presupuesto"],
+            "nueva_instalacion_cruzverde": resumen["categorias"]["nueva_instalacion_cruzverde"],
         },
     )

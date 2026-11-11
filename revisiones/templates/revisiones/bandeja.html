@@ -5,7 +5,7 @@
 {% block estilos %}
 <link
     rel="stylesheet"
-    href="{% static 'revisiones/bandeja.css' %}?v=20261111-servicios"
+    href="{% static 'revisiones/bandeja.css' %}?v=20261111-cruzverde"
   >
 {% endblock %}
 {% block atributos_body %}
@@ -119,6 +119,12 @@
         <div class="hint">Monto efectivo, incluidos ajustes</div>
       </div>
 
+      <div class="kpi">
+        <small>Mantenimiento nueva instalación Cruzverde</small>
+        <strong>{{ nueva_instalacion_cruzverde.cantidad }}</strong>
+        <b class="money-kpi" data-amount="{{ nueva_instalacion_cruzverde.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
     </section>
     {% endif %}
 
@@ -1162,7 +1168,7 @@
 
   <!-- JAVASCRIPT PRINCIPAL -->
 
-  <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=20261110-creacion"></script>
+  <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=20261111-conservar-pagina"></script>
   <script src="{% static 'revisiones/bandeja.js' %}?v=20261110-sla-dias"></script>
 
   <!-- FILTROS Y FACTURACIÓN -->

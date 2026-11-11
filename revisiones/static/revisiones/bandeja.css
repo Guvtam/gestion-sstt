@@ -1219,7 +1219,7 @@ td.amount .monto-cero-marca, .correccion-pendiente-marca {display:block;width:fi
 td.service .correccion-pendiente-marca {margin-bottom:5px}
 
 /* Seis servicios principales, en una sección independiente de los estados de pago. */
-.kpis-servicios{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpis-servicios{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:1200px){.kpis-servicios{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:800px){.kpis-servicios{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.kpis-servicios{grid-template-columns:1fr}}

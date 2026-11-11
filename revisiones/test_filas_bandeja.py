@@ -170,6 +170,53 @@ class FilasBandejaTests(TestCase):
         self.assertEqual(pagina.number, 1)
         self.assertEqual(pagina.object_list[0].numero, 1)
 
+    def test_guardado_conserva_segunda_pagina_y_orden_de_filas(self):
+        original = paginar_filas(ODT.objects.all(), 2)
+        numeros = [o.numero for o in original]
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=1), estado="PENDIENTE", corrige_monto=True)
+        retorno = paginar_filas(ODT.objects.all(), 2, 1, filas_guardadas=",".join(map(str,numeros)))
+        self.assertEqual(retorno.number, 2)
+        self.assertEqual([o.numero for o in retorno], numeros)
+        self.assertEqual(retorno.paginator.count, 60)
+        # Una navegación normal vuelve a priorizar las correcciones.
+        self.assertEqual(paginar_filas(ODT.objects.all(), 1).object_list[0].numero, 1)
+
+    def test_guardado_real_en_paginas_dos_y_tres_conserva_filas_y_limpia_enlaces(self):
+        from unittest.mock import patch
+        from django.contrib.auth.models import User
+        from django.urls import reverse
+        usuario = User.objects.create_superuser("retorno", password="prueba")
+        self.client.force_login(usuario)
+        ODT.objects.bulk_create([
+            ODT(numero=n, cuenta_completa="FIR-1 - Cuenta", contratista="Prueba",
+                servicio="MANTENCION CORRECTIVA CON COBRO", valor_pago_tecnico=100)
+            for n in range(61, 121)
+        ])
+        with patch("revisiones.vistas.bandeja.coordinadores_para_mostrar",
+                   side_effect=lambda r,numeros:{n:{"nombre":"Responsable","identificado":True} for n in numeros}):
+            for numero_pagina in (2,3):
+                filtros = {"page":str(numero_pagina), "estado":"", "fecha_desde":"", "fecha_hasta":""}
+                antes = self.client.get(reverse("bandeja"), filtros)
+                numeros = [o.numero for o in antes.context["registros"]]
+                numero = numeros[-1]
+                guardado = self.client.post(reverse("guardar_fila"), {
+                    "numero":str(numero), "servicio":"MANTENIMIENTO PRESUPUESTO", "monto":"2", "confirmar_monto":"SI"})
+                self.assertEqual(guardado.status_code, 200, guardado.content)
+                filtros.update(ubicar_odt=str(numero), filas_guardadas=",".join(map(str,numeros)))
+                despues = self.client.get(reverse("bandeja"), filtros)
+                self.assertEqual(despues.context["pagina"].number, numero_pagina)
+                self.assertEqual([o.numero for o in despues.context["registros"]], numeros)
+                self.assertNotIn("filas_guardadas", despues.context["querystring"])
+                self.assertNotIn("ubicar_odt", despues.context["querystring"])
+
+    def test_filas_guardadas_no_amplian_alcance_y_validan_entrada(self):
+        retorno = paginar_filas(ODT.objects.filter(numero__gte=20), 1, 1, filas_guardadas="1,20,21")
+        self.assertEqual([o.numero for o in retorno], [20,21])
+        for valor in ("1 OR 1=1", "1,"*100, "1,1", "0,1", "9"*100, "20,21"):
+            pagina = paginar_filas(ODT.objects.filter(numero__gte=20), 1, 1, filas_guardadas=valor)
+            self.assertEqual(pagina.number, 1)
+            self.assertNotIn(1, [o.numero for o in pagina])
+
     def test_localizacion_respeta_filtros_y_no_expone_odt_ajena(self):
         pagina = paginar_filas(ODT.objects.filter(numero__gte=20), 1, 1)
         self.assertEqual(pagina.paginator.count, 41)

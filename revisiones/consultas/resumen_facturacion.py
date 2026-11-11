@@ -12,6 +12,7 @@ NOMBRES_CATEGORIAS = {
     "preventivo": "Mantenimiento preventivo",
     "acuerdo_comercial": "Mantenimiento acuerdo comercial",
     "presupuesto": "Mantenimiento presupuesto",
+    "nueva_instalacion_cruzverde": "Mantenimiento nueva instalación Cruzverde",
     "otros": "Otros servicios",
 }
 

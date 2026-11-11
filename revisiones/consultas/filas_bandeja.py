@@ -16,7 +16,8 @@ class ComplementosFilas:
     catalogo: dict
 
 
-def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_correcciones=True):
+def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_correcciones=True,
+                  filas_guardadas=None):
     # Priorizar antes de paginar: no solo las correcciones de la página visible.
     # La ausencia de seguimiento conserva el estado pendiente de ediciones antiguas.
     pendientes = Q(seguimiento_correccion__estado="PENDIENTE") | (
@@ -36,7 +37,15 @@ def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_corr
     # Buscar solo dentro del alcance autorizado y de los filtros vigentes.
     # Se recorre una proyección de IDs, sin cargar todas las ODT en memoria.
     ancla = str(numero_ancla or "")
-    if ancla.isascii() and ancla.isdigit() and 0 < len(ancla) <= 10:
+    # Retorno de un guardado: conservar las filas y la página que veía el usuario.
+    # Los números recibidos nunca amplían el queryset autorizado ni sus filtros.
+    numeros = str(filas_guardadas or "").split(",")
+    conservar = (
+        0 < len(numeros) <= TAMANO_PAGINA
+        and all(n.isascii() and n.isdigit() and 0 < len(n) <= 10 and int(n) > 0 for n in numeros)
+        and len({int(n) for n in numeros}) == len(numeros) and ancla in numeros
+    )
+    if not conservar and ancla.isascii() and ancla.isdigit() and 0 < len(ancla) <= 10:
         pk_ancla = registros.filter(numero=int(ancla)).values_list("pk", flat=True).first()
         if pk_ancla is not None:
             for indice, pk in enumerate(ids.iterator(chunk_size=1000)):
@@ -44,7 +53,11 @@ def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_corr
                     numero_pagina = indice // TAMANO_PAGINA + 1
                     break
     pagina = Paginator(ids, TAMANO_PAGINA).get_page(numero_pagina)
-    ids_pagina = list(pagina.object_list)
+    if conservar:
+        pks = dict(registros.filter(numero__in=[int(n) for n in numeros]).values_list("numero", "pk"))
+        ids_pagina = [pks[int(n)] for n in numeros if int(n) in pks]
+    else:
+        ids_pagina = list(pagina.object_list)
     filas = list(registros.filter(pk__in=ids_pagina).select_related("revision", "seguimiento_correccion"))
     orden = {pk: posicion for posicion, pk in enumerate(ids_pagina)}
     filas.sort(key=lambda odt: orden[odt.pk])

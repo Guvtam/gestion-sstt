@@ -2,7 +2,7 @@
 from collections import Counter
 
 
-def ranking_cuentas(filas, limite=10):
+def ranking_cuentas(filas, limite=20):
     cantidades = Counter()
     nombres = {}
     for odt in filas:

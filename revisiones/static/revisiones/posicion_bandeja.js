@@ -8,6 +8,7 @@
     const copia = new URL(url.href);
     copia.searchParams.delete("page");
     copia.searchParams.delete("ubicar_odt");
+    copia.searchParams.delete("filas_guardadas");
     copia.searchParams.sort();
     return copia.pathname + "?" + copia.searchParams.toString();
   }
@@ -34,6 +35,13 @@
       desplazamientoFila: fila.getBoundingClientRect().top
     };
     try { sessionStorage.setItem(CLAVE, JSON.stringify(posicion)); } catch (_) { /* Guardar sigue funcionando sin almacenamiento. */ }
+    const pagina = document.body.dataset.paginaActual;
+    if (/^[1-9][0-9]*$/.test(pagina || "")) url.searchParams.set("page", pagina);
+    const numeros = [...(tabla()?.querySelectorAll("tr[data-numero]") || [])]
+      .map(elemento => elemento.dataset.numero).filter(numeroValido);
+    if (numeros.length && numeros.length <= 50 && numeros.includes(posicion.numero)) {
+      url.searchParams.set("filas_guardadas", numeros.join(","));
+    }
     url.searchParams.set("ubicar_odt", posicion.numero);
     window.location.assign(url.href);
   }
@@ -42,6 +50,7 @@
     // La ubicación es de un solo uso; la siguiente navegación usa la página real.
     if (url.searchParams.has("ubicar_odt")) {
       url.searchParams.delete("ubicar_odt");
+      url.searchParams.delete("filas_guardadas");
       const pagina = document.body.dataset.paginaActual;
       if (/^[1-9][0-9]*$/.test(pagina || "")) url.searchParams.set("page", pagina);
       window.history.replaceState(null, "", url.href);

@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const source = fs.readFileSync(process.argv[2], 'utf8');
-function entorno({guardado=null, href='http://localhost/?servicios=A&servicios=B&page=2', numero='10', top=200, bloquear=false, pagina='1'}={}) {
+function entorno({guardado=null, href='http://localhost/?servicios=A&servicios=B&page=2', numero='10', top=200, bloquear=false, pagina='2'}={}) {
   const datos = new Map(guardado ? [['sstt_posicion_bandeja_v2', JSON.stringify(guardado)]] : []);
   const clases = new Set();
   const fila = {dataset:{numero},getBoundingClientRect:()=>({top}),classList:{add:x=>clases.add(x),remove:x=>clases.delete(x)}};
@@ -18,10 +18,12 @@ function entorno({guardado=null, href='http://localhost/?servicios=A&servicios=B
 let e=entorno();e.window.SSTTPosicionBandeja.recargar(e.fila);
 let url=new URL(e.llamadas.url);
 assert.deepEqual(url.searchParams.getAll('servicios'),['A','B']);assert.equal(url.searchParams.get('ubicar_odt'),'10');
+assert.equal(url.searchParams.get('page'),'2');assert.equal(url.searchParams.get('filas_guardadas'),'10');
 const guardado=JSON.parse(e.datos.get('sstt_posicion_bandeja_v2'));
 e=entorno({guardado,href:url.href,top:400});e.cargar();
 assert.deepEqual(e.llamadas.scroll,[0,1200]);assert.equal(e.superior.scrollLeft,300);assert(e.clases.has('odt-reciente'));assert.equal(e.datos.size,0);
-assert.equal(new URL(e.llamadas.canonica).searchParams.get('page'),'1');assert.equal(new URL(e.llamadas.canonica).searchParams.has('ubicar_odt'),false);
+assert.equal(new URL(e.llamadas.canonica).searchParams.get('page'),'2');assert.equal(new URL(e.llamadas.canonica).searchParams.has('ubicar_odt'),false);
+assert.equal(new URL(e.llamadas.canonica).searchParams.has('filas_guardadas'),false);
 e=entorno({guardado,numero:''});e.cargar();assert(e.mensaje.textContent.includes('filtros actuales'));assert.deepEqual(e.llamadas.scroll,[0,1000]);
 e=entorno({guardado,href:'http://localhost/?servicios=C'});e.cargar();assert.equal(e.llamadas.scroll,undefined);
 e=entorno({guardado:{...guardado,fecha:Date.now()-130000}});e.cargar();assert.equal(e.llamadas.scroll,undefined);

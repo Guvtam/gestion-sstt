@@ -127,7 +127,8 @@ def bandeja(request, por_creacion=False):
     inicio_paginacion = tiempo.perf_counter()
 
     pagina = paginar_filas(registros, request.GET.get("page"), request.GET.get("ubicar_odt"),
-                           priorizar_correcciones=not por_creacion)
+                           priorizar_correcciones=not por_creacion,
+                           filas_guardadas=request.GET.get("filas_guardadas"))
     filas = pagina.object_list
     coordinadores_pagina = coordinadores_para_mostrar(request, [odt.numero for odt in filas])
     complementos = cargar_complementos(filas)
@@ -145,6 +146,7 @@ def bandeja(request, por_creacion=False):
     parametros = request.GET.copy()
     parametros.pop("page", None)
     parametros.pop("ubicar_odt", None)
+    parametros.pop("filas_guardadas", None)
     parametros["contratistas_filtrados"] = "1"
     parametros.setlist("contratista", contratistas_seleccionados)
 
@@ -242,6 +244,7 @@ def bandeja(request, por_creacion=False):
             "mantenimiento_preventivo": financieros["mantenimiento_preventivo"],
             "acuerdo_comercial": financieros["acuerdo_comercial"],
             "presupuesto": financieros["presupuesto"],
+            "nueva_instalacion_cruzverde": financieros["nueva_instalacion_cruzverde"],
         },
     )
 
