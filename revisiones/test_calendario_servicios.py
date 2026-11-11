@@ -172,3 +172,29 @@ class CalendarioServiciosTests(TestCase):
             respuesta = self.client.get(reverse("calendario_servicios"), {"mes":"2026-11"})
         self.assertEqual(respuesta.status_code, 503)
         self.assertNotContains(respuesta, "FIR-2", status_code=503)
+
+    def test_filtros_por_color_conservan_totales_y_contexto(self):
+        from urllib.parse import parse_qs, urlsplit
+        with patch("revisiones.calendario_servicios.timezone.localdate", return_value=date(2026,11,10)):
+            ODT.objects.filter(numero=1).update(fecha_visita=date(2026,11,9))
+            for categoria, esperados in (("realizadas", {3}), ("abiertas", {2,5}), ("atrasadas", {1})):
+                c = self.consultar(categoria=categoria, q="Cuenta", servicios_filtrados="1", servicios=["MANTENIMIENTO PREVENTIVO", "RENOVACION", "PREVENTIVO"])
+                self.assertEqual({e["numero"] for e in self.eventos(c)}, esperados)
+                self.assertEqual(c["cantidad"], len(esperados))
+                self.assertEqual(c["cuentas"], len(esperados))
+                self.assertEqual(sum(c["totales"].values()), 4)
+                self.assertEqual([f["clase"] for f in c["filtros_categoria"] if f["activo"]], [categoria])
+                siguiente = parse_qs(urlsplit(c["url_mes_siguiente"]).query)
+                self.assertEqual(siguiente["categoria"], [categoria])
+                todos = parse_qs(urlsplit(c["filtros_categoria"][0]["url"]).query)
+                self.assertNotIn("categoria", todos)
+                self.assertEqual(todos["q"], ["Cuenta"])
+
+    def test_categoria_invalida_muestra_todas_y_no_cambia_servicios(self):
+        c = self.consultar(categoria="desconocida")
+        self.assertEqual(c["categoria_filtro"], "")
+        self.assertEqual(c["cantidad"], 4)
+        self.assertTrue(c["filtros_categoria"][0]["activo"])
+        filtrada = self.consultar(categoria="realizadas", servicios_filtrados="1", servicios=["RENOVACION"])
+        self.assertEqual(filtrada["cantidad"], 0)
+        self.assertEqual(filtrada["totales"]["abiertas"] + filtrada["totales"]["atrasadas"], 1)

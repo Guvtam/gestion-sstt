@@ -9,7 +9,10 @@
 .calendario-evento.visita-abiertas{background:#dcfce7;color:#166534;border-left:4px solid #22a453}
 .calendario-evento.visita-atrasadas{background:#fef9c3;color:#854d0e;border-left:4px solid #eab308}
 .visita-leyenda{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
-.visita-leyenda span{padding:8px 12px;border-radius:6px;font-size:12px;border:1px solid transparent}
+.visita-leyenda a{padding:8px 12px;border-radius:6px;font-size:12px;border:1px solid transparent;text-decoration:none;display:inline-block}
+.visita-leyenda .todas{background:#e8eff7;color:#17324f;border-color:#c5d5e7}
+.visita-leyenda a[aria-current="true"]{box-shadow:0 0 0 2px #17324f;font-weight:700}
+.visita-leyenda a:focus-visible{outline:3px solid #1765ad;outline-offset:4px}
 .visita-leyenda .realizadas{background:#dbeafe;color:#1e40af;border-color:#3b82f6}
 .visita-leyenda .abiertas{background:#dcfce7;color:#166534;border-color:#22a453}
 .visita-leyenda .atrasadas{background:#fef9c3;color:#854d0e;border-color:#eab308}
@@ -34,6 +37,7 @@
 <section class="hist-panel">
 <form method="get" class="preventivos-filtros" id="filtrosCalendario">
 <input type="hidden" name="servicios_filtrados" value="1">
+{% if categoria_filtro %}<input type="hidden" name="categoria" value="{{ categoria_filtro }}">{% endif %}
 <div class="field"><label for="mes">Mes</label><input type="month" id="mes" name="mes" value="{{ mes }}"></div>
 <div class="field"><label for="buscar">Cuenta o técnico / contratista</label><input id="buscar" name="q" value="{{ q }}"></div>
 <div class="field calendario-servicios"><label>Servicios del mes</label>
@@ -58,11 +62,12 @@
 <div class="calendario-cabecera"><div><h2>{{ mes_titulo|date:"F Y" }}</h2><p>{{ cantidad }} visitas · {{ cuentas }} cuentas</p></div>
 <nav class="filtro-acciones" aria-label="Cambiar mes"><a class="btn alt" href="{{ url_mes_anterior }}">Anterior</a><a class="btn alt" href="{{ url_mes_siguiente }}">Siguiente</a></nav></div>
 {% if not cantidad %}<p class="hist-sub">No hay visitas para el mes y filtros seleccionados.</p>{% endif %}
-<div class="visita-leyenda" aria-label="Leyenda de visitas">
-<span class="realizadas">Azul · Realizadas: {{ totales.realizadas }}</span>
-<span class="abiertas">Verde · Abiertas: {{ totales.abiertas }}</span>
-<span class="atrasadas">Amarillo · Atrasadas: {{ totales.atrasadas }}</span>
-</div>
+<nav class="visita-leyenda" aria-label="Filtrar visitas por estado">
+{% for filtro in filtros_categoria %}
+<a class="{{ filtro.clase }}" href="{{ filtro.url }}"{% if filtro.activo %} aria-current="true"{% endif %}>{{ filtro.texto }}: {{ filtro.cantidad }}</a>
+{% endfor %}
+</nav>
+<p class="hist-sub">Selecciona un color para filtrar las visitas o Todas para verlas juntas.</p>
 <p class="hist-sub">Realizada: estado Finalizado. Abierta: visita hoy o a futuro. Atrasada: sigue abierta y su fecha de visita ya pasó. Todas se ubican en la fecha de visita registrada, no en la fecha de finalización.</p>
 <div class="calendario-scroll"><div class="calendario-grid">
 {% for dia in "LMXJVSD" %}<div class="calendario-semana">{{ dia }}</div>{% endfor %}
