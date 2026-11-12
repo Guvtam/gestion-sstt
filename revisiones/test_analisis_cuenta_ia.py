@@ -106,7 +106,7 @@ class PreparacionIA(TestCase):
         previa=self.client.post(self.url,self.datos)
         token=previa.context['confirmacion']
         datos={**self.datos,'accion':'analizar','confirmar_envio':'SI','confirmacion':token}
-        respuesta={'hallazgos':[{'tipo':'solucion','descripcion':'Se documenta reemplazo de batería.','referencias':['1-E1']}]}
+        respuesta={'hallazgos':[{'tipo':'resumen','descripcion':'Se documenta reemplazo de batería.','referencias':['1-E1']}]}
         with patch('revisiones.vistas.analisis_cuenta_ia.solicitar_analisis',return_value=respuesta) as api:
             r=self.client.post(self.url,datos)
             self.assertContains(r,'Se documenta reemplazo')
@@ -139,7 +139,7 @@ class ReglasYProveedorIA(SimpleTestCase):
 
     def test_citas_ajenas_y_respuesta_invalida(self):
         datos={'odts':[{'numero':1,'fuentes':[{'id':'1-E1','texto':'Se reemplaza batería'}]}]}
-        bueno={'hallazgos':[{'tipo':'solucion','descripcion':'Reemplazo registrado','referencias':['1-E1']}]}
+        bueno={'hallazgos':[{'tipo':'resumen','descripcion':'Reemplazo registrado','referencias':['1-E1']}]}
         self.assertEqual(validar_resultado(bueno,datos)[0]['evidencias'][0]['numero'],1)
         for refs in ([],['2-E1'],[1]):
             with self.assertRaises(AnalisisNoDisponible):validar_resultado({'hallazgos':[{**bueno['hallazgos'][0],'referencias':refs}]},datos)
@@ -174,3 +174,30 @@ class ReglasYProveedorIA(SimpleTestCase):
         cursor.fetchmany.side_effect=Exception('PASSWORD SECRETA')
         with self.assertRaises(AnalisisNoDisponible) as e:leer_historiales([1])
         self.assertNotIn('PASSWORD',str(e.exception))
+
+class SintesisEjecutivaIA(SimpleTestCase):
+    def setUp(self):
+        self.datos={'odts':[{'numero':1,'fuentes':[{'id':'1-E1','texto':'Se realiza capacitación'}]}]}
+        self.h={'tipo':'resumen','descripcion':'Hay demanda operativa documentada.','referencias':['1-E1']}
+
+    def test_requiere_resumen_y_limita_extension_evidencias_y_repeticiones(self):
+        buena=validar_resultado({'hallazgos':[self.h]},self.datos)
+        self.assertEqual(buena[0]['titulo'],'Por qué se concentran las atenciones')
+        casos=[{'hallazgos':[{**self.h,'tipo':'solucion'}]},
+               {'hallazgos':[self.h]*9}, {'hallazgos':[self.h,self.h]},
+               {'hallazgos':[{**self.h,'descripcion':'x'*1001}]},
+               {'hallazgos':[{**self.h,'referencias':['1-E1']*5}]}]
+        for caso in casos:
+            with self.assertRaises(AnalisisNoDisponible):validar_resultado(caso,self.datos)
+
+    def test_demanda_operativa_y_pendiente_son_categorias_distintas_de_solucion(self):
+        salida=validar_resultado({'hallazgos':[self.h,
+            {'tipo':'motivo','descripcion':'Se solicita capacitación recurrente.','referencias':['1-E1']},
+            {'tipo':'pendiente','descripcion':'Se debe verificar disponibilidad de medios.','referencias':['1-E1']} ]},self.datos)
+        self.assertEqual([s['tipo'] for s in salida],['resumen','motivo','pendiente'])
+        self.assertEqual(salida[-1]['titulo'],'Pendientes y barreras')
+
+    def test_una_firma_o_correo_omitido_no_son_evidencia_tecnica(self):
+        for texto in ('', '[firma omitida]', '[[correo omitido]] [firma omitida]'):
+            datos={'odts':[{'numero':1,'fuentes':[{'id':'1-E1','texto':texto}]}]}
+            with self.assertRaises(AnalisisNoDisponible):validar_resultado({'hallazgos':[self.h]},datos)

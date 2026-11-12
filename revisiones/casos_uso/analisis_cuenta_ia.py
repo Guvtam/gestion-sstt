@@ -51,7 +51,7 @@ def preparar(codigo, desde, hasta):
     fuentes = []
     for odt in filas:
         registros = [{'id':f'{odt.numero}-OBS', 'fecha':timezone.localtime(odt.fecha_finalizacion).isoformat(),
-                      'accion':'Observación de la ODT', 'texto':depurar_texto(odt.observaciones_insumos)}]
+                      'accion':'Observación de la ODT (fecha de referencia: finalización)', 'texto':depurar_texto(odt.observaciones_insumos)}]
         for i,e in enumerate(eventos[odt.numero],1):
             registros.append({'id':f'{odt.numero}-E{i}', 'fecha':str(e['FechaHora'] or ''),
                              'accion':depurar_texto(e['Accion']), 'texto':depurar_texto(e['Observacion'])})
