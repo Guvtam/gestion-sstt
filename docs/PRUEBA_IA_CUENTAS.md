@@ -67,3 +67,13 @@ No se conserva el resultado en la base ni se reutiliza automáticamente; al sali
 No desplegar la habilitación externa sin completar la prueba y la revisión de seguridad. La nueva página y la vista previa funcionan con la API deshabilitada. Para una habilitación posterior en Gunicorn se necesitan variables de entorno privadas, configuración efectiva segura, capacidad y timeouts revisados. El total de preparación SQL más generación puede superar 30 segundos: no asumir que el timeout por defecto de Gunicorn alcanza. Antes de ampliar el uso, pasar a trabajos en segundo plano y control de cuota/concurrencia compartido.
 
 Referencias de implementación: https://developers.openai.com/api/docs/guides/structured-outputs y https://developers.openai.com/api/docs/guides/your-data.
+
+## Síntesis ejecutiva del análisis
+
+La salida comienza con Por qué se concentran las atenciones y contiene hasta ocho hallazgos agrupados. Se distingue demanda operativa (capacitación, enrolamientos, insumos) de fallas técnicas, trabajos ejecutados y pendientes por medios, acceso o documentación. Cada punto admite hasta cuatro referencias representativas y mil caracteres. El servidor rechaza hallazgos repetidos literalmente, exceso de extensión, ausencia de síntesis inicial o referencias inválidas.
+
+Las pruebas de funcionamiento sin fallas no deben describirse como reparaciones. Compras, cotizaciones y recomendaciones no acreditan instalación o reparación. No se deben equiparar textos duplicados de Observación y Finalizado con dos trabajos ni corregir por semejanza los números de ODT referidos en comentarios. La fuente OBS corresponde a la observación actual y usa la fecha de finalización como referencia; no representa una fecha de creación del comentario.
+
+La síntesis aparece antes de la vista previa extensa. Las evidencias continúan desplegables y usan el historial compartido. No se calculan porcentajes o cantidades de causas mediante IA: las referencias son representativas, no una clasificación cuantitativa exhaustiva de las ODT.
+
+Estas reglas mejoran la instrucción y las validaciones de estructura, pero no garantizan que cada inferencia sea correcta. Comparar nuevas generaciones con fuentes conocidas. Los resultados anteriores no se transforman automáticamente: generar un nuevo análisis después de actualizar, lo que puede consumir cuota de API.
