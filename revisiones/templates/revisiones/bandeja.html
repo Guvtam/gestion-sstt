@@ -445,7 +445,7 @@
 
       {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True etiqueta="Paginación superior de ODT" %}
 
-      {% if destacar_monto_cero %}<p class="hint"><span class="monto-cero-marca">Monto $0</span> Las filas naranjas tienen monto efectivo cero, incluidos los ajustes guardados.</p>{% elif es_coordinador %}<p class="hint"><span class="correccion-pendiente-marca">Corrección pendiente</span> Las filas naranjas requieren aplicar cambios en SoftGuard.</p>{% endif %}
+      {% if destacar_monto_cero %}<p class="hint"><span class="monto-cero-marca">Monto $0</span> Las filas naranjas tienen monto efectivo cero, incluidos los ajustes guardados.</p>{% elif es_coordinador %}<p class="hint"><span class="correccion-pendiente-marca">Corrección por confirmar</span> Las filas naranjas tienen cambios pendientes o procesados, todavía sin confirmación de SoftGuard.</p>{% endif %}
 
       <!-- BARRA HORIZONTAL SUPERIOR -->
 
@@ -509,7 +509,7 @@
 
             {% for r in registros %}
 
-              <tr data-numero="{{ r.numero|stringformat:'d' }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}{% if destacar_monto_cero and r.monto_cero %} odt-monto-cero{% endif %}{% if es_coordinador and r.estado_modificacion == 'PENDIENTE' %} odt-correccion-pendiente{% endif %}">
+              <tr data-numero="{{ r.numero|stringformat:'d' }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}{% if destacar_monto_cero and r.monto_cero %} odt-monto-cero{% endif %}{% if es_coordinador and r.estado_modificacion == 'PENDIENTE' or es_coordinador and r.estado_modificacion == 'EN_PROCESO' %} odt-correccion-pendiente{% endif %}">
 
                 <!-- NÚMERO ODT -->
 
@@ -563,7 +563,7 @@
                 <!-- SERVICIO -->
 
                 <td class="service">
-                  {% if es_coordinador and r.estado_modificacion == 'PENDIENTE' %}<span class="correccion-pendiente-marca">Corrección pendiente</span>{% endif %}
+                  {% if es_coordinador and r.estado_modificacion == 'PENDIENTE' or es_coordinador and r.estado_modificacion == 'EN_PROCESO' %}<span class="correccion-pendiente-marca">Corrección por confirmar</span>{% endif %}
 
                   {% firstof r.servicio_editado r.servicio as servicio_actual %}
                   <select

@@ -146,20 +146,23 @@ class MarcaMontoCorreccionesTests(TestCase):
         coordinador=User.objects.create_user("rsilva")
         permiso,_=Permission.objects.get_or_create(content_type=ContentType.objects.get_for_model(ODT),codename="ver_bandeja_sstt")
         coordinador.user_permissions.add(permiso)
-        for usuario in (self.admin,coordinador):
-            self.client.force_login(usuario)
-            with patch("revisiones.acceso_coordinadores.identificar_coordinadores_odt",side_effect=lambda numeros:{n:{"usuario":"rsilva","nombre":"Romina","identificado":True} for n in numeros}):
-                respuesta=self.client.get(reverse("bandeja"),{"estado":"","fecha_desde":"","fecha_hasta":""})
-            html=respuesta.content.decode()
-            filas=dict(re.findall(r'<tr data-numero="(\d+)"[^>]*class="([^"]*)"',html))
-            if usuario==coordinador:
-                self.assertNotContains(respuesta,"Monto $0")
-                self.assertNotIn("odt-monto-cero",filas["101"])
-                self.assertIn("odt-correccion-pendiente",filas["100"])
-                self.assertNotIn("odt-correccion-pendiente",filas["101"])
-            else:
-                self.assertIn("odt-monto-cero",filas["101"])
-                self.assertNotIn("odt-correccion-pendiente",filas["100"])
+        for estado in ("PENDIENTE", "EN_PROCESO", "ACTUALIZADA"):
+            seguimiento.estado=estado
+            seguimiento.save(update_fields=["estado"])
+            for usuario in (self.admin,coordinador):
+                self.client.force_login(usuario)
+                with patch("revisiones.acceso_coordinadores.identificar_coordinadores_odt",side_effect=lambda numeros:{n:{"usuario":"rsilva","nombre":"Romina","identificado":True} for n in numeros}):
+                    respuesta=self.client.get(reverse("bandeja"),{"estado":"","fecha_desde":"","fecha_hasta":""})
+                html=respuesta.content.decode()
+                filas=dict(re.findall(r'<tr data-numero="(\d+)"[^>]*class="([^"]*)"',html))
+                if usuario==coordinador:
+                    self.assertNotContains(respuesta,"Monto $0")
+                    self.assertNotIn("odt-monto-cero",filas["101"])
+                    self.assertEqual("odt-correccion-pendiente" in filas["100"], estado in ("PENDIENTE", "EN_PROCESO"))
+                    self.assertNotIn("odt-correccion-pendiente",filas["101"])
+                else:
+                    self.assertIn("odt-monto-cero",filas["101"])
+                    self.assertNotIn("odt-correccion-pendiente",filas["100"])
 
 
     def test_historial_muestra_solicitud_dos_y_confirmacion_real(self):
