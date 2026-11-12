@@ -107,6 +107,7 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 <div class="barra-titulo"><span><strong>{{ cuenta_ranking.posicion }}. {{ cuenta_ranking.cuenta }}</strong>{% if cuenta_ranking.nombre != cuenta_ranking.cuenta %} · {{ cuenta_ranking.nombre }}{% endif %}</span><b>{{ cuenta_ranking.cantidad }} ODT</b></div>
 <div class="barra-fondo"><div class="barra-relleno" style="width:{{ cuenta_ranking.ancho }}%"></div></div>
 </a>
+{% if puede_analizar_cuenta_ia %}<a class="btn alt" href="{% url 'analisis_cuenta_ia' %}?codigo={{ cuenta_ranking.cuenta|urlencode }}&amp;desde={{ desde|urlencode }}&amp;hasta={{ hasta|urlencode }}">Analizar atenciones de esta cuenta</a>{% endif %}
 {% empty %}<p class="vacio-grafico">No hay cuentas identificadas para estos filtros.</p>{% endfor %}
 </div>
 <p class="chart-nota">Cada ODT finalizada cuenta como una incidencia operativa; no equivale a una falla confirmada. Agrupa por código de cuenta aunque cambie el nombre o el contratista. Incluye los servicios seleccionados y excluye las ODT sin cuenta. Este ranking usa el período elegido, no la ventana de 90 días de los otros indicadores.</p>
