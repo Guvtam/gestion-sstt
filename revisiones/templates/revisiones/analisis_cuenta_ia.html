@@ -1,0 +1,68 @@
+{% extends "revisiones/base_operativa.html" %}
+{% load static %}
+{% block titulo %}Análisis de atenciones con IA · SSTT{% endblock %}
+{% block estilos %}
+<link rel="stylesheet" href="{% static 'revisiones/preventivos.css' %}?v=20261104-2">
+<style>
+.ia-contenido{max-width:1200px;margin:24px auto;padding:0 16px}.ia-panel{background:white;border:1px solid #d4e1ef;border-radius:12px;padding:24px;margin-bottom:20px}.ia-panel h2{margin-top:0}.ia-filtros{display:flex;flex-wrap:wrap;align-items:end;gap:16px}.ia-filtros label{display:block;margin-bottom:6px}.ia-panel input,.ia-panel textarea{max-width:100%}.ia-panel input{padding:9px}.ia-panel textarea{box-sizing:border-box;width:100%;height:300px;font-size:12px;line-height:1.5}.ia-panel p{line-height:1.6}.ia-error{color:#a32924}.ia-evidencia{margin:10px 0;padding:10px;background:#f3f7fb;overflow-wrap:anywhere}.ia-evidencia a{display:inline-block}.ia-confirmar{display:flex;gap:10px;align-items:flex-start;margin:16px 0}.ia-confirmar input{width:18px;height:18px;flex-shrink:0}.ia-pendiente{display:none}form.enviando .ia-pendiente{display:block}button:disabled{opacity:.6}
+</style>
+{% endblock %}
+{% block titulo_encabezado %}Análisis de atenciones de una cuenta{% endblock %}
+{% block subtitulo %}Prueba de consulta para administrador y supervisor{% endblock %}
+{% block contenido %}
+<main class="ia-contenido">
+<section class="ia-panel">
+<h2>Preparar antecedentes</h2>
+<p>Selecciona una cuenta y hasta un año de ODT finalizadas. Se incluyen todos sus servicios; los demás filtros del ranking no se aplican. Una ODT no equivale necesariamente a una visita física ni a una falla.</p>
+<form method="post" class="ia-filtros">{% csrf_token %}
+<input type="hidden" name="accion" value="preparar">
+<div><label for="codigo">Código de cuenta</label><input required id="codigo" name="codigo" value="{{ codigo }}" placeholder="FIR-3302" maxlength="41"></div>
+<div><label for="desde">Finalización desde</label><input required type="date" name="desde" id="desde" value="{{ desde }}"></div>
+<div><label for="hasta">Finalización hasta</label><input required type="date" name="hasta" id="hasta" value="{{ hasta }}"></div>
+<button class="btn" type="submit">Preparar antecedentes sin enviar a IA</button>
+<p class="ia-pendiente" role="status">Consultando antecedentes. Espera sin volver a pulsar el botón.</p>
+</form>
+<p><a href="{% url 'analisis_odt' %}">Volver a Análisis de ODT</a></p>
+{% if error %}<p class="ia-error" role="alert">{{ error }}</p>{% endif %}
+</section>
+{% if vista_previa %}
+<section class="ia-panel">
+<h2>Revisar cobertura y contenido</h2>
+<p><strong>{{ codigo }} · {{ cantidad }} ODT</strong> · {{ con_historial }} con eventos de historial · {{ eventos }} eventos · {{ textos_recortados }} textos recortados.</p>
+<p>El período corresponde a la fecha de finalización. El historial puede contener eventos de otras fechas. Una consulta fallida se informa como error; no se presenta como historial vacío.</p>
+<ul>{% for nombre,n in servicios %}<li>{{ nombre }}: {{ n }} ODT</li>{% endfor %}</ul>
+<p>Se excluyen nombres de cuenta, direcciones, montos y campos de usuario. Se omiten imágenes y se depuran patrones de correos, teléfonos y firmas. <strong>La depuración no garantiza eliminar todos los datos personales o confidenciales incluidos en texto libre. Revisa el contenido antes de autorizar el envío.</strong></p>
+<label for="antecedentes">Este es el contenido preparado para la IA</label>
+<textarea id="antecedentes" readonly>{{ vista_previa }}</textarea>
+{% if ia_disponible %}
+<form method="post">{% csrf_token %}
+<input type="hidden" name="accion" value="analizar"><input type="hidden" name="codigo" value="{{ codigo }}">
+<input type="hidden" name="desde" value="{{ desde }}"><input type="hidden" name="hasta" value="{{ hasta }}">
+<input type="hidden" name="confirmacion" value="{{ confirmacion }}">
+<label class="ia-confirmar"><input type="checkbox" required name="confirmar_envio" value="SI"><span>Revisé estos antecedentes y confirmo que están autorizados para enviarse a OpenAI. Esta operación consume la cuota de la API configurada.</span></label>
+<button type="submit" class="btn">Generar análisis con IA</button>
+<p class="ia-pendiente" role="status">Generando análisis. Espera sin repetir el envío.</p>
+</form>
+{% else %}<p><strong>Envío a IA desactivado.</strong> La vista previa funciona sin credencial. Administración debe habilitar la API en el servidor para generar el análisis.</p>{% endif %}
+</section>
+{% endif %}
+{% if hallazgos %}
+<section class="ia-panel"><h2>Análisis generado</h2>
+<p>Generado el {{ generado_en|date:"d/m/Y H:i" }} para {{ codigo }}, entre {{ desde }} y {{ hasta }}. Los resultados requieren revisión del supervisor. Verificar que una referencia exista no garantiza que la interpretación sea correcta.</p>
+{% for h in hallazgos %}
+<article><h3>{{ h.tipo|capfirst }}</h3><p>{{ h.descripcion }}</p>
+<details><summary>Ver evidencias y consultar historial</summary>
+{% for e in h.evidencias %}<div class="ia-evidencia"><strong>{{ e.id }} · {{ e.fecha }}</strong><p>{{ e.accion }} · {{ e.texto }}</p><button type="button" class="btn-historial-odt alt" data-numero="{{ e.numero|stringformat:'d' }}" data-url="{% url 'historial_odt' e.numero %}">Historial ODT {{ e.numero|stringformat:'d' }}</button></div>{% endfor %}
+</details></article>
+{% endfor %}
+<p>Este piloto no guarda el análisis en la base. No modifica ODT, pagos, servicios ni informes.</p>
+</section>
+{% endif %}
+</main>
+{% include "revisiones/componentes/modal_historial.html" %}
+<script>
+document.querySelectorAll('.ia-contenido form').forEach(form=>form.addEventListener('submit',()=>{form.classList.add('enviando');form.querySelector('button[type="submit"]').disabled=true;}));
+</script>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'revisiones/historial_facturacion_odt.js' %}?v=2"></script>{% endblock %}

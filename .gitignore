@@ -29,3 +29,5 @@ catalogo_inicial_sstt.csv
 config/settings_prueba.py
 *.sync.lock
 .sstt-sync.lock
+# Configuración privada del piloto IA en el PC.
+config/settings_ia_local.py

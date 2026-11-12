@@ -46,7 +46,7 @@ def datos_menu(request, contexto):
 
     agregar("bandeja", "Gestión de pagos", bandeja, ("detalle",))
     agregar("calendario_servicios", "Calendario de visitas", bandeja or usuario.has_perm("revisiones.ver_calendario_sstt"))
-    agregar("analisis_odt", "Análisis de ODT", bandeja and not coordinador and usuario.has_perm("revisiones.revisar_pago_sstt"))
+    agregar("analisis_odt", "Análisis de ODT", bandeja and not coordinador and usuario.has_perm("revisiones.revisar_pago_sstt"), ("analisis_cuenta_ia",))
     agregar("bandeja_creacion", "ODT por creación", bandeja and not coordinador)
     agregar("odt_modificadas", "Seguimiento de cambios", bandeja and not coordinador)
     agregar("mantenimientos_preventivos", "Mantenimientos preventivos", bandeja and not coordinador)

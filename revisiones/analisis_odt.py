@@ -11,6 +11,7 @@ from .models import ODT
 from .metricas_analisis import cargar_metricas
 from .dominio.servicios import SERVICIOS_PRINCIPALES
 from .dominio.ranking_cuentas import ranking_cuentas
+from .vistas.analisis_cuenta_ia import puede_analizar
 
 
 @login_required
@@ -184,6 +185,7 @@ def analisis_odt(request):
     params.pop("page",None)
     return render(request,"revisiones/analisis_odt.html",{
         "cuenta":cuenta, "ranking_cuentas":ranking,
+        "puede_analizar_cuenta_ia":puede_analizar(request.user),
         "incidencias_cuenta":incidencias_cuenta,"incidencias_grafico":incidencias_grafico,
         "cuentas_repetidas":sum(g["cantidad"] for g in incidencias_grafico),
         "url_revisar_fechas":enlace("sla","REVISAR"),
