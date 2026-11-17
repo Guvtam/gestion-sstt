@@ -3,7 +3,6 @@ from django.urls import path
 
 from .vistas import bandeja, odt, operaciones_odt, cuentas, correcciones
 from .analisis_odt import analisis_odt
-from .vistas.analisis_cuenta_ia import analisis_cuenta_ia
 from .mantenimientos_preventivos import mantenimientos_preventivos
 from .calendario_servicios import calendario_servicios
 from .estadisticas_correcciones import estadisticas_correcciones
@@ -16,7 +15,6 @@ from .historial_requisiciones import historial_requisiciones
 
 
 urlpatterns = [
-    path("analisis-cuenta-ia/", analisis_cuenta_ia, name="analisis_cuenta_ia"),
     path("facturacion/<int:facturacion_id>/historial-requisicion/", historial_requisiciones, name="historial_requisiciones"),
     path("analisis-odt/", analisis_odt, name="analisis_odt"),
     path("calendario-servicios/", calendario_servicios, name="calendario_servicios"),

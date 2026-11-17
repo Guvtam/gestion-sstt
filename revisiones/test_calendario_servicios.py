@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.template import engines
 from django.test import TestCase, RequestFactory
-from .models import ODT
+from .models import ODT, CatalogoCuenta
 from .calendario_servicios import calendario_servicios
 
 class CalendarioServiciosTests(TestCase):
@@ -198,3 +198,34 @@ class CalendarioServiciosTests(TestCase):
         filtrada = self.consultar(categoria="realizadas", servicios_filtrados="1", servicios=["RENOVACION"])
         self.assertEqual(filtrada["cantidad"], 0)
         self.assertEqual(filtrada["totales"]["abiertas"] + filtrada["totales"]["atrasadas"], 1)
+
+    def test_nombre_calendario_usa_la_odt_y_no_un_catalogo_desactualizado(self):
+        nombre_odt = "FIR-101 - CLIENTE CORRECTO - SUCURSAL NORTE"
+        ODT.objects.filter(numero=1).update(cuenta_completa=nombre_odt)
+        CatalogoCuenta.objects.create(codigo_cuenta="FIR-101", nombre_cuenta="ALIAS ANTIGUO DEL CATÁLOGO",
+                                     ceco="50-01-01", tipo_cliente="B2B")
+        contexto = self.consultar()
+        evento = next(e for e in self.eventos(contexto) if e["numero"] == 1)
+        self.assertEqual(evento["codigo"], "FIR-101")
+        self.assertEqual(evento["nombre"], ODT.objects.get(numero=1).cuenta_completa)
+        with patch("django.urls.reverse", return_value="/test/"):
+            html=engines["django"].get_template("revisiones/calendario_servicios.html").render(contexto)
+        self.assertIn(nombre_odt, html)
+        self.assertNotIn("ALIAS ANTIGUO DEL CATÁLOGO", html)
+        self.assertEqual(CatalogoCuenta.objects.get(codigo_cuenta="FIR-101").nombre_cuenta,
+                         "ALIAS ANTIGUO DEL CATÁLOGO")
+
+    def test_busqueda_y_nombre_visible_utilizan_la_misma_cuenta(self):
+        ODT.objects.filter(numero=1).update(cuenta_completa="FIR-101 - NOMBRE ACTUAL NORTE")
+        ODT.objects.filter(numero=2).update(cuenta_completa="FIR-102 - NOMBRE ACTUAL SUR")
+        for codigo in ("FIR-101", "FIR-102"):
+            CatalogoCuenta.objects.create(codigo_cuenta=codigo, nombre_cuenta="OTRO CLIENTE")
+        eventos=self.eventos(self.consultar(q="NOMBRE ACTUAL NORTE"))
+        self.assertEqual([e["numero"] for e in eventos],[1])
+        self.assertEqual(eventos[0]["nombre"],"FIR-101 - NOMBRE ACTUAL NORTE")
+
+    def test_cuenta_sin_texto_no_inventa_un_nombre(self):
+        ODT.objects.filter(numero=1).update(cuenta_completa="")
+        evento=next(e for e in self.eventos(self.consultar()) if e["numero"]==1)
+        self.assertEqual(evento["codigo"],"Sin código de cuenta")
+        self.assertEqual(evento["nombre"],"Sin cuenta")
