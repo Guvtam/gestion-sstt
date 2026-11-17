@@ -11,7 +11,7 @@ from django.views.decorators.http import require_GET
 from .models import EjecucionSincronizacion
 from .consultas.calendario import visitas_del_mes
 from .acceso_coordinadores import datos_coordinador, es_coordinador_sstt, limitar_odts_coordinador
-from .cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta
+from .cuentas_utils import normalizar_codigo_cuenta
 from .dominio.fechas import sumar_meses
 
 
@@ -61,13 +61,11 @@ def calendario_servicios(request):
     else:
         odts=odts.none()
     odts = list(odts.order_by("fecha_visita", "cuenta_completa", "numero"))
-    catalogo = cargar_catalogo_cuentas(o.cuenta_completa for o in odts)
     eventos = {}
     totales = {"realizadas":0,"abiertas":0,"atrasadas":0}
     odts_visibles = []
     for odt in odts:
         codigo = normalizar_codigo_cuenta(odt.cuenta_completa)
-        cuenta = catalogo.get(codigo)
         if odt.estado_normalizado == "finalizado":
             categoria, etiqueta = "realizadas", "Realizada"
         elif odt.fecha_visita < hoy:
@@ -81,7 +79,7 @@ def calendario_servicios(request):
         eventos.setdefault(odt.fecha_visita, []).append({
             "categoria":categoria,"etiqueta":etiqueta,"estado":odt.estado_softguard.strip(),
             "codigo": codigo or "Sin código de cuenta",
-            "nombre": cuenta.nombre_cuenta if cuenta and cuenta.nombre_cuenta else odt.cuenta_completa or "Sin cuenta",
+            "nombre": odt.cuenta_completa or "Sin cuenta",
             "numero": odt.numero, "servicio": odt.servicio_efectivo,
             "tecnico": odt.tecnico or odt.contratista or "Sin técnico",
         })
