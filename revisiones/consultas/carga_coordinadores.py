@@ -7,7 +7,7 @@ from django.utils import timezone
 from ..coordinadores_softguard import CoordinadoresNoDisponibles
 
 
-def resumir_carga(registros, parametros, resolver, *, hoy):
+def filtrar_periodo_creacion(registros, parametros, *, hoy):
     desde = parametros.get('carga_desde', hoy.replace(month=1, day=1).isoformat()).strip()
     hasta = parametros.get('carga_hasta', hoy.isoformat()).strip()
     fechas = {}
@@ -17,9 +17,9 @@ def resumir_carga(registros, parametros, resolver, *, hoy):
             try:
                 fechas[nombre] = date.fromisoformat(texto)
             except ValueError:
-                errores.append('Indica fechas válidas para el total de ODT.')
+                errores.append('Indica fechas válidas para el período del análisis.')
     if fechas.get('desde') and fechas.get('hasta') and fechas['desde'] > fechas['hasta']:
-        errores.append('La fecha inicial del total de ODT no puede superar la fecha final.')
+        errores.append('La fecha inicial del análisis no puede superar la fecha final.')
     if not errores:
         try:
             if 'desde' in fechas:
@@ -29,9 +29,16 @@ def resumir_carga(registros, parametros, resolver, *, hoy):
                 registros = registros.filter(fecha_creacion__lt=timezone.make_aware(
                     datetime.combine(fechas['hasta'] + timedelta(days=1), time.min)))
         except (ValueError, OverflowError):
-            errores.append('El período del total de ODT está fuera de rango.')
+            errores.append('El período del análisis está fuera de rango.')
     if errores:
         registros = registros.none()
+    return registros, {'desde':desde, 'hasta':hasta, 'errores':errores}
+
+
+def resumir_carga(registros, parametros, resolver, *, hoy, periodo=None):
+    if periodo is None:
+        registros, periodo = filtrar_periodo_creacion(registros, parametros, hoy=hoy)
+    desde, hasta, errores = periodo['desde'], periodo['hasta'], list(periodo['errores'])
     registros = registros.order_by('numero').annotate(tiene_correccion=Case(
         When(Q(seguimiento_correccion__isnull=False) | Q(servicio_editado__isnull=False)
              | Q(valor_pago_editado__isnull=False), then=Value(True)),

@@ -2,7 +2,9 @@ from decimal import Decimal
 from unittest.mock import patch
 from django.contrib.auth.models import User
 from django.template import engines
+from django.http import QueryDict
 from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from .models import ODT, CorreccionODT
 from .estadisticas_correcciones import estadisticas_correcciones
 
@@ -12,7 +14,7 @@ class DetalleCorreccionesTests(TestCase):
         self.user = User.objects.create_superuser("admin", password="test")
         self.factory = RequestFactory()
         for n, monto, servicio, estado in ((1, True, False, "PENDIENTE"), (2, False, True, "EN_PROCESO"), (3, True, True, "ACTUALIZADA")):
-            odt = ODT.objects.create(numero=n, servicio="Original", valor_pago_tecnico=100, contratista="Prueba")
+            odt = ODT.objects.create(numero=n, fecha_creacion=timezone.now(), servicio="Original", valor_pago_tecnico=100, contratista="Prueba")
             CorreccionODT.objects.create(odt=odt, corrige_monto=monto, corrige_servicio=servicio,
                                         monto_objetivo=80, servicio_objetivo="Nuevo", estado=estado)
 
@@ -52,10 +54,13 @@ class DetalleCorreccionesTests(TestCase):
 
     def test_paginacion_conserva_filtros(self):
         for n in range(4,56):
-            odt = ODT.objects.create(numero=n)
+            odt = ODT.objects.create(numero=n, fecha_creacion=timezone.now())
             CorreccionODT.objects.create(odt=odt, corrige_monto=True)
         context = self.consultar(coordinador="rsilva", page="2")
         self.assertEqual(context["pagina_detalle"].number, 2)
         self.assertEqual(len(context["pagina_detalle"]), 4)
         self.assertEqual(context["pagina_detalle"].paginator.count, context["total"]["cantidad"])
-        self.assertEqual(context["query_detalle"], "coordinador=rsilva")
+        parametros = QueryDict(context["query_detalle"])
+        self.assertEqual(parametros["coordinador"], "rsilva")
+        self.assertEqual(parametros["carga_desde"], timezone.localdate().replace(month=1, day=1).isoformat())
+        self.assertEqual(parametros["carga_hasta"], timezone.localdate().isoformat())

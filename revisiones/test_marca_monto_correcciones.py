@@ -124,7 +124,7 @@ class MarcaMontoCorreccionesTests(TestCase):
         self.sincronizar(25000)
         item.refresh_from_db()
         self.assertEqual(item.monto_facturado,700)
-        request=RequestFactory().get("/"); request.user=self.admin
+        request=RequestFactory().get("/", {"carga_desde":"", "carga_hasta":""}); request.user=self.admin
         with patch("revisiones.estadisticas_correcciones.coordinadores_en_peticion",return_value={100:{"usuario":"rsilva","nombre":"Romina"}}), patch("revisiones.estadisticas_correcciones.render",side_effect=lambda r,t,c:c):
             contexto=estadisticas_correcciones(request)
         self.assertEqual(contexto["total"]["corregido"],25000)
