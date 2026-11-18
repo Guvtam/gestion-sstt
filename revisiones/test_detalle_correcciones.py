@@ -14,7 +14,7 @@ class DetalleCorreccionesTests(TestCase):
         self.user = User.objects.create_superuser("admin", password="test")
         self.factory = RequestFactory()
         for n, monto, servicio, estado in ((1, True, False, "PENDIENTE"), (2, False, True, "EN_PROCESO"), (3, True, True, "ACTUALIZADA")):
-            odt = ODT.objects.create(numero=n, fecha_creacion=timezone.now(), servicio="Original", valor_pago_tecnico=100, contratista="Prueba")
+            odt = ODT.objects.create(numero=n, fecha_finalizacion=timezone.now(), servicio="Original", valor_pago_tecnico=100, contratista="Prueba")
             CorreccionODT.objects.create(odt=odt, corrige_monto=monto, corrige_servicio=servicio,
                                         monto_objetivo=80, servicio_objetivo="Nuevo", estado=estado)
 
@@ -54,7 +54,7 @@ class DetalleCorreccionesTests(TestCase):
 
     def test_paginacion_conserva_filtros(self):
         for n in range(4,56):
-            odt = ODT.objects.create(numero=n, fecha_creacion=timezone.now())
+            odt = ODT.objects.create(numero=n, fecha_finalizacion=timezone.now())
             CorreccionODT.objects.create(odt=odt, corrige_monto=True)
         context = self.consultar(coordinador="rsilva", page="2")
         self.assertEqual(context["pagina_detalle"].number, 2)

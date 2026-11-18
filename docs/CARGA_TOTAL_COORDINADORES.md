@@ -1,11 +1,11 @@
 # Total de ODT por coordinador
 
 En **Análisis por coordinador**, el nuevo apartado cuenta todas las ODT por
-**fecha de creación**, incluidas las que no tienen correcciones y todos los estados
+**fecha de finalización**, incluidas las que no tienen correcciones y todos los estados
 SoftGuard. Por defecto consulta desde el 1 de enero del año actual hasta hoy.
 Las fechas son inclusivas en la zona horaria del sistema. Se pueden cambiar o
 vaciar ambas para consultar todo el histórico; con fechas activas no se incluyen
-ODT cuya fecha de creación falte. Un período inválido se informa y no amplía resultados.
+ODT cuya fecha de finalización falte. Un período inválido se informa y no amplía resultados.
 
 El gráfico **Total de ODT por coordinador** reemplaza el panel derecho
 **Tipos de corrección**. Se retira la tabla adicional de carga. El gráfico izquierdo
@@ -22,7 +22,7 @@ visitas/acciones realizadas. Las ODT verificadas sin responsable se agrupan en
 **Sin coordinador identificado**. Una falla al verificar no se interpreta como ese
 grupo ni se presenta un total parcial: se informa **Total no disponible**.
 
-El período por **fecha de creación** y el coordinador afectan toda la pantalla:
+El período por **fecha de finalización** y el coordinador afectan toda la pantalla:
 indicadores, gráfico de correcciones, gráfico de total de ODT, resumen y detalle.
 Los filtros de tipo y estado de corrección solo afectan las modificaciones, para
 que la carga total siga incluyendo las ODT sin cambios. Se aplica un mismo rango
@@ -35,3 +35,6 @@ No modifica usuarios, permisos, ODT, correcciones, pagos ni facturas; tampoco
 requiere migraciones. Mantiene el acceso de la página. Actualizar código, publicar
 estáticos, copiarlos al directorio Nginx y reiniciar sstt-prueba después de integrar.
 Las pruebas usan una base aislada y origen simulado; no consultan SQL Server real.
+
+El período no utiliza fecha de creación ni fecha del evento de corrección. No se
+agrega un filtro de estado Finalizado: se usa la fecha de finalización registrada.

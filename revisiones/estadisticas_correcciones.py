@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.utils import timezone
 from .models import CorreccionODT, ODT
-from .consultas.carga_coordinadores import resumir_carga, filtrar_periodo_creacion
+from .consultas.carga_coordinadores import resumir_carga, filtrar_periodo_finalizacion
 from .dominio.conciliacion_correcciones import monto_seguimiento
 from .acceso_coordinadores import coordinadores_en_peticion
 
@@ -15,7 +15,7 @@ from .acceso_coordinadores import coordinadores_en_peticion
 def estadisticas_correcciones(request):
     """Estadísticas por ODT, no por evento histórico; incluye estados actualizados."""
     hoy = timezone.localdate()
-    odts_periodo, periodo = filtrar_periodo_creacion(ODT.objects.all(), request.GET, hoy=hoy)
+    odts_periodo, periodo = filtrar_periodo_finalizacion(ODT.objects.all(), request.GET, hoy=hoy)
     carga = resumir_carga(odts_periodo, request.GET,
         lambda numeros: coordinadores_en_peticion(request, numeros), hoy=hoy, periodo=periodo)
     qs = CorreccionODT.objects.filter(odt__in=odts_periodo).select_related('odt').order_by('odt__numero')
