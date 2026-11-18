@@ -3,7 +3,7 @@
 {% block titulo %}Análisis por coordinador · SSTT{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
-<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261118-carga">
+<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261118-grafico-carga">
 {% endblock %}
 {% block titulo_encabezado %}Análisis por coordinador{% endblock %}
 {% block subtitulo %}Carga total de ODT y seguimiento de correcciones por coordinador{% endblock %}
@@ -46,48 +46,6 @@
                 <a class="stats-btn" href="{% url 'estadisticas_correcciones' %}">Limpiar</a>
             </div>
         </form>
-    </section>
-
-    <section class="stats-panel stats-summary" id="carga-coordinadores" aria-label="Carga total por coordinador">
-        <div class="stats-section-heading">
-            <div><h2>Total de ODT por coordinador</h2>
-                <p>Todas las ODT creadas en el período, con y sin modificaciones, en cualquier estado.</p></div>
-            <span class="stats-count">{% if carga.disponible %}{{ carga.cantidad }} ODT{% else %}Total no disponible{% endif %}</span>
-        </div>
-        <form method="get" class="stats-filter-grid">
-            <input type="hidden" name="coordinador" value="{{ coordinador_filtro }}">
-            <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
-            <input type="hidden" name="estado" value="{{ estado_filtro }}">
-            <div class="stats-field"><label for="cargaDesde">Creación desde</label>
-                <input id="cargaDesde" type="date" name="carga_desde" value="{{ carga.desde }}"></div>
-            <div class="stats-field"><label for="cargaHasta">Creación hasta</label>
-                <input id="cargaHasta" type="date" name="carga_hasta" value="{{ carga.hasta }}"></div>
-            <div class="stats-filter-actions"><button class="stats-btn stats-btn-primary" type="submit">Consultar total</button></div>
-        </form>
-        {% for error in carga.errores %}<p class="stats-footnote" role="alert">{{ error }}</p>{% endfor %}
-        {% if carga.disponible %}
-        <div class="stats-desplazable" data-tabla-desplazable>
-          <div class="stats-scroll-superior" data-scroll-superior tabindex="0" role="region" aria-label="Desplazamiento horizontal superior de carga por coordinador"><div></div></div>
-          <div class="stats-table-wrap" data-scroll-tabla tabindex="0" role="region" aria-label="Tabla de total de ODT por coordinador">
-            <table>
-              <thead><tr><th>Coordinador</th><th class="num">Total ODT</th>
-                {% for estado in carga.estados %}<th class="num">{{ estado }}</th>{% endfor %}
-                <th class="num">Con correcciones</th></tr></thead>
-              <tbody>{% for f in carga.filas %}<tr>
-                <td><a href="?coordinador={{ f.usuario|urlencode }}&amp;tipo={{ tipo_filtro|urlencode }}&amp;estado={{ estado_filtro|urlencode }}&amp;carga_desde={{ carga.desde|urlencode }}&amp;carga_hasta={{ carga.hasta|urlencode }}#carga-coordinadores"><strong>{{ f.nombre }}</strong></a></td>
-                <td class="num">{{ f.cantidad }}</td>
-                {% for cantidad in f.cantidades_estados %}<td class="num">{{ cantidad }}</td>{% endfor %}
-                <td class="num">{{ f.con_correcciones }}</td>
-              </tr>{% empty %}<tr><td colspan="{{ carga.estados|length|add:3 }}" class="stats-empty">No hay ODT creadas para el período y coordinador seleccionados.</td></tr>{% endfor %}</tbody>
-              <tfoot><tr><th>Total</th><th class="num">{{ carga.cantidad }}</th>
-                {% for cantidad in carga.totales_estados %}<th class="num">{{ cantidad }}</th>{% endfor %}
-                <th class="num">{{ carga.con_correcciones }}</th></tr></tfoot>
-            </table>
-          </div>
-        </div>
-        {% endif %}
-        <p class="stats-footnote">Cada ODT cuenta una vez según su coordinador actual. Los estados corresponden a la última sincronización de SoftGuard. «Con correcciones» es parte del total, no se suma a él. El total mide carga asignada, no acciones realizadas ni cantidad de visitas.</p>
-        <p class="stats-footnote">Por defecto se consulta el año actual hasta hoy. Puedes cambiar el período o vaciar ambas fechas para consultar todo el histórico; con fechas activas se excluyen las ODT sin fecha de creación. Estos filtros de fecha solo afectan este apartado. Los filtros de tipo y estado de corrección solo afectan el análisis de modificaciones de abajo.</p>
     </section>
 
     <a class="stats-btn" href="#detalle-odt-modificadas">Ver las ODT modificadas</a>
@@ -144,28 +102,36 @@
             <p class="stats-footnote">La escala de las barras corresponde al total de ODT filtradas.</p>
         </article>
 
-        <article class="stats-panel stats-chart-side">
+        <article class="stats-panel stats-chart-side" id="carga-coordinadores">
             <div class="stats-section-heading">
-                <div>
-                    <h2>Tipos de corrección</h2>
-                    <p>Distribución de las ODT modificadas</p>
-                </div>
+                <div><h2>Total de ODT por coordinador</h2>
+                    <p>ODT creadas en el período, con y sin correcciones.</p></div>
+                <span class="stats-count">{% if carga.disponible %}{{ carga.cantidad }} ODT{% else %}Total no disponible{% endif %}</span>
             </div>
-            <div class="stats-type-list">
+            <form method="get" class="stats-carga-filtros">
+                <input type="hidden" name="coordinador" value="{{ coordinador_filtro }}">
+                <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
+                <input type="hidden" name="estado" value="{{ estado_filtro }}">
+                <div class="stats-field"><label for="cargaDesde">Creación desde</label>
+                    <input id="cargaDesde" type="date" name="carga_desde" value="{{ carga.desde }}"></div>
+                <div class="stats-field"><label for="cargaHasta">Creación hasta</label>
+                    <input id="cargaHasta" type="date" name="carga_hasta" value="{{ carga.hasta }}"></div>
+                <button class="stats-btn stats-btn-primary" type="submit">Consultar período</button>
+            </form>
+            {% for error in carga.errores %}<p class="stats-footnote" role="alert">{{ error }}</p>{% endfor %}
+            {% if carga.disponible %}
+            <div class="stats-carga-barras" role="region" aria-label="Total ODT por coordinador" tabindex="0">
+                {% for fila in carga.filas %}
                 <div class="stats-type-row">
-                    <div class="stats-type-label"><span>Solo monto</span><strong>{{ total.solo_monto }}</strong></div>
-                    <div class="stats-track"><div class="stats-fill stats-blue" style="width:{% if total.cantidad %}{% widthratio total.solo_monto total.cantidad 100 %}{% else %}0{% endif %}%"></div></div>
+                    <div class="stats-type-label"><span>{{ fila.nombre }}</span><strong>{{ fila.cantidad }} ODT</strong></div>
+                    <div class="stats-track" role="img" aria-label="{{ fila.nombre }}: {{ fila.cantidad }} ODT de {{ carga.cantidad }} en el período">
+                        <div class="stats-fill stats-blue" style="width:{% widthratio fila.cantidad carga.cantidad 100 %}%"></div>
+                    </div>
                 </div>
-                <div class="stats-type-row">
-                    <div class="stats-type-label"><span>Solo servicio</span><strong>{{ total.solo_servicio }}</strong></div>
-                    <div class="stats-track"><div class="stats-fill stats-green" style="width:{% if total.cantidad %}{% widthratio total.solo_servicio total.cantidad 100 %}{% else %}0{% endif %}%"></div></div>
-                </div>
-                <div class="stats-type-row">
-                    <div class="stats-type-label"><span>Monto y servicio</span><strong>{{ total.ambos }}</strong></div>
-                    <div class="stats-track"><div class="stats-fill stats-amber" style="width:{% if total.cantidad %}{% widthratio total.ambos total.cantidad 100 %}{% else %}0{% endif %}%"></div></div>
-                </div>
+                {% empty %}<p class="stats-empty">No hay ODT para el período y coordinador seleccionados.</p>{% endfor %}
             </div>
-            <div class="stats-type-note">Una ODT con monto y servicio corregidos se contabiliza una sola vez en la categoría «Monto y servicio».</div>
+            {% endif %}
+            <p class="stats-footnote">Cada ODT cuenta una vez según su coordinador actual, en cualquier estado. Las barras muestran su proporción del total del período. Los filtros de tipo y estado de corrección solo afectan el gráfico de la izquierda.</p>
         </article>
     </section>
 
