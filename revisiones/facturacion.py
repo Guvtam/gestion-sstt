@@ -14,6 +14,7 @@ from .casos_uso.facturacion import (
     actualizar_requisicion as guardar_requisicion,
     confirmar, previsualizar,
 )
+from .dominio.filtros_montos import leer_montos
 from .consultas.facturacion import odts_facturables
 from .dominio.facturacion import (
     FacturacionInvalida, FacturacionNoEncontrada, SeleccionFacturacion, validar_periodo,
@@ -33,7 +34,9 @@ def _parametros(request):
 
 
 def _seleccion(desde, hasta, contratistas, servicios, datos):
+    montos, explicitos = leer_montos(datos)
     return SeleccionFacturacion(
+        montos=montos, montos_filtrados=explicitos,
         desde=desde, hasta=hasta, contratistas=tuple(contratistas), servicios=tuple(servicios),
         contratistas_filtrados=datos.get("contratistas_filtrados") == "1",
         tipo_cliente=datos.get("tipo_cliente", ""), estado=datos.get("estado", ""), q=datos.get("q", ""),

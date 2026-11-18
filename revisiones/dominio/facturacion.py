@@ -1,4 +1,5 @@
 """Período y selección de facturación independientes de HTTP."""
+from .filtros_montos import normalizar_montos
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
@@ -33,9 +34,12 @@ class SeleccionFacturacion:
     tipo_cliente: str = ""
     estado: str = ""
     q: str = ""
+    montos: tuple = ()
+    montos_filtrados: bool = False
 
     def __post_init__(self):
         validar_periodo(self.desde, self.hasta)
+        object.__setattr__(self, "montos", normalizar_montos(self.montos))
         for nombre in ("contratistas", "servicios"):
             valores = getattr(self, nombre)
             if isinstance(valores, (str, bytes)):
@@ -50,4 +54,5 @@ class SeleccionFacturacion:
             "contratistas": list(self.contratistas), "servicios": list(self.servicios),
             "contratistas_filtrados": bool(self.contratistas_filtrados),
             "tipo_cliente": self.tipo_cliente, "estado": self.estado, "q": self.q,
+            "montos": list(self.montos), "montos_filtrados": bool(self.montos_filtrados),
         }

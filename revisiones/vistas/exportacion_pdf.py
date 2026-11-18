@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
+from ..dominio.filtros_montos import leer_montos
 from ..facturacion_models import PeriodoFacturacion, FacturacionContratista
 from ..pdf.componentes import nombre_archivo_seguro
 from ..consultas.exportacion_pdf import datos_contratista_pdf, items_facturados, odts_aprobadas
@@ -182,8 +183,9 @@ def exportar_aprobados_pdf(request):
     # OBTENER ODT APROBADAS
     # --------------------------------------------------------
 
+    montos, montos_filtrados = leer_montos(request.GET)
     odts = odts_aprobadas(
-        contratista, desde, hasta, estado=request.GET.get("estado", "").strip(),
+        contratista, desde, hasta, montos=montos, montos_filtrados=montos_filtrados, estado=request.GET.get("estado", "").strip(),
         tipo_cliente=request.GET.get("tipo_cliente", "").strip(),
         servicios=request.GET.getlist("servicios"), q=request.GET.get("q", "").strip(),
     )
