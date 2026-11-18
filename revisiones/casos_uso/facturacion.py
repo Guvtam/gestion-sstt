@@ -9,6 +9,7 @@ from django.conf import settings
 from django.core import signing
 from django.db import IntegrityError, transaction
 
+from ..acceso_instalacion import exigir_factura_completa
 from ..consultas.facturacion import odts_facturables
 from ..dominio.facturacion import FacturacionInvalida, FacturacionNoEncontrada
 from ..dominio.servicios import servicio_efectivo
@@ -71,7 +72,7 @@ def _huella_y_resumen(filas):
 
 def previsualizar(usuario, seleccion):
     exigir_permiso_operativo(usuario, PERMISO)
-    pendientes = odts_facturables(seleccion).filter(item_facturacion__isnull=True)
+    pendientes = odts_facturables(seleccion, usuario=usuario).filter(item_facturacion__isnull=True)
     # Resumen y firma salen de una misma lectura, sin carreras entre dos consultas.
     huella, resumen, cantidad = _huella_y_resumen(
         pendientes.only(*CAMPOS).order_by("numero").iterator(chunk_size=500)
@@ -105,7 +106,7 @@ def confirmar(usuario, seleccion, *, requisiciones, confirmacion):
 
     try:
         with transaction.atomic():
-            odts = list(odts_facturables(seleccion).filter(item_facturacion__isnull=True)
+            odts = list(odts_facturables(seleccion, usuario=usuario).filter(item_facturacion__isnull=True)
                         .only(*CAMPOS).order_by("numero").select_for_update(of=("self",)))
             if not odts:
                 raise FacturacionInvalida("Ya no quedan ODT pendientes para facturar.")
@@ -151,6 +152,7 @@ def actualizar_requisicion(usuario, *, facturacion_id, numero):
             factura = FacturacionContratista.objects.select_for_update().get(pk=facturacion_id)
         except FacturacionContratista.DoesNotExist:
             raise FacturacionNoEncontrada("Facturación no encontrada.") from None
+        exigir_factura_completa(usuario, factura)
         if factura.numero_requisicion != numero:
             anterior = factura.numero_requisicion
             factura.numero_requisicion = numero

@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 
+from ..acceso_instalacion import es_odt_instalacion, exigir_odt_pago
 from ..coordinadores_softguard import (
     COORDINADORES_SOFTGUARD, catalogo_coordinadores, identificar_coordinador_softguard, puede_asignar_coordinador,
 )
@@ -37,10 +38,13 @@ def actualizar_estado_informe(usuario, *, numero, estado, resolver_responsable=N
     if estado not in validos:
         raise DatosODTInvalidos("Estado de informe inválido.")
     # Fuera de la transacción de escritura: la verificación puede consultar el origen.
+    alcance_instalacion = es_odt_instalacion(usuario, numero)
     exigir_alcance_coordinador(usuario, numero, resolver_responsable)
     with transaction.atomic():
         odts, revisiones = cargar_odts_editables([numero])
         odt = odts[0]
+        if alcance_instalacion:
+            exigir_odt_pago(usuario, odt)
         anterior = odt.estado_informe
         if anterior == estado:
             return ResultadoInforme(estado, False)

@@ -9,7 +9,7 @@ from .montos_bandeja import filtrar_montos
 from .pagos import condicion_aprobada
 
 
-def odts_facturables(seleccion):
+def odts_facturables(seleccion, usuario=None):
     inicio = timezone.make_aware(datetime.combine(seleccion.desde, time.min))
     fin = timezone.make_aware(datetime.combine(seleccion.hasta + timedelta(days=1), time.min))
     qs = ODT.objects.filter(
@@ -22,7 +22,14 @@ def odts_facturables(seleccion):
         qs = qs.filter(contratista__in=seleccion.contratistas)
     else:
         qs = qs.exclude(contratista="")
-    if seleccion.servicios:
+    from ..acceso_instalacion import pagos_instalacion
+    restringida = usuario is not None and pagos_instalacion(usuario)
+    if restringida and seleccion.servicios:
+        from ..acceso_instalacion import SERVICIO_INSTALACION
+        from ..dominio.servicios import normalizar_servicio
+        if any(normalizar_servicio(s) != SERVICIO_INSTALACION for s in seleccion.servicios):
+            return qs.none()
+    if seleccion.servicios and not restringida:
         qs = qs.filter(
             Q(servicio_editado__isnull=True, servicio__in=seleccion.servicios)
             | Q(servicio_editado__in=seleccion.servicios)
@@ -39,4 +46,7 @@ def odts_facturables(seleccion):
         if q.isascii() and q.isdigit() and len(q) <= 10:
             condicion |= Q(numero=int(q))
         qs = qs.filter(condicion)
+    from ..acceso_instalacion import limitar_pagos
+    if usuario is not None:
+        qs = limitar_pagos(usuario, qs)
     return filtrar_montos(qs, seleccion.montos, seleccion.montos_filtrados).order_by("contratista", "numero")

@@ -37,6 +37,11 @@ def resumen_costos_periodo(periodo):
 @require_GET
 def historial_facturacion(request):
 
+    from .acceso_instalacion import pagos_instalacion
+    if pagos_instalacion(request.user):
+        from .vistas.facturacion_instalacion import historial_instalacion
+        return historial_instalacion(request)
+
     buscar_odt = request.GET.get("buscar_odt", "").strip()
     buscar_requisicion = request.GET.get("buscar_requisicion", "").strip()
     busqueda_activa = bool(buscar_odt or buscar_requisicion)
@@ -232,6 +237,10 @@ def historial_facturacion(request):
 @require_POST
 def eliminar_periodo_facturacion(request, periodo_id):
 
+    from .acceso_instalacion import pagos_instalacion
+    if pagos_instalacion(request.user):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("No puedes eliminar períodos compartidos.")
     motivo = request.POST.get("motivo", "").strip()
     confirmacion = request.POST.get("confirmacion", "").strip()
 

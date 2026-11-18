@@ -16,6 +16,7 @@ from ..acceso_coordinadores import (
 from ..coordinadores_softguard import catalogo_coordinadores, puede_asignar_coordinador
 from ..dominio.pagos import OPCIONES_BANDEJA
 from ..dominio.servicios import SERVICIOS_PRINCIPALES
+from ..acceso_instalacion import pagos_instalacion, limitar_instalacion, SERVICIO_INSTALACION, PERMISO_INSTALACION
 from ..models import ODT
 from ..consultas.catalogos_bandeja import servicios_disponibles, estados_disponibles, filtrar_opciones_ajax
 from ..consultas.filas_bandeja import paginar_filas, cargar_complementos
@@ -30,10 +31,10 @@ from ..consultas.indicadores_bandeja import indicador, indicadores_financieros, 
 
 @login_required
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
-def bandeja(request, por_creacion=False):
+def bandeja(request, por_creacion=False, por_instalacion=False):
     campo_fecha = "fecha_creacion" if por_creacion else "fecha_finalizacion"
     inicio_bandeja = tiempo.perf_counter()
-    es_coordinador = es_coordinador_sstt(request.user)
+    es_coordinador = es_coordinador_sstt(request.user) and not por_instalacion
     coordinador_sesion = datos_coordinador(request.user) if es_coordinador else None
 
     seleccion = leer_seleccion(
@@ -43,13 +44,20 @@ def bandeja(request, por_creacion=False):
     servicios_seleccionados = list(seleccion.servicios)
     contratistas_seleccionados = list(seleccion.contratistas)
 
-    contratistas_disponibles = ODT.objects.all()
+    if por_instalacion:
+        from django.core.exceptions import PermissionDenied
+        if not request.user.has_perm(PERMISO_INSTALACION):
+            raise PermissionDenied
+        servicios_seleccionados = [SERVICIO_INSTALACION]
+    base = limitar_instalacion(ODT.objects.all()) if por_instalacion else ODT.objects.all()
+    contratistas_disponibles = base
     contratistas_disponibles = filtrar_disponibles(
         contratistas_disponibles, filtros=filtros,
-        servicios_seleccionados=servicios_seleccionados, campo_fecha=campo_fecha,
+        servicios_seleccionados=[] if por_instalacion else servicios_seleccionados, campo_fecha=campo_fecha,
     )
 
-    contratistas_disponibles = limitar_odts_coordinador(request, contratistas_disponibles)
+    if not por_instalacion:
+        contratistas_disponibles = limitar_odts_coordinador(request, contratistas_disponibles)
 
     contratistas_disponibles = opciones_contratistas(
         contratistas_disponibles, incluir_sin_tecnico=por_creacion
@@ -65,7 +73,7 @@ def bandeja(request, por_creacion=False):
 
     from ..indicadores_odt import con_indicadores_odt
     registros = con_indicadores_odt(
-        ODT.objects.select_related("revision", "seguimiento_correccion")
+        base.select_related("revision", "seguimiento_correccion")
     )
 
     # ==================================================
@@ -73,7 +81,7 @@ def bandeja(request, por_creacion=False):
     # ==================================================
 
     registros = filtrar_tabla(
-        registros, filtros=filtros, servicios_seleccionados=servicios_seleccionados,
+        registros, filtros=filtros, servicios_seleccionados=[] if por_instalacion else servicios_seleccionados,
         contratistas_seleccionados=contratistas_seleccionados, campo_fecha=campo_fecha,
         por_creacion=por_creacion, numero_exacto=seleccion.numero_exacto,
         avisar_fecha=lambda valor: messages.warning(request, f"Fecha inválida: {valor}"),
@@ -163,6 +171,8 @@ def bandeja(request, por_creacion=False):
     parametros.setlist("contratista", contratistas_seleccionados)
 
     # Conservar los filtros efectivos en la paginación.
+    if por_instalacion:
+        parametros.setlist("servicios", [SERVICIO_INSTALACION])
     parametros["estado"] = filtros["estado"]
     parametros["fecha_desde"] = filtros["fecha_desde"]
     parametros["fecha_hasta"] = filtros["fecha_hasta"]
@@ -179,7 +189,7 @@ def bandeja(request, por_creacion=False):
     # CATÁLOGO DE SERVICIOS
     # ==================================================
 
-    servicios = servicios_disponibles()
+    servicios = [SERVICIO_INSTALACION] if por_instalacion else servicios_disponibles()
 
     print(
         f"[SSTT] Catálogo de servicios: "
@@ -198,7 +208,7 @@ def bandeja(request, por_creacion=False):
 
     # Identificar usuarios con rol de coordinador.
     # El grupo debe existir en Django Admin.
-    es_coordinador = es_coordinador_sstt(request.user)
+    es_coordinador = es_coordinador_sstt(request.user) and not por_instalacion
 
 
     # ==================================================
@@ -210,7 +220,8 @@ def bandeja(request, por_creacion=False):
         "revisiones/bandeja.html",
         {
             "por_creacion": por_creacion,
-            "bandeja_url": "bandeja_creacion" if por_creacion else "bandeja",
+            "por_instalacion": por_instalacion,
+            "bandeja_url": "pagos_instalacion" if por_instalacion else ("bandeja_creacion" if por_creacion else "bandeja"),
             "registros": pagina.object_list,
             "pagina": pagina,
             "page_obj": pagina,
@@ -222,10 +233,10 @@ def bandeja(request, por_creacion=False):
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
             "destacar_monto_cero": (not es_coordinador and request.user.has_perm("revisiones.revisar_pago_sstt")
-                                     and (request.user.is_superuser or request.user.groups.filter(name="Supervisor").exists())),
+                                     and (por_instalacion or request.user.is_superuser or request.user.groups.filter(name="Supervisor").exists())),
             "coordinador_sesion": coordinador_sesion,
             "coordinadores_asignables": list(catalogo.values()),
-            "servicios_principales": SERVICIOS_PRINCIPALES,
+            "servicios_principales": [SERVICIO_INSTALACION] if por_instalacion else SERVICIOS_PRINCIPALES,
             
 
             "kpi_odt_modificadas": operativos["kpi_odt_modificadas"],
@@ -278,6 +289,8 @@ def contratistas_disponibles_ajax(request):
     fecha_hasta = request.GET.get("fecha_hasta", "")
     estado = request.GET.get("estado", "")
     servicios = request.GET.getlist("servicios")
+    if request.GET.get("alcance") == "instalacion" and pagos_instalacion(request.user):
+        servicios = []
 
     registros = filtrar_opciones_ajax(
         ODT.objects.all(), campo_fecha=campo_fecha,
@@ -285,7 +298,10 @@ def contratistas_disponibles_ajax(request):
         estado=estado, servicios=servicios,
     )
 
-    registros = limitar_odts_coordinador(request, registros)
+    if request.GET.get("alcance") == "instalacion" and pagos_instalacion(request.user):
+        registros = limitar_instalacion(registros)
+    else:
+        registros = limitar_odts_coordinador(request, registros)
 
     contratistas = opciones_contratistas(
         registros, incluir_sin_tecnico=(campo_fecha == "fecha_creacion")
@@ -295,3 +311,9 @@ def contratistas_disponibles_ajax(request):
         "contratistas": contratistas
     })
 
+
+
+@login_required
+@permission_required(PERMISO_INSTALACION, raise_exception=True)
+def pagos_nueva_instalacion(request):
+    return bandeja(request, por_instalacion=True)

@@ -6,6 +6,7 @@ from django.utils.deprecation import MiddlewareMixin
 from .coordinadores_softguard import (
     COORDINADORES_SOFTGUARD, catalogo_coordinadores, CoordinadoresNoDisponibles, identificar_coordinadores_odt,
 )
+from .acceso_instalacion import pagos_instalacion, es_odt_instalacion
 from .dominio.validacion_odt import numero_odt
 from .dominio.errores import DatosODTInvalidos
 
@@ -83,12 +84,15 @@ def es_coordinador_sstt(user):
     if not user.is_authenticated or user.is_superuser:
         return False
     if user.get_username().strip().casefold() in ("admin", "jiturriaga"):
-        return False
+        return pagos_instalacion(user)
     return (_vinculo_coordinador(user) is not None or datos_coordinador(user) is not None or _identidad_restringida(user) or user.groups.filter(
-        name__in=("Coordinador", "Coordinadores SSTT")).exists())
+        name__in=("Coordinador", "Coordinadores SSTT")).exists() or pagos_instalacion(user))
 
 
 def coordinador_visible(request, numero):
+    numero = numero_odt(numero)
+    if es_odt_instalacion(request.user, numero):
+        return True
     datos = datos_coordinador(request.user)
     if datos is None:
         raise PermissionDenied("El usuario del coordinador no está vinculado a SoftGuard.")
@@ -120,6 +124,11 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         nombre = request.resolver_match.url_name
+        if pagos_instalacion(request.user) and nombre in (
+                "pagos_instalacion", "facturacion_previsualizar", "historial_facturacion",
+                "detalle_facturacion", "actualizar_requisicion", "historial_requisiciones",
+                "exportar_aprobados_pdf", "guardar_fila", "actualizar_revision", "acciones"):
+            return None
         if not es_coordinador_sstt(request.user):
             if (nombre == "bandeja" and request.method in ("GET", "HEAD")
                     and request.user.is_authenticated and request.user.is_active
@@ -131,6 +140,14 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
             return None
         if nombre in ("bandeja", "contratistas_disponibles_ajax", "calendario_servicios"):
             return None
+        if (pagos_instalacion(request.user) and nombre in
+                ("historial_odt", "actualizar_informe", "cambiar_estado_correccion")):
+            try:
+                numero = numero_odt(view_kwargs.get("numero") or request.POST.get("numero", ""))
+            except (DatosODTInvalidos, TypeError, ValueError):
+                return JsonResponse({"error": "Número de ODT inválido."}, status=400)
+            if es_odt_instalacion(request.user, numero):
+                return None
         if datos_coordinador(request.user) is None:
             raise PermissionDenied("El usuario no tiene un responsable activo para operar sobre ODT.")
         # Operaciones internas de la bandeja, no páginas adicionales.

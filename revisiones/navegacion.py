@@ -4,6 +4,7 @@ from urllib.parse import urlencode, urlsplit
 from django.urls import Resolver404, resolve, reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 
+from .acceso_instalacion import pagos_instalacion
 from .acceso_coordinadores import es_coordinador_sstt
 
 
@@ -12,6 +13,7 @@ def agrupar_opciones(opciones):
     secciones = []
     for nombre, titulo, destinos in (
         ("bandeja", "", ("bandeja",)),
+        ("pagos_instalacion", "", ("pagos_instalacion",)),
         ("bandeja_creacion", "", ("bandeja_creacion",)),
         ("odt_modificadas", "", ("odt_modificadas",)),
         ("visitas", "Visitas", ("calendario_servicios", "mantenimientos_preventivos")),
@@ -35,7 +37,7 @@ def datos_menu(request, contexto):
         return {}
     bandeja = usuario.has_perm("revisiones.ver_bandeja_sstt")
     coordinador = contexto.get("es_coordinador")
-    if coordinador is None:
+    if coordinador is None or pagos_instalacion(usuario):
         coordinador = es_coordinador_sstt(usuario)
     opciones = []
 
@@ -45,13 +47,14 @@ def datos_menu(request, contexto):
                              "activos": (nombre, *activos)})
 
     agregar("bandeja", "Gestión de pagos", bandeja, ("detalle",))
+    agregar("pagos_instalacion", "Pagos nueva instalación", pagos_instalacion(usuario))
     agregar("calendario_servicios", "Calendario de visitas", bandeja or usuario.has_perm("revisiones.ver_calendario_sstt"))
     agregar("analisis_odt", "Análisis de ODT", bandeja and not coordinador and usuario.has_perm("revisiones.revisar_pago_sstt"))
     agregar("bandeja_creacion", "ODT por creación", bandeja and not coordinador)
     agregar("odt_modificadas", "Seguimiento de cambios", bandeja and not coordinador)
     agregar("mantenimientos_preventivos", "Mantenimientos preventivos", bandeja and not coordinador)
     agregar("estadisticas_correcciones", "Análisis por coordinador", bandeja and not coordinador)
-    agregar("historial_facturacion", "Facturación", not coordinador and usuario.has_perm("revisiones.exportar_pagos_sstt"),
+    agregar("historial_facturacion", "Facturación", (not coordinador or pagos_instalacion(usuario)) and usuario.has_perm("revisiones.exportar_pagos_sstt"),
             ("facturacion_previsualizar", "detalle_facturacion", "historial_requisiciones"))
     agregar("contratistas:listado", "Administrar contratistas", not coordinador and usuario.has_perm("contratistas.gestionar_contratistas_sstt"),
             ("contratistas:nuevo", "contratistas:editar", "contratistas:equivalencias", "contratistas:vinculacion_softguard"))

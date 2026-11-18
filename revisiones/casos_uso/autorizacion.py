@@ -1,5 +1,6 @@
 """Autorización compartida de permisos y alcance por coordinador."""
 from django.core.exceptions import PermissionDenied
+from ..acceso_instalacion import pagos_instalacion, es_odt_instalacion
 
 from ..acceso_coordinadores import datos_coordinador, es_coordinador_sstt
 from ..coordinadores_softguard import identificar_coordinadores_odt
@@ -13,6 +14,8 @@ def exigir_permiso(usuario, permiso):
 
 def exigir_alcance_coordinador(usuario, numero, resolver=None):
     if not es_coordinador_sstt(usuario):
+        return
+    if es_odt_instalacion(usuario, numero):
         return
     datos = datos_coordinador(usuario)
     if datos is None:
@@ -30,5 +33,7 @@ def exigir_alcance_coordinador(usuario, numero, resolver=None):
 
 def exigir_permiso_operativo(usuario, permiso):
     exigir_permiso(usuario, permiso)
-    if es_coordinador_sstt(usuario):
+    adicional = pagos_instalacion(usuario) and permiso in (
+        "revisiones.editar_odt_sstt", "revisiones.revisar_pago_sstt", "revisiones.exportar_pagos_sstt")
+    if es_coordinador_sstt(usuario) and not adicional:
         raise PermissionDenied("No tienes permiso para realizar esta operación.")
