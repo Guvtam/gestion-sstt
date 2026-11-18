@@ -20,7 +20,7 @@ class CargaCoordinadoresTests(TestCase):
             (4,'Marcha Blanca',datetime(2026,10,1)),(5,'',None),
             (6,'Finalizado',datetime(2025,12,31,23,59,59)),(7,'Asignado',datetime(2026,11,19))):
             ODT.objects.create(numero=n,estado_softguard=estado,contratista='Prueba',
-                fecha_creacion=timezone.make_aware(fecha) if fecha else None)
+                fecha_finalizacion=timezone.make_aware(fecha) if fecha else None)
         CorreccionODT.objects.create(odt=ODT.objects.get(numero=2),corrige_monto=True,monto_objetivo=2)
         ODT.objects.filter(numero=3).update(servicio_editado='Editado')
         self.datos={n:{'identificado':True,'usuario':'a' if n<3 else 'b',
@@ -92,7 +92,7 @@ class CargaCoordinadoresTests(TestCase):
         self.assertFalse(carga['disponible'])
 
     def test_lotes_acotados_y_conteo_unico(self):
-        ODT.objects.bulk_create([ODT(numero=n,fecha_creacion=timezone.make_aware(datetime(2026,6,1))) for n in range(10,511)])
+        ODT.objects.bulk_create([ODT(numero=n,fecha_finalizacion=timezone.make_aware(datetime(2026,6,1))) for n in range(10,511)])
         tamanos=[]
         def resolver(ns):
             tamanos.append(len(ns))
@@ -116,7 +116,7 @@ class CargaCoordinadoresTests(TestCase):
         contexto,req=self.contexto(carga_desde='2026-01-01',carga_hasta='2026-11-18')
         from django.template.loader import render_to_string
         html=render_to_string('revisiones/estadisticas_correcciones.html',contexto,request=req)
-        for texto in ('Total de ODT por coordinador','Creación desde','Coordinador A: 2 ODT de 4 en el período',
+        for texto in ('Total de ODT por coordinador','Finalización desde','Coordinador A: 2 ODT de 4 en el período',
                       'Sin coordinador identificado','data-scroll-superior','Detalle de ODT modificadas'):
             self.assertIn(texto,html)
         self.assertIn('carga_desde=2026-01-01&amp;carga_hasta=2026-11-18#detalle-odt-modificadas',html)
@@ -155,7 +155,7 @@ class CargaCoordinadoresTests(TestCase):
         self.assertNotIn('Tabla de total de ODT por coordinador',html)
 
     def test_error_despues_de_un_lote_descarta_resultado_incompleto(self):
-        ODT.objects.bulk_create([ODT(numero=n,fecha_creacion=timezone.make_aware(datetime(2026,6,1))) for n in range(10,511)])
+        ODT.objects.bulk_create([ODT(numero=n,fecha_finalizacion=timezone.make_aware(datetime(2026,6,1))) for n in range(10,511)])
         llamadas=[]
         def resolver(ns):
             llamadas.append(len(ns))
@@ -204,3 +204,32 @@ class CargaCoordinadoresTests(TestCase):
         self.assertEqual(parametros['carga_desde'],'2026-11-18')
         self.assertEqual(parametros['carga_hasta'],'2026-11-18')
         self.assertEqual(parametros['tipo'],'MONTO')
+
+    def test_finalizacion_prevalece_sobre_creacion_en_todos_los_resultados(self):
+        dentro=timezone.make_aware(datetime(2026,11,18,12))
+        fuera=timezone.make_aware(datetime(2025,12,31,12))
+        ODT.objects.filter(numero=1).update(fecha_creacion=fuera,fecha_finalizacion=dentro)
+        ODT.objects.filter(numero=2).update(fecha_creacion=dentro,fecha_finalizacion=fuera)
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=1),corrige_monto=True,monto_objetivo=20)
+        contexto,req=self.contexto(carga_desde='2026-11-18',carga_hasta='2026-11-18')
+        self.assertEqual(contexto['carga']['cantidad'],1)
+        self.assertEqual(contexto['total']['cantidad'],1)
+        self.assertEqual(contexto['total']['corregido'],20)
+        self.assertEqual([o['numero'] for o in contexto['pagina_detalle']],[1])
+        self.assertEqual(contexto['filas'][0]['cantidad'],1)
+        from django.template.loader import render_to_string
+        html=render_to_string('revisiones/estadisticas_correcciones.html',contexto,request=req)
+        self.assertIn('Finalización desde',html)
+        self.assertIn('Finalización hasta',html)
+        self.assertNotIn('Creación desde',html)
+        self.assertNotIn('Creación hasta',html)
+
+    def test_sin_finalizacion_no_se_incluye_por_tener_fecha_creacion(self):
+        ODT.objects.filter(numero=1).update(fecha_creacion=timezone.make_aware(datetime(2026,11,18)),fecha_finalizacion=None)
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=1),corrige_monto=True,monto_objetivo=20)
+        contexto,_=self.contexto(carga_desde='2026-01-01',carga_hasta='2026-11-18')
+        self.assertEqual(contexto['carga']['cantidad'],3)
+        self.assertEqual([o['numero'] for o in contexto['pagina_detalle']],[2])
+        contexto,_=self.contexto(carga_desde='',carga_hasta='')
+        self.assertEqual(contexto['carga']['cantidad'],7)
+        self.assertEqual(contexto['total']['cantidad'],2)

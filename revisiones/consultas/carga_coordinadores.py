@@ -1,4 +1,4 @@
-"""Carga total por fecha de creación; independiente de los filtros de correcciones."""
+"""Carga total por fecha de finalización; independiente de los filtros de correcciones."""
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 
@@ -7,7 +7,7 @@ from django.utils import timezone
 from ..coordinadores_softguard import CoordinadoresNoDisponibles
 
 
-def filtrar_periodo_creacion(registros, parametros, *, hoy):
+def filtrar_periodo_finalizacion(registros, parametros, *, hoy):
     desde = parametros.get('carga_desde', hoy.replace(month=1, day=1).isoformat()).strip()
     hasta = parametros.get('carga_hasta', hoy.isoformat()).strip()
     fechas = {}
@@ -23,10 +23,10 @@ def filtrar_periodo_creacion(registros, parametros, *, hoy):
     if not errores:
         try:
             if 'desde' in fechas:
-                registros = registros.filter(fecha_creacion__gte=timezone.make_aware(
+                registros = registros.filter(fecha_finalizacion__gte=timezone.make_aware(
                     datetime.combine(fechas['desde'], time.min)))
             if 'hasta' in fechas:
-                registros = registros.filter(fecha_creacion__lt=timezone.make_aware(
+                registros = registros.filter(fecha_finalizacion__lt=timezone.make_aware(
                     datetime.combine(fechas['hasta'] + timedelta(days=1), time.min)))
         except (ValueError, OverflowError):
             errores.append('El período del análisis está fuera de rango.')
@@ -37,7 +37,7 @@ def filtrar_periodo_creacion(registros, parametros, *, hoy):
 
 def resumir_carga(registros, parametros, resolver, *, hoy, periodo=None):
     if periodo is None:
-        registros, periodo = filtrar_periodo_creacion(registros, parametros, hoy=hoy)
+        registros, periodo = filtrar_periodo_finalizacion(registros, parametros, hoy=hoy)
     desde, hasta, errores = periodo['desde'], periodo['hasta'], list(periodo['errores'])
     registros = registros.order_by('numero').annotate(tiene_correccion=Case(
         When(Q(seguimiento_correccion__isnull=False) | Q(servicio_editado__isnull=False)

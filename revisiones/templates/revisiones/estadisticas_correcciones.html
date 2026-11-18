@@ -3,7 +3,7 @@
 {% block titulo %}Análisis por coordinador · SSTT{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
-<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261118-periodo-comun">
+<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261118-finalizacion">
 {% endblock %}
 {% block titulo_encabezado %}Análisis por coordinador{% endblock %}
 {% block subtitulo %}Carga total de ODT y seguimiento de correcciones por coordinador{% endblock %}
@@ -12,9 +12,9 @@
 <main class="stats-container stats-main">
     <section class="stats-panel stats-filtros" aria-label="Filtros de estadísticas">
         <form method="get" class="stats-filter-grid">
-            <div class="stats-field"><label for="cargaDesde">Creación desde</label>
+            <div class="stats-field"><label for="cargaDesde">Finalización desde</label>
                 <input id="cargaDesde" type="date" name="carga_desde" value="{{ carga.desde }}"></div>
-            <div class="stats-field"><label for="cargaHasta">Creación hasta</label>
+            <div class="stats-field"><label for="cargaHasta">Finalización hasta</label>
                 <input id="cargaHasta" type="date" name="carga_hasta" value="{{ carga.hasta }}"></div>
             <div class="stats-field">
                 <label for="coordinador">Coordinador</label>
@@ -48,7 +48,7 @@
                 <a class="stats-btn" href="{% url 'estadisticas_correcciones' %}">Limpiar</a>
             </div>
         </form>
-        <p class="stats-footnote">El período por fecha de creación se aplica a todos los indicadores, gráficos y tablas. Tipo y estado de corrección filtran solo las modificaciones. Vacía ambas fechas para consultar todo el histórico.</p>
+        <p class="stats-footnote">El período por fecha de finalización se aplica a todos los indicadores, gráficos y tablas. Tipo y estado de corrección filtran solo las modificaciones. Vacía ambas fechas para consultar todo el histórico.</p>
         {% for error in carga.errores %}<p class="stats-footnote" role="alert">{{ error }}</p>{% endfor %}
     </section>
 
@@ -109,7 +109,7 @@
         <article class="stats-panel stats-chart-side" id="carga-coordinadores">
             <div class="stats-section-heading">
                 <div><h2>Total de ODT por coordinador</h2>
-                    <p>ODT creadas en el período, con y sin correcciones.</p></div>
+                    <p>ODT según fecha de finalización, con y sin correcciones.</p></div>
                 <span class="stats-count">{% if carga.disponible %}{{ carga.cantidad }} ODT{% else %}Total no disponible{% endif %}</span>
             </div>
             {% if carga.disponible %}

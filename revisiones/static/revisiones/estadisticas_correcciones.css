@@ -21,7 +21,7 @@
 .stats-table-wrap table{min-width:1150px;width:100%}
 .stats-table-wrap:focus-visible,.stats-scroll-superior:focus-visible{outline:3px solid #1765ad;outline-offset:2px}
 
-/* Mismos campos para el período de creación y los filtros de estadísticas. */
+/* Mismos campos para el período de finalización y los filtros de estadísticas. */
 .stats-field input[type="date"]{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #c9d8e8;border-radius:6px;background:#fff;color:#173b61;font:inherit}
 .stats-carga-barras{display:grid;gap:18px;max-height:360px;overflow-y:auto;padding:2px 8px 2px 0}
 .stats-carga-barras .stats-type-label{gap:12px;align-items:flex-start}
