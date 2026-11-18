@@ -3,7 +3,9 @@ from decimal import Decimal
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render
 from django.core.paginator import Paginator
-from .models import CorreccionODT
+from django.utils import timezone
+from .models import CorreccionODT, ODT
+from .consultas.carga_coordinadores import resumir_carga
 from .dominio.conciliacion_correcciones import monto_seguimiento
 from .acceso_coordinadores import coordinadores_en_peticion
 
@@ -12,6 +14,8 @@ from .acceso_coordinadores import coordinadores_en_peticion
 @permission_required('revisiones.ver_bandeja_sstt', raise_exception=True)
 def estadisticas_correcciones(request):
     """Estadísticas por ODT, no por evento histórico; incluye estados actualizados."""
+    carga = resumir_carga(ODT.objects.all(), request.GET,
+        lambda numeros: coordinadores_en_peticion(request, numeros), hoy=timezone.localdate())
     qs = CorreccionODT.objects.select_related('odt').order_by('odt__numero')
     coordinador_filtro = request.GET.get('coordinador', '').strip()
     estado_filtro = request.GET.get('estado', '').strip()
@@ -82,11 +86,12 @@ def estadisticas_correcciones(request):
 
     filas = [{'usuario': k, 'nombre': nombres.get(k, k), **v} for k, v in grupos.items()]
     filas.sort(key=lambda x: (-x['cantidad'], x['nombre']))
-    opciones = sorted([{'usuario': k, 'nombre': v} for k, v in nombres.items()], key=lambda x: x['nombre'])
+    opciones = sorted([{'usuario': k, 'nombre': v} for k, v in {**carga['opciones'], **nombres}.items()], key=lambda x: x['nombre'])
     pagina_detalle = Paginator(detalle, 50).get_page(request.GET.get("page"))
     parametros = request.GET.copy()
     parametros.pop("page", None)
     return render(request, 'revisiones/estadisticas_correcciones.html', {
+        'carga': carga,
         'total': total, 'filas': filas, 'coordinadores': opciones,
         'coordinador_filtro': coordinador_filtro, 'estado_filtro': estado_filtro,
         'tipo_filtro': tipo_filtro,

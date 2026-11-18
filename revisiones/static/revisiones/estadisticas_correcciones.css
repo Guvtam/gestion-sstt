@@ -20,3 +20,7 @@
 .stats-scroll-superior[hidden]{display:none}.stats-scroll-superior>div{height:1px}
 .stats-table-wrap table{min-width:1150px;width:100%}
 .stats-table-wrap:focus-visible,.stats-scroll-superior:focus-visible{outline:3px solid #1765ad;outline-offset:2px}
+
+/* Mismos campos para el período de creación y los filtros de estadísticas. */
+.stats-field input[type="date"]{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #c9d8e8;border-radius:6px;background:#fff;color:#173b61;font:inherit}
+#carga-coordinadores .stats-filter-grid{margin-bottom:18px}
