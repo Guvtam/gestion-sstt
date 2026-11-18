@@ -56,7 +56,7 @@ def exportar_aprobados_pdf(request):
             ).values_list("pk", flat=True))
             if seleccion != permitidos:
                 return HttpResponseBadRequest("La selección no corresponde al período.")
-        items = items_facturados(periodo, seleccion)
+        items = items_facturados(periodo, seleccion, usuario=request.user)
 
         if not items:
             return HttpResponseBadRequest(
@@ -185,7 +185,7 @@ def exportar_aprobados_pdf(request):
 
     montos, montos_filtrados = leer_montos(request.GET)
     odts = odts_aprobadas(
-        contratista, desde, hasta, montos=montos, montos_filtrados=montos_filtrados, estado=request.GET.get("estado", "").strip(),
+        contratista, desde, hasta, usuario=request.user, montos=montos, montos_filtrados=montos_filtrados, estado=request.GET.get("estado", "").strip(),
         tipo_cliente=request.GET.get("tipo_cliente", "").strip(),
         servicios=request.GET.getlist("servicios"), q=request.GET.get("q", "").strip(),
     )

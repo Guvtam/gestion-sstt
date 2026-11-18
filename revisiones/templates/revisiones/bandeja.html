@@ -1,6 +1,6 @@
 {% extends "revisiones/base_operativa.html" %}
 {% load static formato_sstt %}
-{% block titulo %}{% if por_creacion %}ODT por creación | SSTT{% else %}Gestión de pagos SSTT{% endif %}{% endblock %}
+{% block titulo %}{% if por_instalacion %}Pagos nueva instalación | SSTT{% elif por_creacion %}ODT por creación | SSTT{% else %}Gestión de pagos SSTT{% endif %}{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
 <link
@@ -10,13 +10,13 @@
 {% endblock %}
 {% block atributos_body %}
   data-pagina-actual="{{ pagina.number }}"
-  data-puede-editar="{% if perms.revisiones.editar_odt_sstt %}1{% else %}0{% endif %}"
-  data-puede-revisar="{% if perms.revisiones.revisar_pago_sstt %}1{% else %}0{% endif %}"
-  data-guardar-url="{% if perms.revisiones.editar_odt_sstt %}{% url 'guardar_fila' %}{% endif %}"
-  data-revision-url="{% if perms.revisiones.revisar_pago_sstt %}{% url 'actualizar_revision' %}{% endif %}"
+  data-puede-editar="{% if perms.revisiones.editar_odt_sstt and not es_coordinador %}1{% else %}0{% endif %}"
+  data-puede-revisar="{% if perms.revisiones.revisar_pago_sstt and not es_coordinador %}1{% else %}0{% endif %}"
+  data-guardar-url="{% if perms.revisiones.editar_odt_sstt and not es_coordinador %}{% url 'guardar_fila' %}{% endif %}"
+  data-revision-url="{% if perms.revisiones.revisar_pago_sstt and not es_coordinador %}{% url 'actualizar_revision' %}{% endif %}"
   data-informe-url="{% url 'actualizar_informe' %}"
 {% endblock %}
-{% block titulo_encabezado %}{% if por_creacion %}ODT por fecha de creación{% else %}Gestión de pagos SSTT{% endif %}{% endblock %}
+{% block titulo_encabezado %}{% if por_instalacion %}Pagos · Mantenimiento nueva instalación{% elif por_creacion %}ODT por fecha de creación{% else %}Gestión de pagos SSTT{% endif %}{% endblock %}
 {% block subtitulo %}
           Bandeja de revisión y aprobación
           de órdenes de trabajo
@@ -138,7 +138,7 @@
     <small>Total ODT</small>
     <strong>{{ total.cantidad|default:0 }}</strong>
     <div class="hint">
-      Órdenes según los filtros aplicados
+      {% if por_instalacion %}Gestión de pagos · Mantenimiento nueva instalación (excluye Cruzverde){% else %}Órdenes según los filtros aplicados{% endif %}
     </div>
   </div>
 
@@ -184,6 +184,7 @@
       >
 
         <input type="hidden" name="contratistas_filtrados" value="1">
+        {% if por_instalacion %}<input type="hidden" name="alcance" value="instalacion">{% endif %}
         <!-- FECHAS -->
 
         <div class="field">
@@ -419,7 +420,7 @@
 
       </form>
 
-      {% if perms.revisiones.exportar_pagos_sstt and not por_creacion %}
+      {% if perms.revisiones.exportar_pagos_sstt and not es_coordinador and not por_creacion %}
         <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
 
           <form
@@ -458,7 +459,7 @@
         {{ total.cantidad }} ODT encontradas.
         Se muestran hasta 50 por página.
 
-        {% if perms.revisiones.editar_odt_sstt %}
+        {% if perms.revisiones.editar_odt_sstt and not es_coordinador %}
           Presiona Editar para modificar una ODT.
           Las celdas amarillas indican valores corregidos.
         {% else %}
@@ -515,7 +516,7 @@
               <th>Fecha finalización</th>
               <th>Último preventivo</th>
 
-              {% if perms.revisiones.revisar_pago_sstt %}
+              {% if perms.revisiones.revisar_pago_sstt and not es_coordinador %}
                 <th>Incidencias 90 días</th>
                 <th>SLA 48 hrs</th>
               {% endif %}
@@ -538,7 +539,7 @@
                 <!-- NÚMERO ODT -->
 
                 <td>
-                  {% if es_coordinador %}
+                  {% if es_coordinador or por_instalacion %}
                     {{ r.numero }}
                   {% else %}
                   <a href="{% url 'detalle' r.numero %}">
@@ -787,7 +788,7 @@
 
                 </td>
 
-                {% if perms.revisiones.revisar_pago_sstt %}
+                {% if perms.revisiones.revisar_pago_sstt and not es_coordinador %}
 
                   <!-- INCIDENCIAS -->
 
@@ -924,7 +925,7 @@
 
                   <select
                     class="row-select review-select"
-                    {% if not perms.revisiones.revisar_pago_sstt or r.esta_bloqueada %}disabled{% endif %}
+                    {% if not perms.revisiones.revisar_pago_sstt or es_coordinador or r.esta_bloqueada %}disabled{% endif %}
                     data-saved="{% if not r.revision or r.revision.estado == 'POR_REVISAR' %}APROBADA{% else %}{{ r.revision.estado }}{% endif %}"
                   >
 
@@ -1021,7 +1022,7 @@
 
                   <div class="row-actions">
 
-                    {% if perms.revisiones.editar_odt_sstt %}
+                    {% if perms.revisiones.editar_odt_sstt and not es_coordinador %}
 
                       
                       <button
@@ -1545,6 +1546,7 @@
         const solicitudActual = ++numeroSolicitud;
 
         const parametros = new URLSearchParams();
+        {% if por_instalacion %}parametros.set("alcance", "instalacion");{% endif %}
         {% if por_creacion %}parametros.set("campo_fecha", "creacion");{% endif %}
 
         const fechaDesde = formulario.querySelector(

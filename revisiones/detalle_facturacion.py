@@ -10,6 +10,7 @@ from .facturacion_models import (
     FacturacionContratista,
     FacturacionODT,
 )
+from .acceso_instalacion import limitar_pagos, pagos_instalacion
 from .cuentas_utils import normalizar_codigo_cuenta, cargar_catalogo_cuentas, tipo_cliente_cuenta
 
 
@@ -27,11 +28,14 @@ def detalle_facturacion(request, facturacion_id):
     )
 
     items = list(
-        FacturacionODT.objects
-        .filter(facturacion=facturacion)
+        limitar_pagos(request.user, FacturacionODT.objects.filter(facturacion=facturacion), historico=True)
         .select_related("odt")
         .order_by("odt__numero")
     )
+
+    if not items and pagos_instalacion(request.user):
+        from django.http import Http404
+        raise Http404("Facturación no encontrada.")
 
     catalogo = cargar_catalogo_cuentas(item.odt.cuenta_completa for item in items)
 

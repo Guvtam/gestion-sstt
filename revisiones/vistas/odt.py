@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404, render
+from ..acceso_instalacion import pagos_instalacion
+from ..casos_uso.autorizacion import exigir_alcance_coordinador
 from ..models import ODT, Revision
 from ..servicios_sql import consultar_historial_odt
 
@@ -11,6 +13,8 @@ from ..servicios_sql import consultar_historial_odt
 @login_required
 @permission_required("revisiones.ver_bandeja_sstt", raise_exception=True)
 def detalle(request, numero):
+    if pagos_instalacion(request.user):
+        exigir_alcance_coordinador(request.user, numero)
     odt = get_object_or_404(
         ODT.objects.select_related("revision"),
         numero=numero,
@@ -38,6 +42,8 @@ def historial_odt(request, numero):
     Historial de SoftGuard y auditoría local de correcciones SSTT.
     """
 
+    if pagos_instalacion(request.user):
+        exigir_alcance_coordinador(request.user, numero)
     odt = get_object_or_404(ODT, numero=numero)
 
     try:

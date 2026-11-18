@@ -5,6 +5,7 @@ from django.http import Http404
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
+from .acceso_instalacion import pagos_instalacion, exigir_factura_completa
 from .casos_uso.autorizacion import exigir_permiso_operativo
 from .facturacion_models import EventoRequisicion, FacturacionContratista
 
@@ -15,6 +16,10 @@ from .facturacion_models import EventoRequisicion, FacturacionContratista
 def historial_requisiciones(request, facturacion_id):
     exigir_permiso_operativo(request.user, "revisiones.exportar_pagos_sstt")
     factura = FacturacionContratista.objects.select_related("periodo").filter(pk=facturacion_id).first()
+    if pagos_instalacion(request.user):
+        if factura is None:
+            raise Http404("Facturación no encontrada.")
+        exigir_factura_completa(request.user, factura)
     eventos = EventoRequisicion.objects.filter(facturacion_identificador=facturacion_id)
     ultimo = eventos.first()
     if factura is None and ultimo is None:

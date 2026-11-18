@@ -3,6 +3,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 from .autorizacion import exigir_permiso, exigir_alcance_coordinador
+from ..acceso_instalacion import es_odt_instalacion, exigir_odt_pago
 from ..acceso_coordinadores import es_coordinador_sstt
 from ..correcciones import coinciden, registrar_cambio_manual
 from ..dominio.errores import ODTBloqueada, ODTNoEncontrada, VerificacionCoordinadorFallida
@@ -14,10 +15,11 @@ from ..models import ODT, CorreccionODT, EventoCorreccionODT
 def gestionar_correccion(usuario, *, numero, estado, verificar_alcance=None):
     if not usuario.is_authenticated or not usuario.is_active:
         raise PermissionDenied
-    coordinador = es_coordinador_sstt(usuario)
+    numero = numero_odt(numero, formateado=True)
+    alcance_instalacion = es_odt_instalacion(usuario, numero)
+    coordinador = es_coordinador_sstt(usuario) and not alcance_instalacion
     if not coordinador:
         exigir_permiso(usuario, "revisiones.editar_odt_sstt")
-    numero = numero_odt(numero, formateado=True)
     if coordinador:
         if verificar_alcance is None:
             exigir_alcance_coordinador(usuario, numero)
@@ -36,6 +38,8 @@ def gestionar_correccion(usuario, *, numero, estado, verificar_alcance=None):
             odt = ODT.objects.select_for_update().get(numero=numero)
         except ODT.DoesNotExist:
             raise ODTNoEncontrada from None
+        if alcance_instalacion:
+            exigir_odt_pago(usuario, odt)
         seguimiento = CorreccionODT.objects.select_for_update().filter(odt=odt).first()
         if seguimiento is None:
             if odt.servicio_editado is None and odt.valor_pago_editado is None:

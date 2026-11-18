@@ -19,15 +19,18 @@ def datos_contratista_pdf(nombre):
     return candidatos[0] if len(candidatos) == 1 else None
 
 
-def items_facturados(periodo, seleccion=None):
+def items_facturados(periodo, seleccion=None, usuario=None):
     consulta = FacturacionODT.objects.filter(facturacion__periodo=periodo)
     if seleccion is not None:
         consulta = consulta.filter(facturacion_id__in=seleccion)
+    from ..acceso_instalacion import limitar_pagos
+    if usuario is not None:
+        consulta = limitar_pagos(usuario, consulta, historico=True)
     return list(consulta.select_related("odt", "facturacion").order_by(
         "facturacion__contratista", "odt__numero"))
 
 
-def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", servicios=(), q="", montos=(), montos_filtrados=False):
+def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", servicios=(), q="", montos=(), montos_filtrados=False, usuario=None):
     registros = ODT.objects.select_related("revision").filter(
         condicion_aprobada(), contratista=contratista,
         fecha_finalizacion__date__gte=desde, fecha_finalizacion__date__lte=hasta,
@@ -36,7 +39,14 @@ def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", ser
         registros = registros.filter(estado_softguard=estado)
     if tipo_cliente:
         registros = registros.filter(tipo_cliente=tipo_cliente)
-    if servicios:
+    from ..acceso_instalacion import pagos_instalacion
+    restringida = usuario is not None and pagos_instalacion(usuario)
+    if restringida and servicios:
+        from ..acceso_instalacion import SERVICIO_INSTALACION
+        from ..dominio.servicios import normalizar_servicio
+        if any(normalizar_servicio(s) != SERVICIO_INSTALACION for s in servicios):
+            return []
+    if servicios and not restringida:
         registros = registros.filter(
             Q(servicio_editado__isnull=True, servicio__in=servicios)
             | Q(servicio_editado__in=servicios))
@@ -47,4 +57,7 @@ def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", ser
         if q.isdigit():
             filtro |= Q(numero=int(q))
         registros = registros.filter(filtro)
+    from ..acceso_instalacion import limitar_pagos
+    if usuario is not None:
+        registros = limitar_pagos(usuario, registros)
     return list(filtrar_montos(registros, montos, montos_filtrados))

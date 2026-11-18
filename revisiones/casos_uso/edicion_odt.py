@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.db import transaction
 
+from ..acceso_instalacion import exigir_odt_pago
 from ..correcciones import registrar_cambio_manual
 from ..dominio.errores import DatosODTInvalidos
 from ..dominio.pagos import estado_pago_efectivo
@@ -39,6 +40,7 @@ def editar_odt(usuario, *, numero, servicio, monto, confirmar_monto=False, comen
     with transaction.atomic():
         odts, revisiones = _bloquear_odts([numero])
         odt = odts[0]
+        exigir_odt_pago(usuario, odt, servicio)
         revision = revisiones.get(odt.pk)
         estado = estado_pago_efectivo(revision.estado if revision else None)
         anterior_servicio = servicio_efectivo(odt.servicio, odt.servicio_editado)
@@ -96,6 +98,7 @@ def revisar_odt(usuario, *, numero, estado, comentario=""):
     with transaction.atomic():
         odts, revisiones = _bloquear_odts([numero])
         odt = odts[0]
+        exigir_odt_pago(usuario, odt)
         cambio = _guardar_revision(odt, revisiones.get(odt.pk), estado, comentario, usuario)
         return ResultadoRevision(estado, cambio)
 
@@ -118,4 +121,6 @@ def revisar_odts(usuario, *, numeros, estado, comentario=""):
         raise DatosODTInvalidos("Selecciona entre 1 y 300 ODT.")
     with transaction.atomic():
         odts, revisiones = _bloquear_odts(seleccion)
+        for odt in odts:
+            exigir_odt_pago(usuario, odt)
         return sum(_guardar_revision(odt, revisiones.get(odt.pk), estado, comentario, usuario) for odt in odts)

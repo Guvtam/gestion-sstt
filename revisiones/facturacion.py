@@ -14,6 +14,7 @@ from .casos_uso.facturacion import (
     actualizar_requisicion as guardar_requisicion,
     confirmar, previsualizar,
 )
+from .acceso_instalacion import limitar_pagos, pagos_instalacion
 from .dominio.filtros_montos import leer_montos
 from .consultas.facturacion import odts_facturables
 from .dominio.facturacion import (
@@ -72,12 +73,14 @@ def previsualizar_facturacion(request):
         return redirect("bandeja")
 
     resumen = vista.resumen
-    ya_facturadas = FacturacionODT.objects.filter(odt__in=odts_facturables(seleccion)).count()
-    existentes = {
-        f.contratista: f.numero_requisicion for f in FacturacionContratista.objects.filter(
-            periodo__fecha_desde=desde, periodo__fecha_hasta=hasta,
-        )
-    }
+    ya_facturadas = FacturacionODT.objects.filter(odt__in=odts_facturables(seleccion, usuario=request.user)).count()
+    facturas_existentes = FacturacionContratista.objects.filter(
+        periodo__fecha_desde=desde, periodo__fecha_hasta=hasta,
+    )
+    if pagos_instalacion(request.user):
+        facturas_existentes = facturas_existentes.filter(
+            items__in=limitar_pagos(request.user, FacturacionODT.objects.all(), historico=True))
+    existentes = {f.contratista: f.numero_requisicion for f in facturas_existentes}
     for grupo in resumen:
         grupo["requisicion_existente"] = existentes.get(grupo["contratista"], "")
 
