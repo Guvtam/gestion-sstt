@@ -1,5 +1,6 @@
 """Vistas HTTP de bandeja. Sin cambios de reglas de negocio."""
 import time as tiempo
+from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import JsonResponse
@@ -20,6 +21,8 @@ from ..consultas.catalogos_bandeja import servicios_disponibles, estados_disponi
 from ..consultas.filas_bandeja import paginar_filas, cargar_complementos
 from ..presentacion.filas_bandeja import preparar_filas
 
+from ..dominio.filtros_montos import leer_montos
+from ..consultas.montos_bandeja import filtrar_montos, opciones_montos
 from ..dominio.filtros_bandeja import SIN_TECNICO_FILTRO, leer_seleccion
 from ..consultas.filtros_bandeja import filtrar_disponibles, filtrar_tabla, opciones_contratistas
 from ..consultas.indicadores_bandeja import indicador, indicadores_financieros, indicadores_operativos
@@ -101,6 +104,15 @@ def bandeja(request, por_creacion=False):
             ]
             registros = registros.filter(numero__in=numeros_filtrados)
 
+
+    # Obtener opciones antes de aplicar su propia selección, después del alcance.
+    montos_seleccionados, montos_explicitos = leer_montos(request.GET)
+    montos_disponibles = opciones_montos(registros)
+    # Conservar selecciones que dejaron de existir tras un guardado o cambio de filtros.
+    montos_disponibles = sorted(set(montos_disponibles) | set(montos_seleccionados), key=Decimal)
+    if not montos_explicitos:
+        montos_seleccionados = tuple(montos_disponibles)
+    registros = filtrar_montos(registros, montos_seleccionados, montos_explicitos)
 
     # ==================================================
     # INDICADORES FINANCIEROS OPTIMIZADOS
@@ -205,6 +217,8 @@ def bandeja(request, por_creacion=False):
             "querystring": parametros.urlencode(),
             "filtros": filtros,
 
+            "montos_disponibles": montos_disponibles,
+            "montos_seleccionados": montos_seleccionados,
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
             "destacar_monto_cero": (not es_coordinador and request.user.has_perm("revisiones.revisar_pago_sstt")

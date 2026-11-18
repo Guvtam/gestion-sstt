@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from ..models import ODT
+from .montos_bandeja import filtrar_montos
 from .pagos import condicion_aprobada
 
 
@@ -38,4 +39,4 @@ def odts_facturables(seleccion):
         if q.isascii() and q.isdigit() and len(q) <= 10:
             condicion |= Q(numero=int(q))
         qs = qs.filter(condicion)
-    return qs.order_by("contratista", "numero")
+    return filtrar_montos(qs, seleccion.montos, seleccion.montos_filtrados).order_by("contratista", "numero")

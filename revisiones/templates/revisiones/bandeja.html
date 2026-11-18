@@ -321,6 +321,30 @@
           </details>
         </div>
 
+        <div class="field">
+          <label class="field-label">Pago técnico</label>
+          <input type="hidden" name="montos_filtrados" value="1" id="montosFiltrados">
+          <details class="multi" id="montosDropdown">
+            <summary id="montosResumen">Todos los montos</summary>
+            <div class="multi-panel">
+              <input type="search" id="buscarMonto" placeholder="Buscar monto..." aria-label="Buscar monto" autocomplete="off">
+              <div class="multi-options" id="listaMontos">
+                {% for monto in montos_disponibles %}
+                <label class="multi-option">
+                  <input type="checkbox" name="monto" value="{{ monto }}" {% if monto in montos_seleccionados %}checked{% endif %}>
+                  <span>${{ monto|floatformat:"-2g" }}</span>
+                </label>
+                {% empty %}<p>No hay montos para estos filtros.</p>{% endfor %}
+              </div>
+              <div class="multi-footer">
+                <button type="button" id="todosMontos">Seleccionar todos</button>
+                <span id="cantidadMontos"></span>
+                <button type="button" id="limpiarMontos">Desmarcar todos</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
         <!-- ESTADO REVISIÓN -->
 
         <div class="field">
@@ -1170,6 +1194,8 @@
 
   <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=20261111-conservar-pagina"></script>
   <script src="{% static 'revisiones/bandeja.js' %}?v=20261110-sla-dias"></script>
+
+  <script src="{% static 'revisiones/filtro_montos.js' %}?v=20261118"></script>
 
   <!-- FILTROS Y FACTURACIÓN -->
 

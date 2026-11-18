@@ -2,6 +2,7 @@
 from django.db.models import Q
 from ..models import ODT
 from ..facturacion_models import FacturacionODT
+from .montos_bandeja import filtrar_montos
 from .pagos import condicion_aprobada
 
 def datos_contratista_pdf(nombre):
@@ -26,7 +27,7 @@ def items_facturados(periodo, seleccion=None):
         "facturacion__contratista", "odt__numero"))
 
 
-def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", servicios=(), q=""):
+def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", servicios=(), q="", montos=(), montos_filtrados=False):
     registros = ODT.objects.select_related("revision").filter(
         condicion_aprobada(), contratista=contratista,
         fecha_finalizacion__date__gte=desde, fecha_finalizacion__date__lte=hasta,
@@ -46,4 +47,4 @@ def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", ser
         if q.isdigit():
             filtro |= Q(numero=int(q))
         registros = registros.filter(filtro)
-    return list(registros)
+    return list(filtrar_montos(registros, montos, montos_filtrados))
