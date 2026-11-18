@@ -160,8 +160,8 @@ class PagosInstalacionTests(TestCase):
         self.assertEqual([i.odt.numero for i in items_facturados(periodo,usuario=self.usuario)],[1])
         respuesta=self.client.get(reverse('historial_facturacion'))
         self.assertEqual(respuesta.status_code,200)
-        self.assertEqual(respuesta.context['monto_total'],100)
-        self.assertEqual([i.odt.numero for i in respuesta.context['pagina']],[1])
+        self.assertEqual(respuesta.context['periodos'][0].monto_total,100)
+        self.assertEqual(respuesta.context['periodos'][0].cantidad_odt,1)
         detalle=self.client.get(reverse('detalle_facturacion',args=[factura.pk]))
         self.assertEqual([i.odt.numero for i in detalle.context['items']],[1])
         with patch('revisiones.vistas.exportacion_pdf.generar_zip_facturacion',return_value=b'zip') as pdf:

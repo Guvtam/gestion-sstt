@@ -37,7 +37,8 @@ configurando los grupos anteriores sin eliminar este grupo adicional.
   El filtro por servicio se impone en servidor al previsualizar y confirmar;
   manipular la URL o enviar otros números no amplía el alcance.
 - **Facturación** muestra un historial acotado con importes/servicios congelados,
-  búsqueda, páginas numeradas, detalle y PDF solo de sus ODT autorizadas.
+  búsqueda, períodos, resumen de costos, contratistas, detalle y PDF solo de sus ODT autorizadas.
+  Usa la misma plantilla y estilos del historial de supervisión.
 - Una cabecera de contratista/período puede incluir otros servicios. En ese caso
   el número de requisición y su auditoría quedan a cargo de supervisión. Yasna
   puede consultar/exportar solo las ODT permitidas. Si la cabecera es exclusiva,
@@ -57,3 +58,7 @@ seleccionar el período; comparar con una sesión de supervisión; comprobar que
 Cruzverde no aparece en la nueva pantalla, previsualización, historial ni PDF.
 Solo después confirmar una facturación real. Pruebas automáticas usan base aislada
 y origen simulado; no consultan SQL Server ni modifican datos del piloto.
+
+En Pagos nueva instalación se muestran las cuatro tarjetas superiores de pagos y
+las cuatro últimas de seguimiento; se omiten las tarjetas intermedias por servicio.
+Los importes y conteos siempre se calculan sobre las ODT del alcance autorizado.
