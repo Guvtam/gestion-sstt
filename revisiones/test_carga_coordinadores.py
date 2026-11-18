@@ -76,10 +76,10 @@ class CargaCoordinadoresTests(TestCase):
         self.assertEqual(contexto['total']['cantidad'],0)
         self.assertEqual(contexto['carga']['cantidad'],4)
         self.assertIn({'usuario':'b','nombre':'Coordinador B'},contexto['coordinadores'])
-        # Las fechas solo afectan la carga; el seguimiento anterior se conserva.
+        # El mismo período afecta la carga y las modificaciones.
         contexto,req=self.contexto(carga_desde='2026-01-01',carga_hasta='2026-01-01')
         self.assertEqual(contexto['carga']['cantidad'],1)
-        self.assertEqual(contexto['total']['cantidad'],1)
+        self.assertEqual(contexto['total']['cantidad'],0)
 
     def test_fallo_de_origen_no_es_sin_identificar_ni_total_parcial(self):
         def fallo(ns):
@@ -141,7 +141,7 @@ class CargaCoordinadoresTests(TestCase):
 
     def test_error_no_muestra_tabla_parcial_y_preserva_correcciones(self):
         contexto,req=self.contexto(carga_desde='invalida')
-        self.assertEqual(contexto['total']['cantidad'],1)
+        self.assertEqual(contexto['total']['cantidad'],0)
         from django.template.loader import render_to_string
         html=render_to_string('revisiones/estadisticas_correcciones.html',contexto,request=req)
         self.assertIn('Total no disponible',html)
@@ -166,3 +166,41 @@ class CargaCoordinadoresTests(TestCase):
         self.assertFalse(carga['disponible'])
         self.assertEqual(carga['filas'],[])
         self.assertEqual(carga['cantidad'],0)
+
+    def test_periodo_comun_actualiza_total_modificaciones_montos_y_detalle(self):
+        ODT.objects.filter(numero=6).update(valor_pago_tecnico=100)
+        CorreccionODT.objects.create(odt=ODT.objects.get(numero=6),corrige_monto=True,monto_objetivo=50)
+        contexto,_=self.contexto(carga_desde='2025-12-31',carga_hasta='2025-12-31')
+        self.assertEqual(contexto['carga']['cantidad'],1)
+        self.assertEqual(contexto['total']['cantidad'],1)
+        self.assertEqual(contexto['total']['original'],100)
+        self.assertEqual(contexto['total']['corregido'],50)
+        self.assertEqual(contexto['total']['diferencia'],-50)
+        self.assertEqual([f['cantidad'] for f in contexto['filas']],[1])
+        self.assertEqual([f['numero'] for f in contexto['pagina_detalle']],[6])
+        contexto,_=self.contexto(carga_desde='2026-11-18',carga_hasta='2026-11-18')
+        self.assertEqual(contexto['carga']['cantidad'],1)
+        self.assertEqual(contexto['total']['cantidad'],1)
+        self.assertEqual(contexto['total']['corregido'],2)
+        self.assertEqual([f['numero'] for f in contexto['pagina_detalle']],[2])
+
+    def test_un_solo_formulario_superior_y_sin_filtros_dentro_del_grafico(self):
+        contexto,req=self.contexto()
+        from django.template.loader import render_to_string
+        html=render_to_string('revisiones/estadisticas_correcciones.html',contexto,request=req)
+        self.assertEqual(html.count('<form method="get"'),1)
+        self.assertEqual(html.count('name="carga_desde"'),1)
+        self.assertEqual(html.count('name="carga_hasta"'),1)
+        self.assertLess(html.index('id="cargaDesde"'),html.index('<section class="stats-kpis"'))
+        self.assertLess(html.index('id="cargaHasta"'),html.index('<section class="stats-kpis"'))
+        panel=html.split('id="carga-coordinadores"',1)[1].split('</article>',1)[0]
+        self.assertNotIn('<form',panel)
+        self.assertNotIn('type="date"',panel)
+        self.assertEqual(html.count('Aplicar filtros'),1)
+
+    def test_paginacion_conserva_periodo_efectivo(self):
+        contexto,_=self.contexto(carga_desde='2026-11-18',carga_hasta='2026-11-18',tipo='MONTO')
+        parametros=QueryDict(contexto['query_detalle'])
+        self.assertEqual(parametros['carga_desde'],'2026-11-18')
+        self.assertEqual(parametros['carga_hasta'],'2026-11-18')
+        self.assertEqual(parametros['tipo'],'MONTO')

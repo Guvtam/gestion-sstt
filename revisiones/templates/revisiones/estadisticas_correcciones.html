@@ -3,7 +3,7 @@
 {% block titulo %}Análisis por coordinador · SSTT{% endblock %}
 {% block estilos_base %}{% endblock %}
 {% block estilos %}
-<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261118-grafico-carga">
+<link rel="stylesheet" href="{% static 'revisiones/estadisticas_correcciones.css' %}?v=20261118-periodo-comun">
 {% endblock %}
 {% block titulo_encabezado %}Análisis por coordinador{% endblock %}
 {% block subtitulo %}Carga total de ODT y seguimiento de correcciones por coordinador{% endblock %}
@@ -12,8 +12,10 @@
 <main class="stats-container stats-main">
     <section class="stats-panel stats-filtros" aria-label="Filtros de estadísticas">
         <form method="get" class="stats-filter-grid">
-            <input type="hidden" name="carga_desde" value="{{ carga.desde }}">
-            <input type="hidden" name="carga_hasta" value="{{ carga.hasta }}">
+            <div class="stats-field"><label for="cargaDesde">Creación desde</label>
+                <input id="cargaDesde" type="date" name="carga_desde" value="{{ carga.desde }}"></div>
+            <div class="stats-field"><label for="cargaHasta">Creación hasta</label>
+                <input id="cargaHasta" type="date" name="carga_hasta" value="{{ carga.hasta }}"></div>
             <div class="stats-field">
                 <label for="coordinador">Coordinador</label>
                 <select id="coordinador" name="coordinador">
@@ -46,6 +48,8 @@
                 <a class="stats-btn" href="{% url 'estadisticas_correcciones' %}">Limpiar</a>
             </div>
         </form>
+        <p class="stats-footnote">El período por fecha de creación se aplica a todos los indicadores, gráficos y tablas. Tipo y estado de corrección filtran solo las modificaciones. Vacía ambas fechas para consultar todo el histórico.</p>
+        {% for error in carga.errores %}<p class="stats-footnote" role="alert">{{ error }}</p>{% endfor %}
     </section>
 
     <a class="stats-btn" href="#detalle-odt-modificadas">Ver las ODT modificadas</a>
@@ -108,17 +112,6 @@
                     <p>ODT creadas en el período, con y sin correcciones.</p></div>
                 <span class="stats-count">{% if carga.disponible %}{{ carga.cantidad }} ODT{% else %}Total no disponible{% endif %}</span>
             </div>
-            <form method="get" class="stats-carga-filtros">
-                <input type="hidden" name="coordinador" value="{{ coordinador_filtro }}">
-                <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
-                <input type="hidden" name="estado" value="{{ estado_filtro }}">
-                <div class="stats-field"><label for="cargaDesde">Creación desde</label>
-                    <input id="cargaDesde" type="date" name="carga_desde" value="{{ carga.desde }}"></div>
-                <div class="stats-field"><label for="cargaHasta">Creación hasta</label>
-                    <input id="cargaHasta" type="date" name="carga_hasta" value="{{ carga.hasta }}"></div>
-                <button class="stats-btn stats-btn-primary" type="submit">Consultar período</button>
-            </form>
-            {% for error in carga.errores %}<p class="stats-footnote" role="alert">{{ error }}</p>{% endfor %}
             {% if carga.disponible %}
             <div class="stats-carga-barras" role="region" aria-label="Total ODT por coordinador" tabindex="0">
                 {% for fila in carga.filas %}
@@ -131,7 +124,7 @@
                 {% empty %}<p class="stats-empty">No hay ODT para el período y coordinador seleccionados.</p>{% endfor %}
             </div>
             {% endif %}
-            <p class="stats-footnote">Cada ODT cuenta una vez según su coordinador actual, en cualquier estado. Las barras muestran su proporción del total del período. Los filtros de tipo y estado de corrección solo afectan el gráfico de la izquierda.</p>
+            <p class="stats-footnote">Cada ODT cuenta una vez según su coordinador actual, en cualquier estado. Las barras muestran su proporción del total del período. El período y el coordinador se seleccionan en los filtros superiores.</p>
         </article>
     </section>
 

@@ -241,5 +241,5 @@ class CoordinadoresPorLotesTests(TestCase):
         CorreccionODT.objects.create(odt=ODT.objects.get(numero=1), corrige_monto=True, monto_objetivo=100)
         self.client.force_login(self.admin)
         with patch("revisiones.coordinadores_softguard.consultar_eventos_coordinadores", side_effect=RuntimeError):
-            r = self.client.get(reverse("estadisticas_correcciones"))
+            r = self.client.get(reverse("estadisticas_correcciones"), {"carga_desde":"", "carga_hasta":""})
         self.assertEqual(r.status_code, 503)

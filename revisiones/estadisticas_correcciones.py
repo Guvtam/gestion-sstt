@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.core.paginator import Paginator
 from django.utils import timezone
 from .models import CorreccionODT, ODT
-from .consultas.carga_coordinadores import resumir_carga
+from .consultas.carga_coordinadores import resumir_carga, filtrar_periodo_creacion
 from .dominio.conciliacion_correcciones import monto_seguimiento
 from .acceso_coordinadores import coordinadores_en_peticion
 
@@ -14,9 +14,11 @@ from .acceso_coordinadores import coordinadores_en_peticion
 @permission_required('revisiones.ver_bandeja_sstt', raise_exception=True)
 def estadisticas_correcciones(request):
     """Estadísticas por ODT, no por evento histórico; incluye estados actualizados."""
-    carga = resumir_carga(ODT.objects.all(), request.GET,
-        lambda numeros: coordinadores_en_peticion(request, numeros), hoy=timezone.localdate())
-    qs = CorreccionODT.objects.select_related('odt').order_by('odt__numero')
+    hoy = timezone.localdate()
+    odts_periodo, periodo = filtrar_periodo_creacion(ODT.objects.all(), request.GET, hoy=hoy)
+    carga = resumir_carga(odts_periodo, request.GET,
+        lambda numeros: coordinadores_en_peticion(request, numeros), hoy=hoy, periodo=periodo)
+    qs = CorreccionODT.objects.filter(odt__in=odts_periodo).select_related('odt').order_by('odt__numero')
     coordinador_filtro = request.GET.get('coordinador', '').strip()
     estado_filtro = request.GET.get('estado', '').strip()
     tipo_filtro = request.GET.get('tipo', '').strip()
@@ -90,6 +92,8 @@ def estadisticas_correcciones(request):
     pagina_detalle = Paginator(detalle, 50).get_page(request.GET.get("page"))
     parametros = request.GET.copy()
     parametros.pop("page", None)
+    parametros["carga_desde"] = periodo["desde"]
+    parametros["carga_hasta"] = periodo["hasta"]
     return render(request, 'revisiones/estadisticas_correcciones.html', {
         'carga': carga,
         'total': total, 'filas': filas, 'coordinadores': opciones,
