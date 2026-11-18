@@ -112,11 +112,11 @@ class CargaCoordinadoresTests(TestCase):
         sql.assert_not_called()
         self.assertEqual(carga['filas'][0]['usuario'],'jtapia')
 
-    def test_plantilla_tabla_desplazable_fechas_y_enlaces_conservados(self):
+    def test_plantilla_grafico_fechas_y_enlaces_conservados(self):
         contexto,req=self.contexto(carga_desde='2026-01-01',carga_hasta='2026-11-18')
         from django.template.loader import render_to_string
         html=render_to_string('revisiones/estadisticas_correcciones.html',contexto,request=req)
-        for texto in ('Total de ODT por coordinador','Con correcciones','Creación desde','Marcha Blanca',
+        for texto in ('Total de ODT por coordinador','Creación desde','Coordinador A: 2 ODT de 4 en el período',
                       'Sin coordinador identificado','data-scroll-superior','Detalle de ODT modificadas'):
             self.assertIn(texto,html)
         self.assertIn('carga_desde=2026-01-01&amp;carga_hasta=2026-11-18#detalle-odt-modificadas',html)
@@ -149,7 +149,10 @@ class CargaCoordinadoresTests(TestCase):
         self.assertIn('Detalle de ODT modificadas',html)
         contexto,req=self.contexto()
         html=render_to_string('revisiones/estadisticas_correcciones.html',contexto,request=req)
-        self.assertEqual(html.count('data-tabla-desplazable'),3)
+        self.assertEqual(html.count('data-tabla-desplazable'),2)
+        self.assertIn('aria-label="Total ODT por coordinador"',html)
+        self.assertNotIn('Tipos de corrección',html)
+        self.assertNotIn('Tabla de total de ODT por coordinador',html)
 
     def test_error_despues_de_un_lote_descarta_resultado_incompleto(self):
         ODT.objects.bulk_create([ODT(numero=n,fecha_creacion=timezone.make_aware(datetime(2026,6,1))) for n in range(10,511)])

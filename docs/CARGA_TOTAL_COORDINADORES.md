@@ -7,12 +7,13 @@ Las fechas son inclusivas en la zona horaria del sistema. Se pueden cambiar o
 vaciar ambas para consultar todo el histórico; con fechas activas no se incluyen
 ODT cuya fecha de creación falte. Un período inválido se informa y no amplía resultados.
 
-La tabla muestra coordinador, total de ODT, columnas de los estados realmente
-presentes y ODT con correcciones. Tiene totales y barras horizontales superior e
-inferior. Se ordena por mayor número de ODT. Cada ODT cuenta una vez; las que tienen
-seguimiento de corrección o edición local de monto/servicio forman un subconjunto,
-no una cantidad adicional. Una corrección de monto y servicio no cuenta dos veces.
-Se incluyen correcciones actualizadas y ediciones antiguas sin seguimiento.
+El gráfico **Total de ODT por coordinador** reemplaza el panel derecho
+**Tipos de corrección**. Se retira la tabla adicional de carga. El gráfico izquierdo
+de correcciones, los indicadores, resumen y detalle originales se mantienen.
+Cada barra muestra el total de ODT de un coordinador, incluyendo las no modificadas,
+y su proporción respecto del total del período. Se ordena de mayor a menor, con
+cantidad visible y desplazamiento vertical si hay muchos coordinadores. Las fechas
+se consultan dentro del mismo panel con controles compactos.
 
 El coordinador se resuelve con el mismo mecanismo de bandeja: asignación manual,
 proyección local vigente y consulta de origen en lotes de hasta 250 cuando hace falta.
