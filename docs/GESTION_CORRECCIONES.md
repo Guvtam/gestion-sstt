@@ -43,7 +43,8 @@ Los importes ya facturados conservan su instantánea. La sincronización posteri
 es idempotente y sigue usando el monto real aunque cambie en el origen.
 
 Las filas con monto efectivo cero se destacan en naranja para Supervisor y
-superusuarios. Para coordinadores se destacan solo las correcciones PENDIENTE;
+superusuarios. Para coordinadores se destacan las correcciones PENDIENTE y EN_PROCESO
+(«Procesada») hasta la confirmación ACTUALIZADA;
 no se destacan filas únicamente por tener monto cero.
 
 ## Validación y aplicación
