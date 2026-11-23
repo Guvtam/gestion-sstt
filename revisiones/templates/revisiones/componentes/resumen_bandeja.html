@@ -1,0 +1,33 @@
+<section class="resumen-pagos" aria-label="Resumen de cuentas y servicios">
+  <div class="resumen-pagos-cabecera">
+    <div><h2>Distribución de las ODT</h2><p>Según los filtros aplicados · Montos efectivos, incluidos ajustes y rechazados.</p></div>
+    <span class="resumen-pagos-etiqueta">{{ resumen_visual.total.cantidad }} ODT</span>
+  </div>
+  <div class="resumen-pagos-columnas">
+    <div class="resumen-pagos-cuentas">
+      <h3>Por tipo de cliente</h3>
+      <div class="resumen-pagos-scroll" tabindex="0" role="region" aria-label="Montos por tipo de cliente">
+        <table class="resumen-pagos-tabla"><thead><tr><th scope="col">Cuentas</th><th scope="col">ODT</th><th scope="col">Monto efectivo</th></tr></thead>
+        <tbody>{% for fila in resumen_visual.tipos %}<tr><th scope="row">{{ fila.nombre }}</th><td>{{ fila.cantidad }}</td><td><span class="money-kpi" data-amount="{{ fila.monto|stringformat:'.2f' }}"></span></td></tr>{% endfor %}</tbody>
+        <tfoot><tr><th scope="row">Total</th><td>{{ resumen_visual.total.cantidad }}</td><td><span class="money-kpi" data-amount="{{ resumen_visual.total.monto|stringformat:'.2f' }}"></span></td></tr></tfoot></table>
+      </div>
+      <h3 class="resumen-pagos-subtitulo">Detalle de cuentas destacadas</h3>
+      <p class="resumen-pagos-nota">Incluidas arriba en su tipo de cliente. No se suman nuevamente. Identificadas por el nombre de la cuenta.</p>
+      <div class="resumen-pagos-scroll" tabindex="0" role="region" aria-label="Detalle de cuentas destacadas">
+        <table class="resumen-pagos-tabla"><thead><tr><th scope="col">Cuentas</th><th scope="col">ODT</th><th scope="col">Monto efectivo</th></tr></thead>
+        <tbody>{% for fila in resumen_visual.marcas %}<tr><th scope="row">{{ fila.nombre }}</th><td>{{ fila.cantidad }}</td><td><span class="money-kpi" data-amount="{{ fila.monto|stringformat:'.2f' }}"></span></td></tr>{% endfor %}</tbody></table>
+      </div>
+    </div>
+    <div class="resumen-pagos-servicios">
+      <h3>Por servicio</h3>
+      <div class="resumen-servicios-grid">
+        {% for fila in resumen_visual.servicios %}<article class="resumen-servicio"><h4>{{ fila.nombre }}</h4><strong class="money-kpi" data-amount="{{ fila.monto|stringformat:'.2f' }}"></strong><span>{{ fila.cantidad }} ODT</span></article>{% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="resumen-pagos-aprobados">
+    <article><div><h3>Mantenimiento aprobado</h3><p>Correctivas, preventivos, renovaciones, acuerdo comercial y presupuesto.</p></div><div><strong class="money-kpi" data-amount="{{ resumen_visual.mantenimiento.monto|stringformat:'.2f' }}"></strong><span>{{ resumen_visual.mantenimiento.cantidad }} ODT</span></div></article>
+    <article><div><h3>Instalaciones B2C aprobadas</h3><p>Solo nueva instalación B2C. Excluye Cruzverde.</p></div><div><strong class="money-kpi" data-amount="{{ resumen_visual.instalaciones.monto|stringformat:'.2f' }}"></strong><span>{{ resumen_visual.instalaciones.cantidad }} ODT</span></div></article>
+  </div>
+  <p class="resumen-pagos-nota">Aprobado no significa pagado. Se conserva la regla actual de aprobación del sistema.{% if resumen_visual.otros_aprobados.cantidad %} Otros servicios aprobados fuera de ambos grupos: {{ resumen_visual.otros_aprobados.cantidad }} ODT · <span class="money-kpi" data-amount="{{ resumen_visual.otros_aprobados.monto|stringformat:'.2f' }}"></span>.{% endif %}</p>
+</section>
