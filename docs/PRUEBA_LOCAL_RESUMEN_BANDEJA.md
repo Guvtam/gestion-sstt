@@ -1,33 +1,44 @@
-# Prueba local del resumen intermedio de la bandeja
+# Resumen ejecutivo por cuenta y servicio: prueba local
 
-La primera fila financiera y la última fila operativa se conservan. El bloque
-intermedio muestra tipos B2B/B2C/Sin clasificar, detalle de Cruz Verde y Tattersall, desglose por todos los servicios y cierres aprobados.
+Se conservan la primera fila financiera y la última fila operativa de la bandeja.
+El centro contiene una sola tabla: filas B2B, B2C, Cruz Verde y Tattersall;
+columnas total ODT, monto total y cada servicio con monto y cantidad de ODT.
+Si hay ODT sin clasificar se informa la fila correspondiente para no ocultarlas.
+Servicios desconocidos también se muestran si existen. Las columnas sin actividad
+muestran cero. La tabla tiene desplazamiento horizontal y primera columna fija.
+No hay gráficos, bloque de mantenimiento aprobado/instalaciones ni criterios
+plegables. Todos los resúmenes parten del queryset filtrado y autorizado, antes
+de paginar. No se cambian pagos, permisos, facturación ni datos de las ODT.
 
-Todos los datos parten del mismo queryset autorizado y filtrado de la tabla,
-antes de paginar. Se conserva el monto efectivo: editado si no es nulo, incluso
-0 o la marca 2; en otro caso el original. Los resúmenes por cliente y servicio
-incluyen rechazados para conciliar con el total efectivo. La primera tarjeta
-superior sigue mostrando el original SoftGuard.
+Montos efectivos: editado si no es nulo, incluyendo 0 y la marca 2; en otro caso
+original. Incluyen rechazados, como las tarjetas previas por servicio. La primera
+tarjeta superior sigue mostrando el monto original SoftGuard.
 
-Las cuentas destacadas son un detalle adicional, no se suman otra vez. Se
-identifican por nombre de cuenta (Cruz Verde/Cruzverde, Tattersall), sin
-cambiar tipo de cliente ni CECO. Este criterio puede requerir un catálogo
-explícito futuro si las denominaciones no incluyen la marca.
+Cruz Verde y Tattersall son detalle de B2B/B2C, nunca se suman otra vez. Se
+identifican por nombre de cuenta (Cruz Verde/Cruzverde, Tattersall); no se cambia
+tipo de cliente ni CECO. Puede requerirse catálogo explícito si el nombre no
+incluye la marca. Enel no se muestra por separado, pero sus ODT siguen en su tipo.
 
-Mantenimiento aprobado incluye correctivas con/sin cobro, preventivos,
-renovaciones, acuerdo comercial y presupuesto. Instalaciones B2C aprobadas
-incluye solo el servicio genérico de nueva instalación B2C, excluye Cruzverde.
-Otras ODT aprobadas se indican por separado para evitar omitirlas. Aprobado no
-significa pagado. La regla actual sin revisión/POR_REVISAR no cambia.
+La vista especial de Yasna mantiene solo sus tarjetas superiores y operativas;
+coordinadores mantienen su vista sin resumen financiero. Sin migraciones.
 
-Se mantiene la vista especial de Yasna sin tarjetas intermedias y la vista de
-coordinadores sin indicadores financieros. No hay migraciones ni cambios de
-montos, facturas, permisos, sincronización o clasificación guardada.
+## Actualizar solo en el PC, en la rama de prueba ya abierta
 
-## Solo en el PC Windows, no en la Raspberry
+Detener runserver (Ctrl+C):
 
-Guardar el trabajo local y revisar `git status` antes de cambiar de rama. Si hay
-cambios pendientes, resolverlos antes; no usar reset ni restaurar la base.
+```powershell
+git branch --show-current
+git pull --ff-only
+python manage.py check
+python manage.py runserver
+```
+
+La rama debe ser `mejora/resumen-cuentas-servicios`. Abrir
+http://127.0.0.1:8000/ y recargar Ctrl+F5. Si Git informa conflicto, detenerse;
+no descartar settings.py ni db.sqlite3 ni usar reset. Se conservan los respaldos
+y stash locales creados al iniciar la prueba.
+
+Para una primera descarga, con trabajo local ya guardado:
 
 ```powershell
 git fetch origin
@@ -37,28 +48,8 @@ python manage.py check
 python manage.py runserver
 ```
 
-Abrir http://127.0.0.1:8000/ y recargar con Ctrl+F5. Usar los mismos filtros del
-piloto para revisar. Las ediciones en el PC solo se reflejan en la base que use
-ese entorno; este cambio visual no requiere editar datos para probarlo.
-
-Verificar: primera y última fila intactas, totales B2B/B2C/Sin clasificar y por
-servicio iguales al monto efectivo; detalle de marcas no sumado dos veces;
-rechazados solo excluidos en cierres aprobados; fechas, contratistas, servicios,
-monto y coordinador siguen afectando el resumen; comprobar en pantalla estrecha.
-
-Para volver a la vista anterior: detener runserver (Ctrl+C), ejecutar
-`git switch main` y volver a iniciar. No integrar el PR ni actualizar la Raspberry
-hasta revisar y aprobar la prueba local. No ejecutar collectstatic local si se
-usa runserver con la configuración habitual de desarrollo.
-
-## Segunda versión ejecutiva
-
-Se compacta el centro: importes B2B/B2C en dos bloques, cuentas destacadas en
-líneas y servicios activos con monto, cantidad y barra por proporción de ODT.
-Los servicios sin actividad y los criterios pasan a secciones desplegables.
-Los cierres aprobados permanecen al pie. No cambia ningún cálculo del resumen.
-
-Para actualizar la rama de prueba ya abierta en el PC, detener runserver,
-ejecutar `git pull --ff-only` y volver a iniciar con `python manage.py runserver`.
-Recargar con Ctrl+F5. No usar reset ni descartar settings.py o db.sqlite3.
-Si Git informa conflicto, detenerse y conservar los cambios locales.
+Revisar que la suma de servicios de cada fila coincida con su total; B2B+B2C
+(y sin clasificar si existe) concilie con el total efectivo. Cruz Verde y
+Tattersall ya están incluidos. Verificar período y filtros idénticos a la tabla.
+Para volver: detener servidor, `git switch main`, iniciar de nuevo; conservar
+cambios locales. No integrar PR ni actualizar Raspberry hasta aprobar local.

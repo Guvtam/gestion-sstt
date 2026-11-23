@@ -63,3 +63,25 @@ class ResumenBandejaTests(TestCase):
         r=resumen_bandeja(ODT.objects.none())
         self.assertEqual(r["total"]["monto"],0)
         self.assertEqual(r["total"]["cantidad"],0)
+
+    def test_matriz_por_cuenta_y_servicio_concilia_sin_duplicar_marcas(self):
+        self.crear(1,tipo_cliente="B2B",cuenta_completa="FIR-1 CRUZ VERDE",
+            valor_pago_tecnico=230000,valor_pago_editado=2,servicio_editado="MANTENIMIENTO RENOVACIÓN")
+        self.crear(2,tipo_cliente="B2C",cuenta_completa="FIR-2 TATTERSALL",servicio="MANTENIMIENTO PREVENTIVO")
+        self.crear(3,tipo_cliente="B2B",cuenta_completa="FIR-3 GENERAL",valor_pago_editado=0)
+        r=resumen_bandeja(ODT.objects.all())
+        for fila in [*r["filas_tipos"],*r["marcas"]]:
+            self.assertEqual(sum(c["monto"] for c in fila["celdas"]),fila["monto"])
+            self.assertEqual(sum(c["cantidad"] for c in fila["celdas"]),fila["cantidad"])
+        self.assertEqual(r["total"]["monto"],102)
+        self.assertEqual(r["marcas"][0]["desglose"]["renovacion"]["monto"],2)
+        self.assertEqual(r["marcas"][0]["desglose"]["correctiva_con_cobro"]["cantidad"],0)
+        self.assertEqual(sum(f["monto"] for f in r["filas_tipos"]),102)
+        from django.template.loader import render_to_string
+        html=render_to_string("revisiones/componentes/resumen_bandeja.html",{"resumen_visual":r})
+        self.assertIn('class="ejecutivo-matriz"',html)
+        self.assertIn('Nueva instalación Cruzverde',html)
+        self.assertNotIn('ejecutivo-barra',html)
+        self.assertNotIn('Mantenimiento aprobado',html)
+        self.assertNotIn('Instalaciones B2C aprobadas',html)
+        self.assertNotIn('Enel',html)

@@ -27,6 +27,8 @@ def resumen_bandeja(registros):
     tipos = {t: indicador(t) for t in ("B2B", "B2C", "Sin clasificar")}
     marcas = {m: indicador(m) for m in ("Cruz Verde", "Tattersall")}
     servicios = {c: indicador(n) for c, n in CATEGORIAS}
+    for grupo in [*tipos.values(), *marcas.values()]:
+        grupo["desglose"] = {c: indicador(n) for c, n in CATEGORIAS}
     mantenimiento = indicador("Mantenimiento aprobado")
     instalaciones = indicador("Instalaciones B2C aprobadas")
     otros_aprobados = indicador("Otros servicios aprobados")
@@ -55,7 +57,16 @@ def resumen_bandeja(registros):
         for destino in destinos:
             destino["cantidad"] += cantidad
             destino["monto"] += monto
-    return {"tipos": [v for k,v in tipos.items() if k != "Sin clasificar" or v["cantidad"]],
+            if "desglose" in destino:
+                destino["desglose"][categoria]["cantidad"] += cantidad
+                destino["desglose"][categoria]["monto"] += monto
+    columnas = [c for c, _ in CATEGORIAS if c != "otros" or servicios[c]["cantidad"]]
+    filas_tipos = [v for k,v in tipos.items() if k != "Sin clasificar" or v["cantidad"]]
+    for grupo in [*filas_tipos, *marcas.values()]:
+        grupo["celdas"] = [grupo["desglose"][c] for c in columnas]
+    return {"columnas": [dict(categoria=c, nombre=servicios[c]["nombre"]) for c in columnas],
+            "filas_tipos": filas_tipos,
+            "tipos": [v for k,v in tipos.items() if k != "Sin clasificar" or v["cantidad"]],
             "marcas": list(marcas.values()),
             "servicios": [v for k,v in servicios.items() if k != "otros" or v["cantidad"]],
             "mantenimiento": mantenimiento, "instalaciones": instalaciones,

@@ -1,37 +1,18 @@
-<section class="resumen-pagos resumen-ejecutivo" aria-label="Resumen ejecutivo de pagos">
-  <header class="ejecutivo-encabezado">
+<section class="resumen-pagos resumen-ejecutivo" aria-label="Resumen ejecutivo por cliente y servicio">
+  <div class="ejecutivo-encabezado">
     <div><h2>Resumen del período</h2><p>Montos efectivos según los filtros aplicados</p></div>
     <div class="ejecutivo-total"><span>Total efectivo · {{ resumen_visual.total.cantidad }} ODT</span><strong class="money-kpi" data-amount="{{ resumen_visual.total.monto|stringformat:'.2f' }}"></strong></div>
-  </header>
-  <div class="ejecutivo-columnas">
-    <section class="ejecutivo-clientes" aria-label="Distribución por cliente">
-      <h3>Tipo de cliente</h3>
-      <div class="ejecutivo-tipos">
-        {% for fila in resumen_visual.tipos %}<article><div><h4>{{ fila.nombre }}</h4><span>{{ fila.cantidad }} ODT</span></div><strong class="money-kpi" data-amount="{{ fila.monto|stringformat:'.2f' }}"></strong></article>{% endfor %}
-      </div>
-      <div class="ejecutivo-destacadas">
-        <h3>Cuentas destacadas <small>Incluidas en B2B / B2C</small></h3>
-        {% for fila in resumen_visual.marcas %}<div class="ejecutivo-cuenta"><strong>{{ fila.nombre }}</strong><span>{{ fila.cantidad }} ODT</span><b class="money-kpi" data-amount="{{ fila.monto|stringformat:'.2f' }}"></b></div>{% endfor %}
-      </div>
-    </section>
-    <section class="ejecutivo-servicios" aria-label="Distribución por servicio">
-      <div class="ejecutivo-servicios-titulo"><h3>Distribución por servicio</h3><span>ODT / monto efectivo</span></div>
-      <div class="ejecutivo-lista-servicios">
-        {% for fila in resumen_visual.servicios %}{% if fila.cantidad %}
-        <article class="ejecutivo-servicio">
-          <div class="ejecutivo-servicio-datos"><h4>{{ fila.nombre }}</h4><span>{{ fila.cantidad }} ODT</span><strong class="money-kpi" data-amount="{{ fila.monto|stringformat:'.2f' }}"></strong></div>
-          <div class="ejecutivo-barra" aria-hidden="true"><span style="width:{% widthratio fila.cantidad resumen_visual.total.cantidad 100 %}%"></span></div>
-        </article>
-        {% endif %}{% endfor %}
-        {% if not resumen_visual.total.cantidad %}<p class="ejecutivo-vacio">Sin ODT para los filtros seleccionados.</p>{% endif %}
-      </div>
-      <details class="ejecutivo-sin-actividad"><summary>Servicios sin actividad</summary><div>{% for fila in resumen_visual.servicios %}{% if not fila.cantidad %}<span>{{ fila.nombre }} <b>0 ODT · $0</b></span>{% endif %}{% endfor %}</div></details>
-      <p class="ejecutivo-leyenda">Barras: proporción de ODT. Importes incluyen ajustes y rechazados.</p>
-    </section>
   </div>
-  <footer class="ejecutivo-cierre">
-    <div><span>Mantenimiento aprobado</span><strong class="money-kpi" data-amount="{{ resumen_visual.mantenimiento.monto|stringformat:'.2f' }}"></strong><small>{{ resumen_visual.mantenimiento.cantidad }} ODT</small></div>
-    <div><span>Instalaciones B2C aprobadas</span><strong class="money-kpi" data-amount="{{ resumen_visual.instalaciones.monto|stringformat:'.2f' }}"></strong><small>{{ resumen_visual.instalaciones.cantidad }} ODT · Excluye Cruzverde</small></div>
-  </footer>
-  <details class="ejecutivo-criterios"><summary>Criterios del resumen</summary><p>Los totales por cliente y servicio incluyen ajustes y rechazados. Cruz Verde y Tattersall son un detalle del total, identificado por el nombre de la cuenta, y no se suman nuevamente. Mantenimiento aprobado incluye correctivas, preventivos, renovaciones, acuerdo comercial y presupuesto. Instalaciones B2C considera solo nueva instalación genérica. Aprobado no significa pagado; se conserva la regla actual de aprobación del sistema.</p>{% if resumen_visual.otros_aprobados.cantidad %}<p>Otros servicios aprobados fuera de ambos grupos: {{ resumen_visual.otros_aprobados.cantidad }} ODT · <span class="money-kpi" data-amount="{{ resumen_visual.otros_aprobados.monto|stringformat:'.2f' }}"></span>.</p>{% endif %}</details>
+  <div class="ejecutivo-matriz-scroll" role="region" aria-label="Desglose de cuentas por servicio; desplazar horizontalmente" tabindex="0">
+    <table class="ejecutivo-matriz">
+      <thead><tr><th scope="col">Cuentas</th><th scope="col">Total ODT</th><th scope="col" class="ejecutivo-col-total">Monto total</th>{% for columna in resumen_visual.columnas %}<th scope="col">{{ columna.nombre }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for fila in resumen_visual.filas_tipos %}{% include "revisiones/componentes/fila_resumen_cuenta.html" %}{% endfor %}
+      </tbody>
+      <tbody class="ejecutivo-detalle-marcas">
+        {% for fila in resumen_visual.marcas %}{% include "revisiones/componentes/fila_resumen_cuenta.html" %}{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="ejecutivo-nota">Cada servicio muestra monto y cantidad de ODT. Cruz Verde y Tattersall ya están incluidos en B2B/B2C; no se suman nuevamente. Montos efectivos con ajustes y rechazados.</p>
 </section>
