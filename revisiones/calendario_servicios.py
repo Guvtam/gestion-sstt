@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import EjecucionSincronizacion
 from .consultas.calendario import visitas_del_mes
+from .acceso_calendario import limitar_tecnicos_calendario
 from .acceso_coordinadores import datos_coordinador, es_coordinador_sstt, limitar_odts_coordinador
 from .cuentas_utils import normalizar_codigo_cuenta
 from .dominio.fechas import sumar_meses
@@ -36,7 +37,8 @@ def calendario_servicios(request):
     q = request.GET.get("q", "").strip()
     servicio = request.GET.get("servicio", "").strip()
     es_coordinador = es_coordinador_sstt(request.user)
-    periodo = limitar_odts_coordinador(request, visitas_del_mes(mes))
+    periodo = limitar_tecnicos_calendario(
+        request.user, limitar_odts_coordinador(request, visitas_del_mes(mes)))
     disponibles_mes = periodo.count()
     valores = list(periodo.order_by("servicio_efectivo").values_list("servicio_efectivo",flat=True).distinct())
     servicios = sorted({v or "__SIN_SERVICIO__" for v in valores})
