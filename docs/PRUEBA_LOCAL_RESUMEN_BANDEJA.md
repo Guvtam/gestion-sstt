@@ -52,3 +52,15 @@ Para volver a la vista anterior: detener runserver (Ctrl+C), ejecutar
 `git switch main` y volver a iniciar. No integrar el PR ni actualizar la Raspberry
 hasta revisar y aprobar la prueba local. No ejecutar collectstatic local si se
 usa runserver con la configuración habitual de desarrollo.
+
+## Segunda versión ejecutiva
+
+Se compacta el centro: importes B2B/B2C en dos bloques, cuentas destacadas en
+líneas y servicios activos con monto, cantidad y barra por proporción de ODT.
+Los servicios sin actividad y los criterios pasan a secciones desplegables.
+Los cierres aprobados permanecen al pie. No cambia ningún cálculo del resumen.
+
+Para actualizar la rama de prueba ya abierta en el PC, detener runserver,
+ejecutar `git pull --ff-only` y volver a iniciar con `python manage.py runserver`.
+Recargar con Ctrl+F5. No usar reset ni descartar settings.py o db.sqlite3.
+Si Git informa conflicto, detenerse y conservar los cambios locales.

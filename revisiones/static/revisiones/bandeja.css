@@ -1224,25 +1224,28 @@ td.service .correccion-pendiente-marca {margin-bottom:5px}
 @media(max-width:800px){.kpis-servicios{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.kpis-servicios{grid-template-columns:1fr}}
 
-/* Resumen intermedio: no altera tarjetas superiores ni operativas. */
-.resumen-pagos{background:#fff;border:1px solid #d5e2f0;border-radius:12px;padding:22px;margin:16px 0;color:#193d61;box-shadow:0 3px 10px #193d6105}
-.resumen-pagos h2,.resumen-pagos h3,.resumen-pagos h4,.resumen-pagos p{margin:0}
-.resumen-pagos h2{font-size:18px}.resumen-pagos h3{font-size:14px;margin-bottom:12px}
-.resumen-pagos p{color:#637c98;font-size:12px;line-height:1.55}
-.resumen-pagos-cabecera{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
-.resumen-pagos-etiqueta{background:#edf5fd;color:#216cb0;border-radius:20px;padding:8px 12px;white-space:nowrap;font-size:12px}
-.resumen-pagos-columnas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:28px}
-.resumen-pagos-scroll{overflow-x:auto}.resumen-pagos-tabla{width:100%;min-width:320px;border-collapse:collapse;font-size:13px}
-.resumen-pagos-tabla th,.resumen-pagos-tabla td{padding:12px;border-bottom:1px solid #e4edf6;text-align:right;position:static;background:transparent;box-shadow:none;white-space:nowrap}
-.resumen-pagos-tabla th:first-child{text-align:left}.resumen-pagos-tabla thead{background:#f0f5fa;font-size:11px;color:#617995}
-.resumen-pagos-tabla tfoot{background:#edf5fd;font-weight:700}.resumen-pagos .resumen-pagos-subtitulo{margin:22px 0 5px}
-.resumen-pagos .resumen-pagos-nota{font-size:11px;margin:8px 0 12px}
-.resumen-servicios-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.resumen-servicio{padding:15px 12px;border:1px solid #e0e9f3;border-radius:9px;background:#fafcfe;display:flex;flex-direction:column;gap:9px}
-.resumen-servicio h4{font-size:12px;line-height:1.4;font-weight:500;min-height:34px}.resumen-servicio strong{font-size:18px}.resumen-servicio span{font-size:11px;color:#6b829d}
-.resumen-pagos-aprobados{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
-.resumen-pagos-aprobados article{display:flex;justify-content:space-between;gap:16px;border:1px solid #cfe6e0;border-radius:9px;padding:16px;background:#f4faf8}
-.resumen-pagos-aprobados h3{margin-bottom:5px}.resumen-pagos-aprobados article>div:last-child{text-align:right;white-space:nowrap;display:flex;flex-direction:column;gap:6px}
-.resumen-pagos-aprobados strong{font-size:20px;color:#137561}.resumen-pagos-aprobados span{font-size:11px;color:#637c98}
-@media(max-width:1100px){.resumen-pagos-columnas{grid-template-columns:1fr}.resumen-servicios-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:700px){.resumen-pagos{padding:16px}.resumen-servicios-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.resumen-pagos-aprobados{grid-template-columns:1fr}.resumen-pagos-aprobados article{flex-direction:column}.resumen-pagos-aprobados article>div:last-child{text-align:left}}
+/* Resumen ejecutivo: primera y última fila permanecen intactas. */
+.resumen-ejecutivo{background:#fff;border:1px solid #d5e2ef;border-radius:12px;margin:16px 0;padding:22px 24px;color:#193b5c}
+.resumen-ejecutivo h2,.resumen-ejecutivo h3,.resumen-ejecutivo h4,.resumen-ejecutivo p{margin:0}
+.ejecutivo-encabezado{background:transparent;color:inherit;padding:0 0 18px;display:flex;justify-content:space-between;align-items:center;gap:20px;padding-bottom:18px;border-bottom:1px solid #e7edf4}
+.ejecutivo-encabezado h2{font-size:18px;font-weight:700}.ejecutivo-encabezado p{font-size:12px;color:#71849a;margin-top:5px}
+.ejecutivo-total{text-align:right;display:flex;flex-direction:column;gap:5px}.ejecutivo-total span{font-size:11px;color:#71849a}.ejecutivo-total strong{font-size:25px;letter-spacing:-.5px}
+.ejecutivo-columnas{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:34px;margin:20px 0}
+.resumen-ejecutivo h3{font-size:13px;font-weight:700}.ejecutivo-tipos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 20px}
+.ejecutivo-tipos article{background:#f3f7fc;border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.ejecutivo-tipos article>div{display:flex;align-items:center;justify-content:space-between;gap:8px}.ejecutivo-tipos h4{font-size:12px}.ejecutivo-tipos span{font-size:11px;color:#71849a}.ejecutivo-tipos strong{font-size:22px;letter-spacing:-.4px}
+.ejecutivo-destacadas h3{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}.ejecutivo-destacadas h3 small{font-size:10px;font-weight:400;color:#71849a}
+.ejecutivo-cuenta{display:grid;grid-template-columns:minmax(0,1fr) 65px 110px;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #edf1f6;font-size:12px}
+.ejecutivo-cuenta strong{font-weight:500}.ejecutivo-cuenta span{text-align:right;font-size:11px;color:#71849a}.ejecutivo-cuenta b{text-align:right;font-size:14px}
+.ejecutivo-servicios-titulo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}.ejecutivo-servicios-titulo>span{font-size:10px;color:#71849a}
+.ejecutivo-lista-servicios{max-height:300px;overflow-y:auto;padding-right:3px}.ejecutivo-servicio{padding:11px 0 5px}.ejecutivo-servicio-datos{display:grid;grid-template-columns:minmax(0,1fr) 65px 120px;gap:10px;align-items:center}
+.ejecutivo-servicio h4{font-size:12px;font-weight:500;line-height:1.4}.ejecutivo-servicio-datos>span{text-align:right;font-size:11px;color:#71849a}.ejecutivo-servicio strong{text-align:right;font-size:16px}
+.ejecutivo-barra{height:5px;background:#edf2f8;border-radius:5px;margin-top:8px;overflow:hidden}.ejecutivo-barra>span{display:block;height:100%;background:#397ebd;border-radius:5px}
+.ejecutivo-sin-actividad{font-size:11px;color:#71849a;margin-top:15px}.ejecutivo-sin-actividad summary,.ejecutivo-criterios summary{cursor:pointer;width:fit-content}.ejecutivo-sin-actividad>div{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0}.ejecutivo-sin-actividad span{background:#f5f7fa;padding:8px;border-radius:5px}.ejecutivo-sin-actividad b{display:block;font-size:10px;font-weight:400;margin-top:3px}
+.resumen-ejecutivo .ejecutivo-leyenda{font-size:10px;color:#71849a;margin-top:10px}.ejecutivo-vacio{font-size:12px;color:#71849a;padding:20px 0}
+.ejecutivo-cierre{text-align:left;color:inherit;display:grid;grid-template-columns:1fr 1fr;background:#f1f8f6;border:1px solid #d9eae4;border-radius:8px;padding:15px 18px;gap:20px}.ejecutivo-cierre>div{display:grid;grid-template-columns:1fr auto;align-items:center;gap:5px 16px}.ejecutivo-cierre>div+div{border-left:1px solid #d9eae4;padding-left:20px}
+.ejecutivo-cierre span{font-size:12px;font-weight:500}.ejecutivo-cierre strong{font-size:21px;color:#15725f;text-align:right;letter-spacing:-.3px}.ejecutivo-cierre small{font-size:10px;color:#71849a;grid-column:1/-1}
+.ejecutivo-criterios{margin-top:12px;font-size:10px;color:#71849a}.ejecutivo-criterios p{line-height:1.6;padding-top:8px;max-width:1000px}
+@media(min-width:1500px){.resumen-ejecutivo{padding:20px 28px}.ejecutivo-columnas{gap:48px}}
+@media(max-width:850px){.ejecutivo-columnas{grid-template-columns:1fr;gap:24px}.ejecutivo-cierre{grid-template-columns:1fr}.ejecutivo-cierre>div+div{border-left:0;border-top:1px solid #d9eae4;padding:12px 0 0}}
+@media(max-width:480px){.resumen-ejecutivo{padding:16px}.ejecutivo-encabezado{align-items:flex-start}.ejecutivo-encabezado h2{font-size:16px}.ejecutivo-total strong{font-size:20px}.ejecutivo-tipos strong{font-size:18px}.ejecutivo-tipos article{padding:12px}.ejecutivo-servicio-datos{grid-template-columns:minmax(0,1fr) 48px 94px;gap:6px}.ejecutivo-servicio strong{font-size:14px}.ejecutivo-cuenta{grid-template-columns:minmax(0,1fr) 48px 94px}.ejecutivo-destacadas h3{align-items:flex-start;flex-direction:column}.ejecutivo-cierre>div{grid-template-columns:1fr}.ejecutivo-cierre strong{text-align:left}.ejecutivo-servicios-titulo>span{display:none}}
