@@ -133,6 +133,8 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
 
     inicio_indicadores = tiempo.perf_counter()
 
+    from ..consultas.resumen_bandeja import resumen_bandeja
+    resumen_visual = resumen_bandeja(registros) if not es_coordinador and not por_instalacion else None
     financieros = indicadores_financieros(registros)
     operativos = indicadores_operativos(registros)
 
@@ -257,6 +259,7 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
             "por_revisar": financieros["por_revisar"],
             "observadas": financieros["observadas"],
 
+            "resumen_visual": resumen_visual,
             "indicadores": {
                 "total": financieros["total"],
                 "aprobadas": financieros["aprobadas"],
