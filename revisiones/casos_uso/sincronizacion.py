@@ -5,6 +5,8 @@ from django.db import DatabaseError, transaction
 from django.utils import timezone
 
 from ..correcciones import verificar_sincronizacion
+from ..dominio.contratistas_odt import contratista_desde_tecnico
+from .contratistas_odt import registrar_cambios_contratista
 from ..dominio.cuentas import TIPO_CLIENTE_PREDETERMINADO
 from ..cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta, tipo_cliente_cuenta
 from ..integraciones.bloqueo_sync import bloquear_sincronizacion
@@ -59,6 +61,7 @@ def _aplicar_lote(lote, simular):
         existentes_qs = existentes_qs.select_for_update()
     existentes = existentes_qs.in_bulk(validos, field_name="numero")
     nuevos, cambios = [], []
+    cambios_contratista = []
     codigos_nuevos = set()
     for numero, datos in validos.items():
         datos["tipo_cliente"] = tipo_cliente_cuenta(datos["cuenta_completa"], catalogo)
@@ -67,16 +70,16 @@ def _aplicar_lote(lote, simular):
             codigos_nuevos.add(codigo)
         odt = existentes.get(numero)
         if odt is None:
-            nuevos.append(ODT(numero=numero, contratista=datos["tecnico"][:150], **datos))
+            nuevos.append(ODT(numero=numero, contratista=contratista_desde_tecnico(datos["tecnico"]), **datos))
         else:
-            # Completar asignaciones ausentes incluso si el origen no cambió.
-            # Una asignación existente pertenece a SSTT y se conserva.
-            completar_contratista = not (odt.contratista or "").strip() and bool(datos["tecnico"].strip())
-            if completar_contratista or any(getattr(odt, campo) != valor for campo, valor in datos.items()):
+            nuevo_contratista = contratista_desde_tecnico(datos["tecnico"], odt.contratista)
+            cambia_contratista = nuevo_contratista != odt.contratista
+            if cambia_contratista or any(getattr(odt, campo) != valor for campo, valor in datos.items()):
                 for campo, valor in datos.items():
                     setattr(odt, campo, valor)
-                if completar_contratista:
-                    odt.contratista = datos["tecnico"][:150]
+                if cambia_contratista:
+                    cambios_contratista.append((odt, odt.contratista, nuevo_contratista))
+                    odt.contratista = nuevo_contratista
                 cambios.append(odt)
             else:
                 conteos.sin_cambios += 1
@@ -88,9 +91,10 @@ def _aplicar_lote(lote, simular):
 
     ODT.objects.bulk_create(nuevos, batch_size=250)
     if cambios:
-        # Los contratistas existentes conservan su valor; solo se completan vacíos.
+        # El contratista operativo refleja el técnico actual; los documentos facturados no se modifican.
         campos = [*next(iter(validos.values())), "contratista"]
         ODT.objects.bulk_update(cambios, campos, batch_size=250)
+    registrar_cambios_contratista(cambios_contratista, "Actualización del técnico desde SoftGuard.")
     for codigo in sorted(codigos_nuevos):
         _, creada = CatalogoCuenta.objects.get_or_create(codigo_cuenta=codigo, defaults={
             "tipo_cliente": TIPO_CLIENTE_PREDETERMINADO, "requiere_revision_ceco": True,

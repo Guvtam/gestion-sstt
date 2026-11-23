@@ -97,6 +97,13 @@ def historial_odt(request, numero):
                 "usuario": evento.usuario.get_username() if evento.usuario else "Sistema SSTT",
                 "correo_usuario": "", "correo_observacion": "", "id_usuario": None,
             })
+        from ..casos_uso.contratistas_odt import PREFIJO_AUDITORIA
+        for evento in odt.eventos_revision.filter(comentario__startswith=PREFIJO_AUDITORIA).select_related("usuario"):
+            historial.append({
+                "fecha": evento.fecha.isoformat(), "accion": "SSTT · Contratista actualizado",
+                "observacion": evento.comentario, "usuario": evento.usuario.get_username() if evento.usuario else "Sistema SSTT",
+                "correo_usuario": "", "correo_observacion": "", "id_usuario": None,
+            })
         def instante(evento):
             fecha = parse_datetime(evento["fecha"]) if evento.get("fecha") else None
             if fecha is None:

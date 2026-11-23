@@ -16,9 +16,26 @@ su seguimiento de corrección. Las equivalencias automáticas se aplican al fina
 en una transacción separada junto al cierre exitoso de la ejecución.
 
 El contrato de transformación contiene solo campos de origen y clasificación
-proyectada. No incluye servicio/monto editados, contratista existente, revisión,
+proyectada. No incluye servicio/monto editados, contratista derivado, revisión,
 informe, asignación manual de coordinador ni valores facturados. La sincronización
 no elimina ODT cuando el origen deja de devolverlas.
+
+El contratista operativo se deriva del técnico actual de SoftGuard (hasta 150
+caracteres) y se actualiza si cambia o si el valor local difiere, aunque los demás
+campos de origen no cambien. Un técnico vacío no borra la asignación guardada.
+Cada cambio de un contratista existente deja un EventoRevision con el valor
+anterior y nuevo, visible en el historial de la ODT. El contratista operativo ya
+no se considera una asignación manual independiente. El catálogo de contratistas
+y sus equivalencias se mantienen separados.
+
+Las cabeceras y los items de facturación emitidos no se reasignan: conservan
+contratista, requisición, servicio y monto facturados. La selección de una nueva
+facturación usa el contratista operativo corregido y conserva sus bloqueos,
+exclusión de ya facturadas y confirmación por huella.
+
+Para diferencias existentes se dispone de `reparar_contratistas_odt`, en modo
+simulación por defecto y sin conexión a SQL Server. Ver
+[Reparación de contratistas](REPARACION_CONTRATISTAS_ODT.md).
 
 ## Historial
 
