@@ -96,5 +96,4 @@ class DisenoFacturacionInstalacionTests(TestCase):
         with patch('revisiones.vistas.bandeja.coordinadores_para_mostrar',
                    side_effect=lambda r,ns:{n:{'identificado':False} for n in ns}):
             respuesta=self.client.get('/',{'fecha_desde':'2026-10-21','fecha_hasta':'2026-11-20'})
-        self.assertContains(respuesta,'class="resumen-pagos resumen-ejecutivo"')
-        self.assertContains(respuesta,'class="kpis kpis-operativos"')
+        self.assertContains(respuesta,'class="kpis kpis-servicios"')

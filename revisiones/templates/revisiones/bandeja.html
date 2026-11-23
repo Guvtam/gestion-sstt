@@ -5,7 +5,7 @@
 {% block estilos %}
 <link
     rel="stylesheet"
-    href="{% static 'revisiones/bandeja.css' %}?v=20261123-matriz-cuentas-3"
+    href="{% static 'revisiones/bandeja.css' %}?v=20261111-cruzverde"
   >
 {% endblock %}
 {% block atributos_body %}
@@ -73,7 +73,60 @@
 
     </section>
     {% if not por_instalacion %}
-    {% include "revisiones/componentes/resumen_bandeja.html" %}
+    <section class="kpis kpis-servicios" aria-label="Indicadores por servicio">
+      <div class="kpi">
+        <small>Mantención correctiva con cobro</small>
+        <strong>{{ mantencion_con_cobro.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ mantencion_con_cobro.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantención correctiva sin cobro</small>
+        <strong>{{ mantencion_sin_cobro.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ mantencion_sin_cobro.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento renovación</small>
+        <strong>{{ renovacion.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ renovacion.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento preventivo</small>
+        <strong>{{ mantenimiento_preventivo.cantidad }}</strong>
+        <b class="money-kpi"
+           data-amount="{{ mantenimiento_preventivo.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento acuerdo comercial</small>
+        <strong>{{ acuerdo_comercial.cantidad }}</strong>
+        <b class="money-kpi" data-amount="{{ acuerdo_comercial.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento presupuesto</small>
+        <strong>{{ presupuesto.cantidad }}</strong>
+        <b class="money-kpi" data-amount="{{ presupuesto.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+
+      <div class="kpi">
+        <small>Mantenimiento nueva instalación Cruzverde</small>
+        <strong>{{ nueva_instalacion_cruzverde.cantidad }}</strong>
+        <b class="money-kpi" data-amount="{{ nueva_instalacion_cruzverde.monto|stringformat:'.2f' }}"></b>
+        <div class="hint">Monto efectivo, incluidos ajustes</div>
+      </div>
+    </section>
     {% endif %}
     {% endif %}
 
