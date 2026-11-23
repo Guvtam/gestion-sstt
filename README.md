@@ -54,6 +54,8 @@ de versiones. Registrar y validar versiones exactas antes de cada release.
 - Coordinadores: solo sus ODT identificadas y operaciones autorizadas.
 - Una cuenta con código válido sin clasificación explícita se considera B2C.
   Sin código reconocible se muestra Sin clasificar; CECO no se infiere.
+- El contratista operativo sigue al técnico actual no vacío de SoftGuard, con auditoría.
+  Las cabeceras de facturación ya emitidas conservan su contratista histórico.
 - Una ODT facturada conserva servicio y monto facturados como instantánea.
 - Procesada es una marca manual; Actualizada requiere coincidencia con el origen.
 - Visitas: fecha de visita; realizadas en azul, abiertas en verde y atrasadas
