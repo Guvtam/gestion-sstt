@@ -1,8 +1,7 @@
 # Prueba local del resumen intermedio de la bandeja
 
 La primera fila financiera y la última fila operativa se conservan. El bloque
-intermedio muestra tipos B2B/B2C/Sin clasificar, detalle de Cruz Verde, Tattersall
-y Enel, desglose por todos los servicios y cierres aprobados.
+intermedio muestra tipos B2B/B2C/Sin clasificar, detalle de Cruz Verde y Tattersall, desglose por todos los servicios y cierres aprobados.
 
 Todos los datos parten del mismo queryset autorizado y filtrado de la tabla,
 antes de paginar. Se conserva el monto efectivo: editado si no es nulo, incluso
@@ -11,10 +10,9 @@ incluyen rechazados para conciliar con el total efectivo. La primera tarjeta
 superior sigue mostrando el original SoftGuard.
 
 Las cuentas destacadas son un detalle adicional, no se suman otra vez. Se
-identifican por nombre de cuenta (Cruz Verde/Cruzverde, Tattersall, Enel), sin
+identifican por nombre de cuenta (Cruz Verde/Cruzverde, Tattersall), sin
 cambiar tipo de cliente ni CECO. Este criterio puede requerir un catálogo
-explícito futuro si las denominaciones no incluyen la marca. No se infiere Enel
-a partir de nombres parciales como Generación u otros textos.
+explícito futuro si las denominaciones no incluyen la marca.
 
 Mantenimiento aprobado incluye correctivas con/sin cobro, preventivos,
 renovaciones, acuerdo comercial y presupuesto. Instalaciones B2C aprobadas

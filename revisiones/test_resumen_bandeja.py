@@ -17,7 +17,9 @@ class ResumenBandejaTests(TestCase):
         self.assertEqual(r["total"]["cantidad"],4)
         self.assertEqual(sum(x["cantidad"] for x in r["tipos"]),4)
         self.assertEqual(sum(x["monto"] for x in r["tipos"]),400)
-        self.assertEqual(sum(x["cantidad"] for x in r["marcas"]),3)
+        self.assertEqual(sum(x["cantidad"] for x in r["marcas"]),2)
+        self.assertEqual([x["nombre"] for x in r["marcas"]],["Cruz Verde","Tattersall"])
+        self.assertEqual(r["tipos"][0]["monto"],200)
 
     def test_ajustes_cero_y_dos_servicios_editados_y_rechazados(self):
         a=self.crear(1,valor_pago_tecnico=230000,valor_pago_editado=2,

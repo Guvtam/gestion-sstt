@@ -25,7 +25,7 @@ def indicador(nombre):
 
 def resumen_bandeja(registros):
     tipos = {t: indicador(t) for t in ("B2B", "B2C", "Sin clasificar")}
-    marcas = {m: indicador(m) for m in ("Cruz Verde", "Tattersall", "Enel")}
+    marcas = {m: indicador(m) for m in ("Cruz Verde", "Tattersall")}
     servicios = {c: indicador(n) for c, n in CATEGORIAS}
     mantenimiento = indicador("Mantenimiento aprobado")
     instalaciones = indicador("Instalaciones B2C aprobadas")
@@ -48,7 +48,6 @@ def resumen_bandeja(registros):
         # Desglose por nombre visible; no reasigna tipo de cliente ni CECO.
         if re.search(r"\bCRUZ\s*VERDE\b", nombre): destinos.append(marcas["Cruz Verde"])
         elif re.search(r"\bTATTERSALL\b", nombre): destinos.append(marcas["Tattersall"])
-        elif re.search(r"\bENEL\b", nombre): destinos.append(marcas["Enel"])
         if fila["_aprobada_resumen"]:
             if categoria in MANTENIMIENTO: destinos.append(mantenimiento)
             elif categoria == "nueva_instalacion" and tipo == "B2C": destinos.append(instalaciones)
