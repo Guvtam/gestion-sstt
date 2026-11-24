@@ -1,0 +1,27 @@
+{% load formato_sstt tz %}
+<section class="panel" id="detecciones-softguard">
+  <h2>Cambios detectados en SoftGuard</h2>
+  <p class="hint">Fecha y hora en que SSTT recibió un servicio o monto diferente, en horario de Chile. Se registra desde la activación de esta función; no corresponde a la hora de edición en SoftGuard. Estos filtros se aplican solo a este historial.</p>
+  <form method="get" class="filters" action="#detecciones-softguard">
+    {% for nombre, valor in detecciones.mantener %}<input type="hidden" name="{{ nombre }}" value="{{ valor }}">{% endfor %}
+    <div class="field"><label class="field-label" for="sgDesde">Detectado desde</label><input id="sgDesde" type="date" name="sg_desde" value="{{ detecciones.filtros.sg_desde }}"></div>
+    <div class="field"><label class="field-label" for="sgHasta">Detectado hasta</label><input id="sgHasta" type="date" name="sg_hasta" value="{{ detecciones.filtros.sg_hasta }}"></div>
+    <div class="field"><label class="field-label" for="sgOdt">Número ODT</label><input id="sgOdt" name="sg_odt" value="{{ detecciones.filtros.sg_odt }}" inputmode="numeric"></div>
+    <div class="field"><label class="field-label" for="sgCampo">Campo detectado</label><select id="sgCampo" name="sg_campo"><option value="">Servicio y monto</option><option value="servicio"{% if detecciones.filtros.sg_campo == 'servicio' %} selected{% endif %}>Servicio</option><option value="valor_pago_tecnico"{% if detecciones.filtros.sg_campo == 'valor_pago_tecnico' %} selected{% endif %}>Pago técnico</option></select></div>
+    <div class="filter-actions"><button type="submit">Buscar detecciones</button></div>
+  </form>
+  {% for error in detecciones.errores %}<p role="alert">{{ error }}</p>{% endfor %}
+  <p class="hint">{{ detecciones.cantidad }} cambios de campo · {{ detecciones.cantidad_odt }} ODT. Una ODT puede tener varias detecciones.</p>
+  {% include "revisiones/componentes/paginacion.html" with pagina=detecciones.pagina querystring=detecciones.querystring parametro="page_detalle" ancla="detecciones-softguard" numerada=True siempre=True etiqueta="Paginación de detecciones" %}
+  <div class="table-scroll"><table class="modificadas-tabla"><thead><tr><th>Detectado por SSTT · Chile</th><th>ODT</th><th>Campo</th><th>Valor anterior</th><th>Valor nuevo</th><th>Variación de monto</th><th>Sincronización</th></tr></thead><tbody>
+    {% for cambio in detecciones.filas %}<tr>
+      <td>{% timezone "America/Santiago" %}{{ cambio.detectado_en|date:"d/m/Y H:i:s" }}{% endtimezone %}</td>
+      <td><a href="{% url 'bandeja' %}?numero_odt={{ cambio.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{{ cambio.numero|stringformat:'d' }}</a></td>
+      <td>{{ cambio.campo }}</td>
+      <td>{% if cambio.es_monto %}${{ cambio.anterior|clp }}{% else %}{{ cambio.anterior|default:"Sin servicio" }}{% endif %}</td>
+      <td>{% if cambio.es_monto %}${{ cambio.nuevo|clp }}{% else %}{{ cambio.nuevo|default:"Sin servicio" }}{% endif %}</td>
+      <td>{% if cambio.es_monto %}{% if cambio.diferencia > 0 %}+{% endif %}${{ cambio.diferencia|clp }}{% else %}—{% endif %}</td>
+      <td>{{ cambio.ejecucion_id|default:"—" }}</td>
+    </tr>{% empty %}<tr><td colspan="7">Sin detecciones registradas para estos filtros. Los registros anteriores a la activación no se reconstruyen.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
