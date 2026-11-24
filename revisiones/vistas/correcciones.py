@@ -71,9 +71,13 @@ def odt_modificadas(request):
 
     pagina = Paginator(registros, 50).get_page(request.GET.get("page"))
     filas = []
-    from ..models import CambioSoftGuard
+    from ..models import CambioSoftGuard, EventoCorreccionODT
     ultimas_detecciones = dict(CambioSoftGuard.objects.filter(odt_id__in=[o.pk for o in pagina.object_list])
         .values("odt_id").annotate(ultima=Max("detectado_en")).values_list("odt_id", "ultima"))
+
+    ultimos_procesamientos = dict(EventoCorreccionODT.objects.filter(
+        odt_id__in=[o.pk for o in pagina.object_list], estado_nuevo="EN_PROCESO")
+        .order_by().values("odt_id").annotate(ultima=Max("fecha")).values_list("odt_id", "ultima"))
 
     coordinadores_pagina = coordinadores_para_mostrar(request, [o.numero for o in pagina.object_list])
 
@@ -100,6 +104,7 @@ def odt_modificadas(request):
         filas.append({
             "numero": odt.numero,
             "ultima_deteccion_softguard": ultimas_detecciones.get(odt.pk),
+            "procesada_en": ultimos_procesamientos.get(odt.pk),
             "coordinador": coordinador.get("nombre", "Sin identificar"),
             "coordinador_identificado": coordinador.get("identificado", False),
             "contratista": odt.contratista,
