@@ -143,3 +143,10 @@ class NavegacionCompartidaTests(SimpleTestCase):
                 datos["request"] = request
                 html = render_to_string(f"revisiones/{plantilla}.html", datos)
                 self.assertEqual(html.count("historial_modal.css"), 1)
+
+    def test_script_de_enlaces_compartido_en_bases_de_ambos_modulos(self):
+        request=RequestFactory().get('/')
+        request.user=AnonymousUser()
+        for template in ('revisiones/base_documento.html','revisiones/base_operativa.html','contratistas/base.html'):
+            html=render_to_string(template,{},request=request)
+            self.assertEqual(html.count('revisiones/enlaces_pestanas.js'),1)
