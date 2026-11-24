@@ -9,6 +9,7 @@ from ..acceso_coordinadores import (
     coordinadores_en_peticion,
 )
 from ..casos_uso.gestion_correcciones import gestionar_correccion
+from ..casos_uso.reapertura_rechazos import deshacer_rechazo
 from ..casos_uso.edicion_odt import editar_odt, revisar_odt, revisar_odts
 from ..casos_uso.informes_asignaciones import actualizar_estado_informe, asignar_responsable
 from ..coordinadores_softguard import identificar_coordinador_softguard
@@ -124,3 +125,16 @@ def asignar_coordinador(request):
         return _respuesta_error_odt(error)
     return JsonResponse({"ok": True, "coordinador": resultado.nombre})
 
+
+
+@login_required
+@permission_required("revisiones.revisar_pago_sstt", raise_exception=True)
+@require_POST
+def reabrir_rechazo(request):
+    try:
+        resultado = deshacer_rechazo(request.user, numero=request.POST.get("numero", ""),
+                                     motivo=request.POST.get("motivo", ""))
+    except ErrorOperacionODT as error:
+        return _respuesta_error_odt(error)
+    return JsonResponse({"ok": True, "estado": resultado.estado,
+                         "mensaje": "Rechazo deshecho. La ODT quedó aprobada."})

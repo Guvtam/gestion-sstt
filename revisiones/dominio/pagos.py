@@ -15,5 +15,5 @@ def motivo_bloqueo(*, facturada, rechazada):
     if facturada:
         return "La ODT ya está facturada y no permite modificaciones."
     if rechazada:
-        return "La ODT está rechazada definitivamente y no permite modificaciones."
+        return "La ODT está rechazada y no permite modificaciones hasta deshacer el rechazo."
     return None

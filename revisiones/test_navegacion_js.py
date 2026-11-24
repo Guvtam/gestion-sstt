@@ -27,3 +27,6 @@ class NavegacionJSTests(SimpleTestCase):
 
     def test_enlaces_de_consulta_en_nueva_pestana_sin_afectar_controles(self):
         self.comprobar("enlaces_pestanas")
+
+    def test_reapertura_requiere_confirmacion_y_conserva_posicion(self):
+        self.comprobar("reabrir_rechazo")

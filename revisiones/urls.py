@@ -16,6 +16,7 @@ from .historial_requisiciones import historial_requisiciones
 
 
 urlpatterns = [
+    path("reabrir-rechazo/", operaciones_odt.reabrir_rechazo, name="reabrir_rechazo"),
     path("calendario-servicios/odt/<int:numero>/", detalle_calendario, name="detalle_calendario"),
     path("pagos-nueva-instalacion/", bandeja.pagos_nueva_instalacion, name="pagos_instalacion"),
     path("facturacion/<int:facturacion_id>/historial-requisicion/", historial_requisiciones, name="historial_requisiciones"),

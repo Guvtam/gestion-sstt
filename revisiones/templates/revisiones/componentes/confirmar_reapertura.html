@@ -1,0 +1,10 @@
+<dialog id="confirmarReapertura" aria-labelledby="tituloReapertura" data-url="{% url 'reabrir_rechazo' %}">
+  <form id="formReapertura" method="dialog">
+    <h2 id="tituloReapertura">Deshacer rechazo · ODT <span id="numeroReapertura"></span></h2>
+    <p>La ODT pasará a <strong>Aprobada</strong> y volverá a considerarse para pago y facturación según los filtros y reglas vigentes.</p>
+    <label for="motivoReapertura">Motivo para deshacer el rechazo</label>
+    <textarea id="motivoReapertura" name="motivo" required rows="3" style="display:block;width:100%;box-sizing:border-box;margin:10px 0"></textarea>
+    <p id="errorReapertura" role="alert" class="error-row"></p>
+    <div class="dialog-actions"><button type="button" id="cancelarReapertura" class="alt">Cancelar</button><button type="submit" id="aprobarReapertura">Confirmar aprobación</button></div>
+  </form>
+</dialog>

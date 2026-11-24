@@ -33,7 +33,7 @@ def resumen_bandeja(registros):
     instalaciones = indicador("Instalaciones B2C aprobadas")
     otros_aprobados = indicador("Otros servicios aprobados")
     total = indicador("Total del período filtrado")
-    grupos = registros.order_by().annotate(
+    grupos = registros.exclude(revision__estado="RECHAZADA").order_by().annotate(
         _servicio_resumen=servicio_normalizado(),
         _aprobada_resumen=Case(When(condicion_aprobada(), then=Value(True)),
                               default=Value(False), output_field=BooleanField()),
@@ -45,11 +45,12 @@ def resumen_bandeja(registros):
         servicio = fila["_servicio_resumen"]
         categoria = ("nueva_instalacion" if normalizar_servicio(servicio) ==
                      "MANTENIMIENTO NUEVA INSTALACION" else categoria_servicio(servicio))
-        destinos = [total, tipos[tipo], servicios[categoria]]
+        destinos = [total, servicios[categoria]]
         nombre = re.sub(r"[^A-Z0-9]+", " ", normalizar_servicio(fila["cuenta_completa"]))
-        # Desglose por nombre visible; no reasigna tipo de cliente ni CECO.
+        # Categorías excluyentes del resumen; el catálogo B2B/B2C no se modifica.
         if re.search(r"\bCRUZ\s*VERDE\b", nombre): destinos.append(marcas["Cruz Verde"])
         elif re.search(r"\bTATTERSALL\b", nombre): destinos.append(marcas["Tattersall"])
+        else: destinos.append(tipos[tipo])
         if fila["_aprobada_resumen"]:
             if categoria in MANTENIMIENTO: destinos.append(mantenimiento)
             elif categoria == "nueva_instalacion" and tipo == "B2C": destinos.append(instalaciones)
@@ -64,6 +65,8 @@ def resumen_bandeja(registros):
     filas_tipos = [v for k,v in tipos.items() if k != "Sin clasificar" or v["cantidad"]]
     for grupo in [*filas_tipos, *marcas.values()]:
         grupo["celdas"] = [grupo["desglose"][c] for c in columnas]
+    total["celdas"] = [servicios[c] for c in columnas]
+    total["nombre"] = "Total sin rechazados"
     return {"columnas": [dict(categoria=c, nombre=servicios[c]["nombre"]) for c in columnas],
             "filas_tipos": filas_tipos,
             "tipos": [v for k,v in tipos.items() if k != "Sin clasificar" or v["cantidad"]],
