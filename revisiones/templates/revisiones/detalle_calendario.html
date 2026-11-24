@@ -1,0 +1,35 @@
+{% extends "revisiones/base_operativa.html" %}
+{% load static %}
+{% block titulo %}ODT {{ detalle.numero }} · Detalle técnico{% endblock %}
+{% block titulo_encabezado %}Detalle técnico de visita{% endblock %}
+{% block subtitulo %}Consulta de equipos internos · Solo lectura{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{% static 'revisiones/detalle_calendario.css' %}?v=20261124-1">{% endblock %}
+{% block contenido %}
+<main class="detalle-visita">
+  <section class="detalle-visita-panel">
+    <div class="detalle-visita-titulo"><div><span>Orden de trabajo</span><h2>ODT {{ detalle.numero|stringformat:'d' }}</h2></div><a class="btn alt" href="{{ volver_calendario }}">← Volver al calendario</a></div>
+    <h3>{{ detalle.cuenta|default:"Sin cuenta" }}</h3>
+    <dl class="detalle-visita-datos">
+      <div><dt>Técnico</dt><dd>{{ detalle.tecnico }}</dd></div>
+      <div><dt>Estado SoftGuard</dt><dd>{{ detalle.estado }}</dd></div>
+      <div><dt>Servicio</dt><dd>{{ detalle.servicio|default:"Sin servicio" }}</dd></div>
+      <div><dt>Dirección</dt><dd>{{ detalle.direccion|default:"Sin dirección" }}</dd></div>
+      <div><dt>Localidad</dt><dd>{{ detalle.localidad|default:"Sin localidad" }}</dd></div>
+      <div><dt>Visita</dt><dd>{{ detalle.fecha_visita|date:"d/m/Y"|default:"Sin fecha" }}</dd></div>
+      <div><dt>Creación</dt><dd>{{ detalle.fecha_creacion|date:"d/m/Y H:i"|default:"Sin fecha" }}</dd></div>
+      <div><dt>Finalización</dt><dd>{{ detalle.fecha_finalizacion|date:"d/m/Y H:i"|default:"Sin fecha" }}</dd></div>
+    </dl>
+    <h3>Observaciones técnicas</h3>
+    <div class="detalle-visita-texto">{{ detalle.observaciones|default:"Sin observaciones registradas."|linebreaksbr }}</div>
+  </section>
+  <section class="detalle-visita-panel">
+    <h2>Historial técnico de SoftGuard</h2>
+    <p class="detalle-visita-nota">Acciones y observaciones del origen. Los fragmentos administrativos identificables se omiten en esta consulta.</p>
+    {% if not historial_disponible %}<p role="status" class="detalle-visita-aviso">El historial no está disponible temporalmente. Puedes volver a intentar más tarde.</p>
+    {% else %}<ol class="detalle-visita-historial">
+      {% for evento in eventos %}<li><div class="detalle-visita-evento"><strong>{{ evento.accion }}</strong><time>{{ evento.fecha|date:"d/m/Y H:i"|default:"Sin fecha" }}</time></div><p class="detalle-visita-usuario">{{ evento.usuario }}</p><div class="detalle-visita-texto">{{ evento.observacion|default:"Sin observación adicional."|linebreaksbr }}</div></li>
+      {% empty %}<li>Sin movimientos técnicos registrados.</li>{% endfor %}
+    </ol>{% endif %}
+  </section>
+</main>
+{% endblock %}

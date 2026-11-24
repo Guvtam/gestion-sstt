@@ -75,8 +75,8 @@
 <div class="calendario-dia {% if not dia.del_mes %}fuera-mes{% endif %} {% if dia.hoy %}es-hoy{% endif %}">
 <time datetime="{{ dia.fecha|date:'Y-m-d' }}">{{ dia.fecha|date:"j" }}</time>
 {% for evento in dia.eventos %}
-{% if puede_ver_bandeja %}<a class="calendario-evento visita-{{ evento.categoria }}" href="{% url 'bandeja' %}?numero_odt={{ evento.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{% else %}<div class="calendario-evento visita-{{ evento.categoria }}">{% endif %}
-<b>{{ evento.codigo }}</b><span class="visita-etiqueta">{{ evento.etiqueta }} · {{ evento.estado }}</span><span>{{ evento.nombre }}</span><span>ODT {{ evento.numero|stringformat:'d' }} · {{ evento.servicio|default:"Sin servicio" }}</span><span>{{ evento.tecnico }}</span>{% if puede_ver_bandeja %}</a>{% else %}</div>{% endif %}
+{% if puede_ver_detalle_calendario %}<a class="calendario-evento visita-{{ evento.categoria }}" href="{% url 'detalle_calendario' evento.numero %}?volver={{ volver_calendario|urlencode }}" aria-label="Ver detalle de ODT {{ evento.numero }}">{% elif puede_ver_bandeja %}<a class="calendario-evento visita-{{ evento.categoria }}" href="{% url 'bandeja' %}?numero_odt={{ evento.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=">{% else %}<div class="calendario-evento visita-{{ evento.categoria }}">{% endif %}
+<b>{{ evento.codigo }}</b><span class="visita-etiqueta">{{ evento.etiqueta }} · {{ evento.estado }}</span><span>{{ evento.nombre }}</span><span>ODT {{ evento.numero|stringformat:'d' }} · {{ evento.servicio|default:"Sin servicio" }}</span><span>{{ evento.tecnico }}</span>{% if puede_ver_detalle_calendario or puede_ver_bandeja %}</a>{% else %}</div>{% endif %}
 {% endfor %}</div>
 {% endfor %}{% endfor %}
 </div></div>

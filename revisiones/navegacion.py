@@ -48,7 +48,7 @@ def datos_menu(request, contexto):
 
     agregar("bandeja", "Gestión de pagos", bandeja, ("detalle",))
     agregar("pagos_instalacion", "Pagos nueva instalación", pagos_instalacion(usuario))
-    agregar("calendario_servicios", "Calendario de visitas", bandeja or usuario.has_perm("revisiones.ver_calendario_sstt"))
+    agregar("calendario_servicios", "Calendario de visitas", bandeja or usuario.has_perm("revisiones.ver_calendario_sstt"), ("detalle_calendario",))
     agregar("analisis_odt", "Análisis de ODT", bandeja and not coordinador and usuario.has_perm("revisiones.revisar_pago_sstt"))
     agregar("bandeja_creacion", "ODT por creación", bandeja and not coordinador)
     agregar("odt_modificadas", "Seguimiento de cambios", bandeja and not coordinador)
@@ -83,6 +83,8 @@ def datos_menu(request, contexto):
             anterior = None
         if anterior in permitidas and partes.path != request.path:
             volver = partes.path + ("?" + partes.query if partes.query else "")
+    if actual == "detalle_calendario":
+        volver = contexto.get("volver_calendario", reverse("calendario_servicios"))
     return {"opciones": opciones, "secciones": agrupar_opciones(opciones), "volver": volver,
             "en_inicio": getattr(request, "path", "") == inicio and volver == inicio,
             "usuario_id": usuario.pk}
