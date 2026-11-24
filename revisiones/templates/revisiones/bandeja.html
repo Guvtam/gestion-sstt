@@ -5,7 +5,7 @@
 {% block estilos %}
 <link
     rel="stylesheet"
-    href="{% static 'revisiones/bandeja.css' %}?v=20261123-matriz-cuentas-3"
+    href="{% static 'revisiones/bandeja.css' %}?v=20261124-resumen-neto"
   >
 {% endblock %}
 {% block atributos_body %}
@@ -543,7 +543,7 @@
                   <select
                     class="row-input row-select service-input {% if r.servicio_editado != None %}saved{% endif %}"
                     data-original="{{ r.servicio }}"
-                    title="{% if r.esta_facturada %}ODT facturada: edición bloqueada{% elif r.esta_rechazada %}ODT rechazada definitivamente: edición bloqueada{% endif %}"
+                    title="{% if r.esta_facturada %}ODT facturada: edición bloqueada{% elif r.esta_rechazada %}ODT rechazada: deshacer el rechazo para habilitar edición{% endif %}"
                     disabled>
                     {% if servicio_actual not in servicios_principales %}
                       <option value="{{ servicio_actual }}" selected disabled>{{ servicio_actual|default:"Sin servicio" }}</option>
@@ -847,7 +847,7 @@
                     autocomplete="off"
                     value="{% if r.valor_pago_editado != None %}{{ r.valor_pago_editado|stringformat:'.2f' }}{% else %}{{ r.valor_pago_tecnico|stringformat:'.2f' }}{% endif %}"
                     data-original="{{ r.valor_pago_tecnico|stringformat:'.2f' }}"
-                    title="{% if r.esta_facturada %}ODT facturada: edición bloqueada{% elif r.esta_rechazada %}ODT rechazada definitivamente: edición bloqueada{% endif %}"
+                    title="{% if r.esta_facturada %}ODT facturada: edición bloqueada{% elif r.esta_rechazada %}ODT rechazada: deshacer el rechazo para habilitar edición{% endif %}"
                     disabled
                   >
 
@@ -979,7 +979,7 @@
                         class="edit-row"
                         {% if r.esta_bloqueada %}
                           disabled
-                          title="{% if r.esta_facturada %}ODT facturada: no permite modificaciones{% else %}ODT rechazada definitivamente: no permite modificaciones{% endif %}"
+                          title="{% if r.esta_facturada %}ODT facturada: no permite modificaciones{% else %}ODT rechazada: deshacer el rechazo para habilitar edición{% endif %}"
                         {% endif %}
                       >
                         Editar
@@ -1041,6 +1041,9 @@
 
                     {% endif %}
 
+                    {% if r.esta_rechazada and not r.esta_facturada and perms.revisiones.revisar_pago_sstt and not es_coordinador %}
+                    <button type="button" class="btn alt deshacer-rechazo" data-numero="{{ r.numero|stringformat:'d' }}">Deshacer rechazo</button>
+                    {% endif %}
                     {% if perms.revisiones.ver_historial_sstt %}
 
                       <button
@@ -1088,6 +1091,10 @@
   <footer>
     Sistema SSTT · Entorno de desarrollo
   </footer>
+
+  {% if perms.revisiones.revisar_pago_sstt and not es_coordinador %}
+  {% include "revisiones/componentes/confirmar_reapertura.html" %}
+  {% endif %}
 
   <!-- MODAL HISTORIAL -->
 
@@ -1143,6 +1150,7 @@
   <!-- JAVASCRIPT PRINCIPAL -->
 
   <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=20261111-conservar-pagina"></script>
+  <script src="{% static 'revisiones/reabrir_rechazo.js' %}?v=20261124-1"></script>
   <script src="{% static 'revisiones/bandeja.js' %}?v=20261110-sla-dias"></script>
 
   <script src="{% static 'revisiones/filtro_montos.js' %}?v=20261118"></script>

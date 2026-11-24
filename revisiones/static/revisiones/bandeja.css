@@ -1246,3 +1246,9 @@ td.service .correccion-pendiente-marca {margin-bottom:5px}
 .ejecutivo-matriz tbody:last-child tr:last-child>*{border-bottom:0}
 .resumen-ejecutivo .ejecutivo-nota{font-size:11px;color:#71849a;line-height:1.6;margin-top:12px}
 @media(max-width:600px){.resumen-ejecutivo{padding:16px}.ejecutivo-encabezado{align-items:flex-start}.ejecutivo-encabezado h2{font-size:16px}.ejecutivo-total strong{font-size:20px}}
+
+/* Total de categorías excluyentes; rechazados fuera del resumen. */
+.ejecutivo-matriz tfoot th,.ejecutivo-matriz tfoot td{background:#e8f1fb;border-top:2px solid #b5cce5;border-bottom:0;font-weight:700}
+.ejecutivo-matriz tfoot th:first-child{background:#e8f1fb}
+.ejecutivo-matriz tfoot td strong{font-size:14px}
+.ejecutivo-matriz tfoot .ejecutivo-col-total strong{font-size:17px}

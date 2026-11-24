@@ -127,7 +127,7 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
         if pagos_instalacion(request.user) and nombre in (
                 "pagos_instalacion", "facturacion_previsualizar", "historial_facturacion",
                 "detalle_facturacion", "actualizar_requisicion", "historial_requisiciones",
-                "exportar_aprobados_pdf", "guardar_fila", "actualizar_revision", "acciones"):
+                "exportar_aprobados_pdf", "guardar_fila", "actualizar_revision", "acciones", "reabrir_rechazo"):
             return None
         if not es_coordinador_sstt(request.user):
             if (nombre == "bandeja" and request.method in ("GET", "HEAD")

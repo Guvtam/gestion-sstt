@@ -1,7 +1,7 @@
 <section class="resumen-pagos resumen-ejecutivo" aria-label="Resumen ejecutivo por cliente y servicio">
   <div class="ejecutivo-encabezado">
-    <div><h2>Resumen del período</h2><p>Montos efectivos según los filtros aplicados</p></div>
-    <div class="ejecutivo-total"><span>Total efectivo · {{ resumen_visual.total.cantidad }} ODT</span><strong class="money-kpi" data-amount="{{ resumen_visual.total.monto|stringformat:'.2f' }}"></strong></div>
+    <div><h2>Resumen del período</h2><p>Montos efectivos sin pagos rechazados, según los filtros aplicados</p></div>
+    <div class="ejecutivo-total"><span>Total sin rechazados · {{ resumen_visual.total.cantidad }} ODT</span><strong class="money-kpi" data-amount="{{ resumen_visual.total.monto|stringformat:'.2f' }}"></strong></div>
   </div>
   <div class="ejecutivo-matriz-scroll" role="region" aria-label="Desglose de cuentas por servicio; desplazar horizontalmente" tabindex="0">
     <table class="ejecutivo-matriz">
@@ -12,7 +12,8 @@
       <tbody class="ejecutivo-detalle-marcas">
         {% for fila in resumen_visual.marcas %}{% include "revisiones/componentes/fila_resumen_cuenta.html" %}{% endfor %}
       </tbody>
+      <tfoot>{% include "revisiones/componentes/fila_resumen_cuenta.html" with fila=resumen_visual.total only %}</tfoot>
     </table>
   </div>
-  <p class="ejecutivo-nota">Cada servicio muestra monto y cantidad de ODT. Cruz Verde y Tattersall ya están incluidos en B2B/B2C; no se suman nuevamente. Montos efectivos con ajustes y rechazados.</p>
+  <p class="ejecutivo-nota">Cada servicio muestra monto y cantidad de ODT. Cruz Verde y Tattersall se muestran por separado y se excluyen de B2B/B2C en este resumen. Los totales incluyen ajustes y excluyen pagos rechazados.</p>
 </section>

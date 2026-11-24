@@ -1,6 +1,7 @@
 """Vistas HTTP de odt. Sin cambios de reglas de negocio."""
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import JsonResponse
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404, render
@@ -98,9 +99,11 @@ def historial_odt(request, numero):
                 "correo_usuario": "", "correo_observacion": "", "id_usuario": None,
             })
         from ..casos_uso.contratistas_odt import PREFIJO_AUDITORIA
-        for evento in odt.eventos_revision.filter(comentario__startswith=PREFIJO_AUDITORIA).select_related("usuario"):
+        for evento in odt.eventos_revision.filter(Q(comentario__startswith=PREFIJO_AUDITORIA) |
+                Q(comentario__startswith="[REAPERTURA]")).select_related("usuario"):
             historial.append({
-                "fecha": evento.fecha.isoformat(), "accion": "SSTT · Contratista actualizado",
+                "fecha": evento.fecha.isoformat(), "accion": ("SSTT · Rechazo deshecho → Aprobada" if evento.comentario.startswith("[REAPERTURA]")
+                           else "SSTT · Contratista actualizado"),
                 "observacion": evento.comentario, "usuario": evento.usuario.get_username() if evento.usuario else "Sistema SSTT",
                 "correo_usuario": "", "correo_observacion": "", "id_usuario": None,
             })

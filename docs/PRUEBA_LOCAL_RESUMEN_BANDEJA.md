@@ -11,10 +11,10 @@ plegables. Todos los resúmenes parten del queryset filtrado y autorizado, antes
 de paginar. No se cambian pagos, permisos, facturación ni datos de las ODT.
 
 Montos efectivos: editado si no es nulo, incluyendo 0 y la marca 2; en otro caso
-original. Incluyen rechazados, como las tarjetas previas por servicio. La primera
+original. Se excluyen las ODT rechazadas de cantidades y montos. La primera
 tarjeta superior sigue mostrando el monto original SoftGuard.
 
-Cruz Verde y Tattersall son detalle de B2B/B2C, nunca se suman otra vez. Se
+Cruz Verde y Tattersall son categorías separadas, excluidas de B2B/B2C en el resumen. Se
 identifican por nombre de cuenta (Cruz Verde/Cruzverde, Tattersall); no se cambia
 tipo de cliente ni CECO. Puede requerirse catálogo explícito si el nombre no
 incluye la marca. Enel no se muestra por separado, pero sus ODT siguen en su tipo.
@@ -49,7 +49,7 @@ python manage.py runserver
 ```
 
 Revisar que la suma de servicios de cada fila coincida con su total; B2B+B2C
-(y sin clasificar si existe) concilie con el total efectivo. Cruz Verde y
-Tattersall ya están incluidos. Verificar período y filtros idénticos a la tabla.
+(y sin clasificar si existe), Cruz Verde y Tattersall concilien con el total sin
+rechazados. La fila inferior suma todas las columnas sin doble conteo. Verificar período y filtros idénticos a la tabla.
 Para volver: detener servidor, `git switch main`, iniciar de nuevo; conservar
-cambios locales. No integrar PR ni actualizar Raspberry hasta aprobar local.
+cambios locales. Integrar y desplegar solo la versión revisada.
