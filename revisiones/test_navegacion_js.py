@@ -24,3 +24,6 @@ class NavegacionJSTests(SimpleTestCase):
 
     def test_desplegables_cierran_con_escape_clic_exterior_y_cambio_de_grupo(self):
         self.comprobar("menu_desplegable")
+
+    def test_enlaces_de_consulta_en_nueva_pestana_sin_afectar_controles(self):
+        self.comprobar("enlaces_pestanas")
