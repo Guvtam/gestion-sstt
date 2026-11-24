@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from .models import EjecucionSincronizacion
 from .consultas.calendario import visitas_del_mes
-from .acceso_calendario import limitar_tecnicos_calendario
+from .acceso_calendario import limitar_tecnicos_calendario, puede_ver_detalle_calendario
 from .acceso_coordinadores import datos_coordinador, es_coordinador_sstt, limitar_odts_coordinador
 from .cuentas_utils import normalizar_codigo_cuenta
 from .dominio.fechas import sumar_meses
@@ -123,6 +123,8 @@ def calendario_servicios(request):
     return render(request, "revisiones/calendario_servicios.html", {
         "es_coordinador": es_coordinador,
         "puede_ver_bandeja": puede_ver_bandeja,
+        "puede_ver_detalle_calendario": puede_ver_detalle_calendario(request.user),
+        "volver_calendario": request.get_full_path(),
         "coordinador_sin_vinculo": es_coordinador and datos_coordinador(request.user) is None,
         "disponibles_mes": disponibles_mes,
         "ultima_sincronizacion": None if es_coordinador else EjecucionSincronizacion.objects.first(),

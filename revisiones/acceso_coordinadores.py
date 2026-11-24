@@ -138,7 +138,7 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
             return None
         if nombre in ("login", "logout"):
             return None
-        if nombre in ("bandeja", "contratistas_disponibles_ajax", "calendario_servicios"):
+        if nombre in ("bandeja", "contratistas_disponibles_ajax", "calendario_servicios", "detalle_calendario"):
             return None
         if (pagos_instalacion(request.user) and nombre in
                 ("historial_odt", "actualizar_informe", "cambiar_estado_correccion")):

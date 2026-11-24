@@ -1,0 +1,12 @@
+.detalle-visita{max-width:1250px;margin:0 auto;padding:24px 20px;color:#193b5c}
+.detalle-visita-panel{background:white;border:1px solid #d5e2ef;border-radius:12px;padding:24px;margin-bottom:18px}
+.detalle-visita h2{font-size:19px;margin:0 0 12px}.detalle-visita h3{font-size:14px;margin:18px 0 12px}
+.detalle-visita-titulo{display:flex;align-items:center;justify-content:space-between;gap:16px}.detalle-visita-titulo span{display:block;font-size:11px;color:#71849a;margin-bottom:5px}
+.detalle-visita-datos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin:20px 0 26px}
+.detalle-visita-datos dt{font-size:11px;color:#71849a;margin-bottom:6px}.detalle-visita-datos dd{font-size:13px;margin:0;overflow-wrap:anywhere}
+.detalle-visita-texto{font-size:13px;line-height:1.7;overflow-wrap:anywhere}.detalle-visita-nota{color:#71849a;font-size:12px;line-height:1.6}
+.detalle-visita-historial{list-style:none;padding:0;margin:20px 0 0}.detalle-visita-historial li{border-top:1px solid #e4edf5;padding:18px 0}
+.detalle-visita-evento{display:flex;justify-content:space-between;gap:12px;font-size:13px}.detalle-visita-evento time{font-size:11px;color:#71849a;white-space:nowrap}.detalle-visita-usuario{font-size:11px;color:#71849a;margin:8px 0}
+.detalle-visita-aviso{background:#fff7df;padding:16px;border-radius:8px;font-size:13px}
+@media(max-width:700px){.detalle-visita-datos{grid-template-columns:repeat(2,minmax(0,1fr))}.detalle-visita-titulo{align-items:flex-start;flex-direction:column}.detalle-visita-panel{padding:18px}}
+@media(max-width:430px){.detalle-visita-datos{grid-template-columns:1fr}.detalle-visita-evento{flex-direction:column}.detalle-visita{padding:16px 10px}}

@@ -5,6 +5,7 @@ from .vistas import bandeja, odt, operaciones_odt, cuentas, correcciones
 from .analisis_odt import analisis_odt
 from .mantenimientos_preventivos import mantenimientos_preventivos
 from .calendario_servicios import calendario_servicios
+from .vistas.detalle_calendario import detalle_calendario
 from .estadisticas_correcciones import estadisticas_correcciones
 from .vistas.exportacion_pdf import exportar_aprobados_pdf
 from .facturacion import previsualizar_facturacion, actualizar_requisicion
@@ -15,6 +16,7 @@ from .historial_requisiciones import historial_requisiciones
 
 
 urlpatterns = [
+    path("calendario-servicios/odt/<int:numero>/", detalle_calendario, name="detalle_calendario"),
     path("pagos-nueva-instalacion/", bandeja.pagos_nueva_instalacion, name="pagos_instalacion"),
     path("facturacion/<int:facturacion_id>/historial-requisicion/", historial_requisiciones, name="historial_requisiciones"),
     path("analisis-odt/", analisis_odt, name="analisis_odt"),
