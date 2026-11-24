@@ -1,5 +1,5 @@
 {% extends "revisiones/base_operativa.html" %}
-{% load static formato_sstt %}
+{% load static formato_sstt tz %}
 {% load l10n %}
 {% load humanize %}
 {% block titulo %}Seguimiento de cambios | SSTT{% endblock %}
@@ -116,6 +116,7 @@
         <div class="filter-actions"><button type="submit">Aplicar filtros</button><a class="btn alt" href="{% url 'odt_modificadas' %}">Limpiar</a></div>
       </form>
     </section>
+    {% if detecciones %}{% include "revisiones/componentes/detecciones_softguard.html" %}{% endif %}
     <section class="panel"><h2>Listado de cambios · {{ cantidad }} ODT</h2>
       <p class="hint">ODT con correcciones guardadas en servicio o monto técnico. Incluye todos los períodos y conserva las ODT actualizadas. Se muestran primero las pendientes y luego las procesadas. Hasta 50 por página.</p>
       {% include "revisiones/componentes/paginacion.html" with pagina=pagina querystring=querystring numerada=True siempre=True etiqueta="Paginación superior de cambios" %}
@@ -123,7 +124,7 @@
         <thead><tr>
           <th>ODT</th><th>Coordinador</th><th>Contratista</th><th>Cuenta</th><th>Fecha finalización</th>
           <th>Servicio SoftGuard</th><th>Servicio solicitado</th><th>Monto SoftGuard</th><th>Monto solicitado</th>
-          <th>Tipo cambio</th><th>Estado de corrección</th><th>Acciones</th>
+          <th>Tipo cambio</th><th>Estado de corrección</th><th>Última detección SoftGuard</th><th>Acciones</th>
         </tr></thead>
         <tbody>
           {% for r in filas %}
@@ -150,10 +151,11 @@
                   <span class="estado-correccion">{{ r.estado_correccion_nombre }}</span>
                 {% endif %}
               </td>
+              <td>{% timezone "America/Santiago" %}{{ r.ultima_deteccion_softguard|date:"d/m/Y H:i:s"|default:"Sin registro" }}{% endtimezone %}</td>
               <td><a class="btn alt" href="{% url 'bandeja' %}?numero_odt={{ r.numero|stringformat:'d' }}&amp;estado=&amp;fecha_desde=&amp;fecha_hasta=&amp;servicios_filtrados=1&amp;servicios={{ r.servicio_actual|urlencode }}">Ver en bandeja</a> {% if perms.revisiones.ver_historial_sstt %}<button type="button" class="btn-historial-odt alt" data-numero="{{ r.numero|stringformat:'d' }}" data-url="{% url 'historial_odt' r.numero %}">Historial</button>{% else %}—{% endif %}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="12">No existen ODT modificadas para los filtros seleccionados.</td></tr>
+            <tr><td colspan="13">No existen ODT modificadas para los filtros seleccionados.</td></tr>
           {% endfor %}
         </tbody>
       </table></div>

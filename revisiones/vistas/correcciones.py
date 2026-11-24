@@ -2,7 +2,7 @@
 from decimal import Decimal
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Max
 from django.views.decorators.http import require_GET
 from django.shortcuts import render
 from ..acceso_coordinadores import coordinadores_en_peticion, coordinadores_para_mostrar
@@ -71,6 +71,9 @@ def odt_modificadas(request):
 
     pagina = Paginator(registros, 50).get_page(request.GET.get("page"))
     filas = []
+    from ..models import CambioSoftGuard
+    ultimas_detecciones = dict(CambioSoftGuard.objects.filter(odt_id__in=[o.pk for o in pagina.object_list])
+        .values("odt_id").annotate(ultima=Max("detectado_en")).values_list("odt_id", "ultima"))
 
     coordinadores_pagina = coordinadores_para_mostrar(request, [o.numero for o in pagina.object_list])
 
@@ -96,6 +99,7 @@ def odt_modificadas(request):
 
         filas.append({
             "numero": odt.numero,
+            "ultima_deteccion_softguard": ultimas_detecciones.get(odt.pk),
             "coordinador": coordinador.get("nombre", "Sin identificar"),
             "coordinador_identificado": coordinador.get("identificado", False),
             "contratista": odt.contratista,
@@ -119,7 +123,10 @@ def odt_modificadas(request):
         for datos in catalogo_coordinadores().values()
     ]
 
+    from ..consultas.cambios_softguard import consultar_detecciones
+    detecciones = consultar_detecciones(request.GET) if request.user.has_perm("revisiones.ver_montos_sstt") else None
     return render(request, "revisiones/odt_modificadas.html", {
+        "detecciones": detecciones,
         "filas": filas,
         "tarjetas_estados":tarjetas_estados,
         "pagina": pagina,

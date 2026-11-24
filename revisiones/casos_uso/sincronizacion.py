@@ -7,11 +7,12 @@ from django.utils import timezone
 from ..correcciones import verificar_sincronizacion
 from ..dominio.contratistas_odt import contratista_desde_tecnico
 from .contratistas_odt import registrar_cambios_contratista
+from .cambios_softguard import preparar_cambios
 from ..dominio.cuentas import TIPO_CLIENTE_PREDETERMINADO
 from ..cuentas_utils import cargar_catalogo_cuentas, normalizar_codigo_cuenta, tipo_cliente_cuenta
 from ..integraciones.bloqueo_sync import bloquear_sincronizacion
 from ..integraciones.transformacion_odt import RegistroOrigenInvalido, fecha_hora, transformar_registro
-from ..models import CatalogoCuenta, CorreccionODT, EjecucionSincronizacion, ODT
+from ..models import CambioSoftGuard, CatalogoCuenta, CorreccionODT, EjecucionSincronizacion, ODT
 
 
 @dataclass
@@ -39,7 +40,7 @@ def _datos_historial(resultado, extra=None):
     return datos
 
 
-def _aplicar_lote(lote, simular):
+def _aplicar_lote(lote, simular, *, ejecucion=None):
     conteos = Conteos()
     validos = {}
     for registro in lote:
@@ -62,6 +63,8 @@ def _aplicar_lote(lote, simular):
     existentes = existentes_qs.in_bulk(validos, field_name="numero")
     nuevos, cambios = [], []
     cambios_contratista = []
+    cambios_origen = []
+    detectado_en = timezone.now()
     codigos_nuevos = set()
     for numero, datos in validos.items():
         datos["tipo_cliente"] = tipo_cliente_cuenta(datos["cuenta_completa"], catalogo)
@@ -72,6 +75,8 @@ def _aplicar_lote(lote, simular):
         if odt is None:
             nuevos.append(ODT(numero=numero, contratista=contratista_desde_tecnico(datos["tecnico"]), **datos))
         else:
+            if not simular:
+                cambios_origen.extend(preparar_cambios(odt, datos, detectado_en, ejecucion))
             nuevo_contratista = contratista_desde_tecnico(datos["tecnico"], odt.contratista)
             cambia_contratista = nuevo_contratista != odt.contratista
             if cambia_contratista or any(getattr(odt, campo) != valor for campo, valor in datos.items()):
@@ -94,6 +99,7 @@ def _aplicar_lote(lote, simular):
         # El contratista operativo refleja el técnico actual; los documentos facturados no se modifican.
         campos = [*next(iter(validos.values())), "contratista"]
         ODT.objects.bulk_update(cambios, campos, batch_size=250)
+    CambioSoftGuard.objects.bulk_create(cambios_origen, batch_size=250)
     registrar_cambios_contratista(cambios_contratista, "Actualización del técnico desde SoftGuard.")
     for codigo in sorted(codigos_nuevos):
         _, creada = CatalogoCuenta.objects.get_or_create(codigo_cuenta=codigo, defaults={
@@ -114,7 +120,7 @@ def _guardar_lote(lote, resultado, ejecucion, simular):
         delta = _aplicar_lote(lote, True)
     else:
         with transaction.atomic():
-            delta = _aplicar_lote(lote, False)
+            delta = _aplicar_lote(lote, False, ejecucion=ejecucion)
             EjecucionSincronizacion.objects.filter(pk=ejecucion.pk).update(**_datos_historial(resultado, delta))
     for campo in fields(Conteos):
         setattr(resultado, campo.name, getattr(resultado, campo.name) + getattr(delta, campo.name))

@@ -241,3 +241,18 @@ from .sincronizacion_models import EjecucionSincronizacion
 from .coordinadores_models import VinculoCoordinador
 from .coordinadores_models import ResponsableSoftGuard
 from .coordinadores_models import ProyeccionCoordinadorODT
+
+
+class CambioSoftGuard(models.Model):
+    """Diferencia de origen observada y confirmada en una sincronización local."""
+    CAMPOS = [('servicio', 'Servicio'), ('valor_pago_tecnico', 'Pago técnico')]
+    odt = models.ForeignKey(ODT, on_delete=models.PROTECT, related_name='cambios_softguard')
+    ejecucion = models.ForeignKey('EjecucionSincronizacion', on_delete=models.SET_NULL,
+                                 null=True, related_name='cambios_detectados')
+    campo = models.CharField(max_length=30, choices=CAMPOS)
+    valor_anterior = models.TextField()
+    valor_nuevo = models.TextField()
+    detectado_en = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ['-detectado_en', '-pk']
