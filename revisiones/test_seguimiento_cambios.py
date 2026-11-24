@@ -92,3 +92,43 @@ class SeguimientoCambiosTests(TestCase):
         coordinador = User.objects.create_user("rsilva")
         self.client.force_login(coordinador)
         self.assertRedirects(self.client.get(reverse("odt_modificadas")), reverse("bandeja"), fetch_redirect_response=False)
+
+    def test_fecha_procesamiento_usa_ultimo_evento_procesada_no_ultima_gestion(self):
+        from datetime import datetime, timezone
+        from .models import EventoCorreccionODT
+        odt=ODT.objects.get(numero=2)
+        primero=EventoCorreccionODT.objects.create(odt=odt,estado_nuevo='EN_PROCESO')
+        ultimo=EventoCorreccionODT.objects.create(odt=odt,estado_nuevo='EN_PROCESO')
+        pendiente=EventoCorreccionODT.objects.create(odt=odt,estado_nuevo='PENDIENTE')
+        fecha=datetime(2026,11,24,11,5,6,tzinfo=timezone.utc)
+        EventoCorreccionODT.objects.filter(pk=primero.pk).update(fecha=datetime(2026,11,23,11,tzinfo=timezone.utc))
+        EventoCorreccionODT.objects.filter(pk=ultimo.pk).update(fecha=fecha)
+        EventoCorreccionODT.objects.filter(pk=pendiente.pk).update(fecha=datetime(2026,11,25,11,tzinfo=timezone.utc))
+        CorreccionODT.objects.filter(odt=odt).update(gestionado_en=datetime(2026,11,25,11,tzinfo=timezone.utc))
+        fila=next(f for f in self.consultar()['filas'] if f['numero']==2)
+        self.assertEqual(fila['procesada_en'],fecha)
+        self.assertIsNone(fila['ultima_deteccion_softguard'])
+
+    def test_fecha_procesamiento_se_conserva_actualizada_y_no_se_inventa_si_no_hay_evento(self):
+        from .models import EventoCorreccionODT
+        evento=EventoCorreccionODT.objects.create(odt=ODT.objects.get(numero=4),estado_nuevo='EN_PROCESO')
+        EventoCorreccionODT.objects.create(odt=ODT.objects.get(numero=4),estado_nuevo='ACTUALIZADA')
+        filas={f['numero']:f for f in self.consultar()['filas']}
+        self.assertEqual(filas[4]['procesada_en'],evento.fecha)
+        self.assertIsNone(filas[3]['procesada_en'])
+
+    def test_fecha_procesamiento_visible_en_horario_chile_sin_confundir_deteccion(self):
+        from datetime import datetime, timezone
+        from .models import EventoCorreccionODT, CambioSoftGuard
+        odt=ODT.objects.get(numero=2)
+        evento=EventoCorreccionODT.objects.create(odt=odt,estado_nuevo='EN_PROCESO')
+        EventoCorreccionODT.objects.filter(pk=evento.pk).update(fecha=datetime(2026,11,24,11,5,6,tzinfo=timezone.utc))
+        CambioSoftGuard.objects.create(odt=odt,campo='valor_pago_tecnico',valor_anterior='100.00',valor_nuevo='200.00',
+            detectado_en=datetime(2026,11,24,12,10,20,tzinfo=timezone.utc))
+        self.client.force_login(self.user)
+        with patch('revisiones.vistas.correcciones.coordinadores_para_mostrar',side_effect=self.responsables):
+            respuesta=self.client.get(reverse('odt_modificadas'))
+        self.assertContains(respuesta,'Fecha de procesamiento')
+        self.assertContains(respuesta,'24/11/2026 08:05:06')
+        self.assertContains(respuesta,'24/11/2026 09:10:20')
+        self.assertContains(respuesta,'Sin registro')
