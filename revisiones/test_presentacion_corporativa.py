@@ -59,14 +59,17 @@ class VentanasYOrdenTests(TestCase):
     def test_detecta_mayusculas_minusculas_tildes_y_frases_en_texto(self):
         frases=['FDP requerido','fDp','Fallo de prueba en alarma','FALLO DE PRUEBA',
                 'Reporta fallo de comunicación','FALLO DE COMUNICACIÓN','fallo de comunicacion',
-                'fallo  de\nprueba','Sin anomalías']
+                'fallo  de\nprueba','falla de comunicación','FALLA DE COMUNICACION',
+                'fallas de comunicación','fallos de prueba','FALLA DE PRUEBA',
+                'OPERADOR 2 GRC 67381 CUENTA CON FDP INTERMITENTE. Remoto: sistema es una cuenta SEM',
+                'Sin anomalías']
         for n,obs in enumerate(frases,1):self.crear(n,1,observaciones_insumos=obs)
         qs,activo=marcar_fallos(ODT.objects.all(),self.usuario)
         self.assertTrue(activo)
-        self.assertEqual(set(qs.filter(es_fallo_prueba=True).values_list('numero',flat=True)),set(range(1,9)))
-        otro=User.objects.create_user('consulta')
-        qs,activo=marcar_fallos(ODT.objects.all(),otro)
-        self.assertFalse(activo);self.assertFalse(any(o.es_fallo_prueba for o in qs))
+        self.assertEqual(set(qs.filter(es_fallo_prueba=True).values_list('numero',flat=True)),set(range(1,len(frases))))
+        for otro in (User.objects.create_user('consulta'), User.objects.create_superuser('admin',password='test')):
+            qs,activo=marcar_fallos(ODT.objects.all(),otro)
+            self.assertFalse(activo);self.assertFalse(any(o.es_fallo_prueba for o in qs))
 
     def test_fallos_al_final_global_antes_de_paginar_incluso_con_correccion(self):
         for n in range(1,56):self.crear(n,1,cuenta_completa='Z - normal')

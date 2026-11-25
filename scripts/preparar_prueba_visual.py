@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import sqlite3
 import sys
+import subprocess
 
 
 def copiar_base(origen, destino):
@@ -25,6 +26,15 @@ def copiar_base(origen, destino):
         destino.unlink(missing_ok=True)
         raise
     return destino
+
+
+def preparar_esquema(destino):
+    """Aplicar migraciones del código únicamente a la base aislada de la prueba."""
+    destino = Path(destino).resolve()
+    if not (destino/'config/settings_visual.py').is_file() or not (destino/'db_visual.sqlite3').is_file():
+        raise ValueError('Falta la carpeta de prueba o su copia de base; no se ejecutarán migraciones.')
+    subprocess.run([sys.executable, str(destino/'manage.py'), 'migrate', '--noinput',
+                    '--settings=config.settings_visual'], cwd=destino, check=True)
 
 
 def main():
@@ -50,6 +60,12 @@ def main():
     except (ValueError, sqlite3.Error, OSError) as error:
         parser.error(str(error))
     print('Copia de prueba creada y verificada:', copia.name)
+    print('Aplicando migraciones pendientes solo en la copia visual…', flush=True)
+    try:
+        preparar_esquema(destino)
+    except (ValueError, subprocess.CalledProcessError) as error:
+        parser.error('La copia se creó, pero falta completar su esquema. Desde la carpeta de prueba ejecuta:\n'
+                     'python manage.py migrate --settings=config.settings_visual')
     print('La base original y la Raspberry permanecen sin cambios.')
 
 

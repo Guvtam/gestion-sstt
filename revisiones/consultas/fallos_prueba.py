@@ -10,7 +10,7 @@ def marcar_fallos(registros, usuario):
         return registros.annotate(es_fallo_prueba=Value(False,output_field=BooleanField())), False
     registros=registros.alias(_observacion_fdp=normalizado(Cast(F("observaciones_insumos"), CharField())))
     condicion=(Q(_observacion_fdp__contains="FDP") |
-        Q(_observacion_fdp__regex=r"FALLO\s+DE\s+PRUEBA") |
-        Q(_observacion_fdp__regex=r"FALLO\s+DE\s+COMUNICACION"))
+        Q(_observacion_fdp__regex=r"FALL[OA]S?\s+DE\s+PRUEBA") |
+        Q(_observacion_fdp__regex=r"FALL[OA]S?\s+DE\s+COMUNICACION"))
     return registros.annotate(es_fallo_prueba=Case(When(condicion,then=Value(True)),
         default=Value(False),output_field=BooleanField())), True

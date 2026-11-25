@@ -1,6 +1,6 @@
 # Prueba local: identidad, incidencias y exportaciones
 
-Esta rama se revisa primero en el PC. No requiere migraciones, cambios de permisos,
+Esta rama se revisa primero en el PC. No crea migraciones nuevas ni requiere cambios de permisos,
 merge a main ni actualización de la Raspberry. Conserva las reglas de pagos,
 rechazos, facturación, revisión y sincronización existentes.
 
@@ -19,7 +19,10 @@ python manage.py runserver 127.0.0.1:8001 --settings=config.settings_visual
 Abre http://127.0.0.1:8001 e ingresa con tu usuario habitual. La sesión, base y
 configuración corresponden al PC, no al servidor. El script obtiene la ruta de
 SQLite desde tu configuración habitual, hace una copia con la API de backup,
-verifica integridad y copia `config/.env` local sin mostrar su contenido. Si tu
+verifica integridad y copia `config/.env` local sin mostrar su contenido. Después
+aplica automáticamente las migraciones pendientes a `db_visual.sqlite3`, usando
+exclusivamente `config.settings_visual`. Esto incluye la tabla de seguimiento
+`CambioSoftGuard` si la base habitual aún no tenía aplicada la migración 0016. Si tu
 PC usa otro módulo de configuración, agrega `--settings=config.TU_MODULO` al
 comando del script, no al comando de runserver.
 
@@ -44,7 +47,7 @@ continuar una prueba ya preparada, usa solo los dos últimos comandos. No uses
   Incluyen la ODT actual si cumple esos criterios; no usan la fecha del filtro
   como extremo de la ventana ni cambian los umbrales de severidad.
 - Juan Pablo (`jiturriaga`): FDP, fallo de prueba y fallo de comunicación se
-  detectan dentro del texto, con cualquier combinación de mayúsculas, tildes y
+  y las variantes falla/fallas/fallos se detectan dentro del texto, con cualquier combinación de mayúsculas, tildes y
   espacios. Aparecen al final del conjunto filtrado antes de paginar. Verde
   suave; cuando existe destacado naranja se conserva el naranja y se agrega
   una marca verde. Los demás usuarios mantienen su orden y presentación.
@@ -86,3 +89,25 @@ python manage.py test contratistas revisiones --settings=config.settings_test
 Para finalizar la prueba local, presiona Ctrl+C. Tu copia habitual y el servidor
 continúan en su versión anterior. Validar visualmente en el navegador del PC
 antes de decidir un despliegue; los tests no sustituyen esa revisión.
+
+## Actualizar una prueba ya creada
+
+Detén el servidor de prueba con Ctrl+C. Desde `sstt-prueba-visual`:
+
+```powershell
+git fetch origin
+git switch --detach origin/prueba/identidad-incidencias-exportaciones
+python manage.py migrate --settings=config.settings_visual
+python manage.py runserver 127.0.0.1:8001 --settings=config.settings_visual
+```
+
+No repitas el script de copia sobre `db_visual.sqlite3`: conserva la base que ya
+estás usando. `migrate` completa su esquema sin copiar ni sobrescribir la base
+habitual. Un error `no such table: revisiones_cambiosoftguard` indica que falta
+aplicar la migración existente 0016 en esa copia.
+
+El destacado FDP se habilita exclusivamente al ingresar como `jiturriaga`.
+Ingresar como `admin` u otro usuario no activa esa preferencia personal, aunque
+el usuario sea administrador. La frase ahora incluye falla/fallo y sus plurales,
+además de FDP, con cualquier mayúscula o tilde. Un monto cero conserva su naranja
+y muestra una etiqueta verde; no se vuelve verde toda esa fila.
