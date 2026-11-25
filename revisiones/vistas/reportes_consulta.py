@@ -27,12 +27,12 @@ def exportar_bandeja(request, registros, *, coordinador):
     exigir_permiso_operativo(request.user,'revisiones.exportar_pagos_sstt')
     if coordinador:raise PermissionDenied
     try:numeros=ids_seleccion(request.POST.get('seleccion'))
-    except ValueError as e:return HttpResponseBadRequest(str(e))
+    except ValueError as e:return HttpResponseBadRequest(str(e), content_type='text/plain; charset=utf-8')
     formato=request.POST.get('formato','')
-    if formato not in ('pdf','xlsx'):return HttpResponseBadRequest('Formato no válido.')
+    if formato not in ('pdf','xlsx'):return HttpResponseBadRequest('Formato no válido.', content_type='text/plain; charset=utf-8')
     filas = list(registros.filter(numero__in=numeros).select_related('revision', 'seguimiento_correccion'))
     if {o.numero for o in filas} != set(numeros):
-        return HttpResponseBadRequest('La selección contiene ODT fuera de los filtros o permisos vigentes. Actualiza o limpia la selección.')
+        return HttpResponseBadRequest('La selección contiene ODT fuera de los filtros o permisos vigentes. Actualiza o limpia la selección.', content_type='text/plain; charset=utf-8')
     from ..acceso_coordinadores import coordinadores_para_mostrar
     from ..consultas.filas_bandeja import cargar_complementos
     from ..consultas.preventivos import asignar_ultimos_preventivos
@@ -88,11 +88,11 @@ def exportar_bandeja(request, registros, *, coordinador):
 def informe_periodos_pdf(request):
     exigir_permiso_operativo(request.user,'revisiones.exportar_pagos_sstt')
     try:ids=ids_seleccion(request.POST.get('seleccion'),120)
-    except ValueError as e:return HttpResponseBadRequest(str(e))
+    except ValueError as e:return HttpResponseBadRequest(str(e), content_type='text/plain; charset=utf-8')
     items=limitar_pagos(request.user,FacturacionODT.objects.filter(facturacion__periodo_id__in=ids),historico=True)
     disponibles=set(items.values_list('facturacion__periodo_id',flat=True).distinct())
     if disponibles!=set(ids):raise PermissionDenied('Algún período no tiene facturación disponible para tu perfil.')
-    if items.count()>10000:return HttpResponseBadRequest('Selecciona menos períodos: máximo 10.000 ODT por informe.')
+    if items.count()>10000:return HttpResponseBadRequest('Selecciona menos períodos: máximo 10.000 ODT por informe.', content_type='text/plain; charset=utf-8')
     grupos={};detalle=[]
     for item in items.select_related('facturacion__periodo','odt').order_by('facturacion__periodo__fecha_desde','facturacion__contratista','odt__numero'):
         f=item.facturacion;p=f.periodo;etiqueta=f'{p.fecha_desde:%d/%m/%Y} al {p.fecha_hasta:%d/%m/%Y}'

@@ -74,7 +74,7 @@ def xlsx_reporte(cabeceras,filas,filtros=''):
     from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
     filas=list(filas)
     if any(isinstance(v,str) and (len(v)>32767 or ILLEGAL_CHARACTERS_RE.search(v)) for fila in filas for v in fila):
-        return HttpResponseBadRequest('Una observación excede los límites de Excel o contiene caracteres no admitidos. Exporta en PDF para conservar el contenido.')
+        return HttpResponseBadRequest('Una observación excede los límites de Excel o contiene caracteres no admitidos. Exporta en PDF para conservar el contenido.', content_type='text/plain; charset=utf-8')
     wb=Workbook();ws=wb.active;ws.title='ODT seleccionadas'
     logo=Image(str(LOGO));logo.width=190;logo.height=60;ws.add_image(logo,'A1');ws.row_dimensions[1].height=48
     ws.cell(3,1,'First Security · Área Mantenimiento · '+texto(timezone.now()))

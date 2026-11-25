@@ -245,6 +245,7 @@ class ExportacionesCorporativasTests(TestCase):
         from .pdf.reportes import xlsx_reporte
         r=xlsx_reporte(['Observaciones'],[['a'*32768]])
         self.assertEqual(r.status_code,400)
+        self.assertTrue(r['Content-Type'].startswith('text/plain'))
 
     def test_juan_pablo_ve_marca_incidencias_y_no_cambia_montos_al_consultar(self):
         self.odt.observaciones_insumos='FaLLo de comunicación en dispositivo';self.odt.valor_pago_editado=10;self.odt.save()
