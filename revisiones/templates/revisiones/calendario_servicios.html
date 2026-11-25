@@ -34,6 +34,8 @@
 {% endblock %}
 {% block contenido %}
 <main class="hist-main">
+<div class="exportar-pantalla"><a class="btn alt exportar-pdf-filtros" href="?{{ request.GET.urlencode }}&amp;formato=pdf">Exportar PDF con estos filtros</a></div>
+
 <section class="hist-panel">
 <form method="get" class="preventivos-filtros" id="filtrosCalendario">
 <input type="hidden" name="servicios_filtrados" value="1">

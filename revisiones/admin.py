@@ -8,6 +8,18 @@ from .models import EjecucionSincronizacion
 from .models import EventoRequisicion
 
 
+# El encabezado compartido cubre también acceso, índice y formularios del admin.
+# No depende del orden de búsqueda de plantillas entre aplicaciones.
+from django.templatetags.static import static
+from django.utils.html import format_html
+admin.site.site_header = format_html(
+    '<link rel="stylesheet" href="{}"><img src="{}" alt="First Security · Área Mantenimiento" '
+    'style="width:250px;max-width:65vw;height:auto;background:white">',
+    static('revisiones/admin_corporativa.css'), static('revisiones/marca/logo_area.png'),
+)
+admin.site.site_title = 'Administración SSTT'
+
+
 @admin.register(EventoRequisicion)
 class EventoRequisicionAdmin(admin.ModelAdmin):
     list_display = ("fecha", "facturacion_identificador", "contratista", "numero_anterior", "numero_nuevo", "usuario_nombre")

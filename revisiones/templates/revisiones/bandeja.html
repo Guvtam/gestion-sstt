@@ -402,6 +402,7 @@
 
       <h2>Órdenes de trabajo</h2>
       {% if es_coordinador and not coordinador_sesion %}<p class="hint" role="status">Tu usuario todavía no tiene un responsable activo vinculado. Puedes acceder, pero no se mostrarán ODT hasta configurarlo.</p>{% endif %}
+      {% if perms.revisiones.exportar_pagos_sstt and not es_coordinador %}{% include "revisiones/componentes/exportar_seleccion.html" with tipo="odt" %}{% endif %}
       <p id="estadoPosicionBandeja" class="hint" role="status" aria-live="polite"></p>
 
       <p class="hint">
@@ -421,6 +422,7 @@
 
       {% if destacar_monto_cero %}<p class="hint"><span class="monto-cero-marca">Monto $0</span> Las filas naranjas tienen monto efectivo cero, incluidos los ajustes guardados.</p>{% elif es_coordinador %}<p class="hint"><span class="correccion-pendiente-marca">Corrección pendiente</span> Las filas naranjas requieren aplicar cambios en SoftGuard.</p>{% endif %}
 
+      {% if priorizar_fallos %}<p class="hint"><span class="fdp-marca">FDP / fallo detectado</span> Se muestran al final del listado. Las correcciones mantienen su destacado naranja.</p>{% endif %}
       <!-- BARRA HORIZONTAL SUPERIOR -->
 
       <p class="tabla-ayuda">
@@ -448,7 +450,7 @@
 
           <thead>
             <tr>
-              <th>ODT</th>
+              <th>{% if perms.revisiones.exportar_pagos_sstt and not es_coordinador %}<input type="checkbox" class="seleccion-pagina" data-tipo="odt" aria-label="Seleccionar ODT de esta página para exportar">{% endif %}ODT</th>
               <th>Cuenta</th>
               <th>Localidad</th>
               <th>Técnico / contratista</th>
@@ -466,7 +468,7 @@
               <th>Último preventivo</th>
 
               {% if perms.revisiones.revisar_pago_sstt and not es_coordinador %}
-                <th>Incidencias 90 días</th>
+                <th>Incidencias · 90 / 60 / 30 días</th>
                 <th>SLA 48 hrs</th>
               {% endif %}
 
@@ -483,11 +485,12 @@
 
             {% for r in registros %}
 
-              <tr data-numero="{{ r.numero|stringformat:'d' }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}{% if destacar_monto_cero and r.monto_cero %} odt-monto-cero{% endif %}{% if es_coordinador and r.estado_modificacion == 'PENDIENTE' %} odt-correccion-pendiente{% endif %}">
+              <tr data-numero="{{ r.numero|stringformat:'d' }}" data-bloqueada="{% if r.esta_bloqueada %}1{% else %}0{% endif %}" class="{% if r.esta_bloqueada %}odt-bloqueada{% endif %}{% if destacar_monto_cero and r.monto_cero %} odt-monto-cero{% endif %}{% if es_coordinador and r.estado_modificacion == 'PENDIENTE' %} odt-correccion-pendiente{% endif %}{% if r.es_fallo_prueba %} odt-fallo-prueba{% endif %}">
 
                 <!-- NÚMERO ODT -->
 
                 <td>
+                  {% if perms.revisiones.exportar_pagos_sstt and not es_coordinador %}<input type="checkbox" class="seleccion-odt" value="{{ r.numero|stringformat:'d' }}" aria-label="Exportar ODT {{ r.numero }}">{% endif %}
                   {% if es_coordinador or por_instalacion %}
                     {{ r.numero }}
                   {% else %}
@@ -564,6 +567,7 @@
                 <!-- OBSERVACIONES -->
 
                 <td class="obs">
+                  {% if r.es_fallo_prueba %}<span class="fdp-marca">FDP / fallo detectado</span><br>{% endif %}
                   {{ r.observaciones_insumos|truncatechars:260|default:'Sin observaciones' }}
                 </td>
 
@@ -741,44 +745,11 @@
 
                   <!-- INCIDENCIAS -->
 
-                  <td class="incidencias-celda">
-
-                    {% if r.cantidad_incidencias >= 3 %}
-
-                      <span
-                        class="incidencia-badge incidencia-alta"
-                        title="Tres o más visitas del mismo técnico a la misma cuenta en 90 días"
-                      >
-                        {{ r.cantidad_incidencias }}
-                      </span>
-
-                    {% elif r.cantidad_incidencias == 2 %}
-
-                      <span
-                        class="incidencia-badge incidencia-media"
-                        title="Dos visitas del mismo técnico a la misma cuenta en 90 días"
-                      >
-                        2
-                      </span>
-
-                    {% elif r.cantidad_incidencias == 1 %}
-
-                      <span
-                        class="incidencia-badge incidencia-baja"
-                        title="Una visita del mismo técnico a la misma cuenta en 90 días"
-                      >
-                        1
-                      </span>
-
-                    {% else %}
-
-                      <span class="incidencia-badge incidencia-sin-datos">
-                        0
-                      </span>
-
-                    {% endif %}
-
-                  </td>
+                  <td class="incidencias-celda"><div class="incidencias-ventanas" aria-label="Incidencias acumulativas por cuenta y contratista">
+                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=90 valor=r.cantidad_incidencias only %}
+                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=60 valor=r.cantidad_incidencias_60 only %}
+                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=30 valor=r.cantidad_incidencias_30 only %}
+                  </div></td>
 
                   <!-- SLA -->
 

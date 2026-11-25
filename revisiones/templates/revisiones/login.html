@@ -1,3 +1,4 @@
+{% load static %}
 
 <!DOCTYPE html>
 <html lang="es">
@@ -120,6 +121,8 @@
             color: #94a3b8;
         }
     </style>
+<link rel="stylesheet" href="{% static 'revisiones/corporativa.css' %}?v=20261125-local-1">
+<style>.login-card .marca-logo{width:100%;max-width:100%;margin-bottom:18px}.login-card h1{color:#252525}</style>
 </head>
 
 <body>
@@ -127,7 +130,7 @@
 <div class="login-card">
 
     <div class="logo">
-        <div class="logo-icon">FS</div>
+        <img class="marca-logo" src="{% static 'revisiones/marca/logo_area.png' %}" alt="First Security · Área Mantenimiento">
 
         <h1>Sistema de Pagos SSTT</h1>
 

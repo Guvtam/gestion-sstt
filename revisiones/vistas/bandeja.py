@@ -122,6 +122,13 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
         montos_seleccionados = tuple(montos_disponibles)
     registros = filtrar_montos(registros, montos_seleccionados, montos_explicitos)
 
+    from ..consultas.fallos_prueba import marcar_fallos
+    registros, priorizar_fallos = marcar_fallos(registros, request.user)
+
+    if request.method == "POST" and request.POST.get("exportar") == "seleccion":
+        from .reportes_consulta import exportar_bandeja
+        return exportar_bandeja(request, registros, coordinador=es_coordinador)
+
     # ==================================================
     # INDICADORES FINANCIEROS OPTIMIZADOS
     # ==================================================
@@ -150,7 +157,7 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
 
     pagina = paginar_filas(registros, request.GET.get("page"), request.GET.get("ubicar_odt"),
                            priorizar_correcciones=not por_creacion,
-                           filas_guardadas=request.GET.get("filas_guardadas"))
+                           filas_guardadas=request.GET.get("filas_guardadas"), priorizar_fallos=priorizar_fallos)
     filas = pagina.object_list
     coordinadores_pagina = coordinadores_para_mostrar(request, [odt.numero for odt in filas])
     complementos = cargar_complementos(filas)
@@ -234,6 +241,7 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
             "montos_seleccionados": montos_seleccionados,
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
+            "priorizar_fallos": priorizar_fallos,
             "destacar_monto_cero": (not es_coordinador and request.user.has_perm("revisiones.revisar_pago_sstt")
                                      and (por_instalacion or request.user.is_superuser or request.user.groups.filter(name="Supervisor").exists())),
             "coordinador_sesion": coordinador_sesion,

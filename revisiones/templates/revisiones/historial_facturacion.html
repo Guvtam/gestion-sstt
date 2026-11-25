@@ -9,6 +9,7 @@
 
 {% block contenido %}
 <main class="hist-main">
+{% include "revisiones/componentes/exportar_seleccion.html" with tipo="periodo" %}
 
     <!-- MENSAJES DEL SISTEMA -->
 
@@ -133,7 +134,7 @@
             <table class="hist-table tabla-periodos">
                 <thead>
                     <tr>
-                        <th>Período</th>
+                        <th><input type="checkbox" class="seleccion-pagina" data-tipo="periodo" aria-label="Seleccionar períodos facturados">Período</th>
                         <th>Contratistas</th>
                         <th>ODT</th>
                         <th>Monto CLP</th>
@@ -147,7 +148,7 @@
 
                         <td>
                             <strong>
-                                {{ periodo.fecha_desde|date:"d/m/Y" }}
+                                <input type="checkbox" class="seleccion-periodo" value="{{ periodo.pk|stringformat:'d' }}" aria-label="Exportar período {{ periodo.fecha_desde|date:'d/m/Y' }}" {% if not periodo.cantidad_odt %}disabled{% endif %}>{{ periodo.fecha_desde|date:"d/m/Y" }}
                                 al
                                 {{ periodo.fecha_hasta|date:"d/m/Y" }}
                             </strong>

@@ -17,7 +17,7 @@ class ComplementosFilas:
 
 
 def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_correcciones=True,
-                  filas_guardadas=None):
+                  filas_guardadas=None, priorizar_fallos=False):
     # Priorizar antes de paginar: no solo las correcciones de la página visible.
     # La ausencia de seguimiento conserva el estado pendiente de ediciones antiguas.
     pendientes = Q(seguimiento_correccion__estado="PENDIENTE") | (
@@ -32,6 +32,8 @@ def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_corr
             default=Value(2), output_field=IntegerField(),
         ))
         orden = ("prioridad_correccion", *orden)
+    if priorizar_fallos:
+        orden = ("es_fallo_prueba", *orden)
     # En ODT por creación una edición no debe mover la fila a otra página.
     ids = registros.order_by(*orden).values_list("pk", flat=True)
     # Buscar solo dentro del alcance autorizado y de los filtros vigentes.

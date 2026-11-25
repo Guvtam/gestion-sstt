@@ -10,6 +10,8 @@
 {% block contenido %}
 
 <main class="stats-container stats-main">
+<div class="exportar-pantalla"><a class="btn alt exportar-pdf-filtros" href="?{{ request.GET.urlencode }}&amp;formato=pdf">Exportar PDF con estos filtros</a></div>
+
     <section class="stats-panel stats-filtros" aria-label="Filtros de estadísticas">
         <form method="get" class="stats-filter-grid">
             <div class="stats-field"><label for="cargaDesde">Finalización desde</label>

@@ -50,7 +50,9 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 {% block antes_encabezado %}
 {% endblock %}
 {% block contenido %}
-<main class="hist-main" id="dashboard"><div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
+<main class="hist-main" id="dashboard">
+<div class="exportar-pantalla"><a class="btn alt exportar-pdf-filtros" href="?{{ request.GET.urlencode }}&amp;formato=pdf">Exportar PDF con estos filtros</a></div>
+<div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
 <input type="hidden" name="cuenta" value="{{ cuenta }}">
 <input type="hidden" name="incidencias_cuenta" value="{{ incidencias_cuenta }}"><input type="hidden" name="servicios_filtrados" value="1"><input type="hidden" name="sla" value="{{ sla }}"><input type="hidden" name="preventivo" value="{{ preventivo }}"><input type="hidden" name="recurrencia" value="{{ recurrencia }}">

@@ -120,6 +120,19 @@ def calendario_servicios(request):
     parametros["mes"] = sumar_meses(mes, -1).strftime("%Y-%m")
     anterior = "?" + parametros.urlencode()
     parametros["mes"] = sumar_meses(mes, 1).strftime("%Y-%m")
+    if request.GET.get("formato") == "pdf":
+        from django.http import HttpResponseBadRequest
+        from .pdf.reportes import pdf_reporte, filtros_texto
+        if errores: return HttpResponseBadRequest(" ".join(errores))
+        if len(odts_visibles)>10000:return HttpResponseBadRequest("Reduce los filtros del calendario para exportar.")
+        resumen = [[(str(dia['fecha'].day) + '\n' + '\n\n'.join(
+            f"ODT {e['numero']} · {e['etiqueta']}\n{e['nombre']}\n{e['tecnico']}"
+            for e in dia['eventos'])) if dia['del_mes'] else '' for dia in semana] for semana in semanas]
+        datos=[[o.fecha_visita,o.numero,o.cuenta_completa,o.servicio_efectivo,o.tecnico,o.estado_softguard] for o in odts_visibles]
+        return pdf_reporte('Calendario de visitas · '+mes.strftime('%m/%Y'),[
+            ('Agenda del mes',['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'],resumen),
+            ('Detalle de visitas',['Fecha visita','ODT','Cuenta','Servicio','Técnico','Estado'],datos)],
+            filtros_texto(request.GET),'Calendario_visitas.pdf')
     return render(request, "revisiones/calendario_servicios.html", {
         "es_coordinador": es_coordinador,
         "puede_ver_bandeja": puede_ver_bandeja,

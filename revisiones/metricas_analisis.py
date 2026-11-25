@@ -2,7 +2,7 @@
 from collections import Counter
 from datetime import timedelta
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from .consultas.preventivos import asignar_ultimos_preventivos
@@ -24,14 +24,19 @@ def cargar_metricas(queryset):
         .exclude(cuenta_completa__isnull=True)
         .order_by()
         .values("cuenta_completa", "contratista")
-        .annotate(total=Count("pk"))
+        .annotate(total=Count("pk"),
+            total_60=Count("pk",filter=Q(fecha_finalizacion__gte=ahora-timedelta(days=60))),
+            total_30=Count("pk",filter=Q(fecha_finalizacion__gte=ahora-timedelta(days=30))))
     )
     incidencias = {}
+    incidencias_60, incidencias_30 = {}, {}
     incidencias_cuenta = Counter()
     for grupo in grupos_incidencias.iterator(chunk_size=1000):
         cuenta = grupo["cuenta_completa"]
         if grupo["contratista"]:
             incidencias[(cuenta, grupo["contratista"])] = grupo["total"]
+            incidencias_60[(cuenta,grupo["contratista"])]=grupo["total_60"]
+            incidencias_30[(cuenta,grupo["contratista"])]=grupo["total_30"]
         codigo = normalizar_codigo_cuenta(cuenta) or cuenta.strip().upper()
         if codigo:
             incidencias_cuenta[codigo] += grupo["total"]
@@ -44,6 +49,8 @@ def cargar_metricas(queryset):
     for odt in filas:
         odt.servicio_efectivo = servicio_efectivo(odt.servicio, odt.servicio_editado)
         odt.cantidad_incidencias = incidencias.get((odt.cuenta_completa, odt.contratista), 0)
+        odt.cantidad_incidencias_60=incidencias_60.get((odt.cuenta_completa,odt.contratista),0)
+        odt.cantidad_incidencias_30=incidencias_30.get((odt.cuenta_completa,odt.contratista),0)
         odt.clave_cuenta_analisis = (
             normalizar_codigo_cuenta(odt.cuenta_completa)
             or (odt.cuenta_completa or "").strip().upper()
