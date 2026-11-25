@@ -33,3 +33,6 @@ class NavegacionJSTests(SimpleTestCase):
 
     def test_exportacion_conserva_seleccion_y_valida_descarga(self):
         self.comprobar("exportacion_seleccion")
+
+    def test_bandeja_fija_filtros_efectivos_para_posicion_y_exportaciones(self):
+        self.comprobar("contexto_bandeja")

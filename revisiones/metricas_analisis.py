@@ -13,12 +13,14 @@ from .dominio.servicios import servicio_efectivo
 from .models import ODT
 
 
-def cargar_metricas(queryset):
-    ahora = timezone.now()
+def cargar_metricas(queryset, *, hasta=None):
+    from .consultas.ventanas_incidencias import referencia_incidencias
+    ahora, operador_fin = referencia_incidencias(hasta)
     grupos_incidencias = (
         ODT.objects.filter(
             estado_softguard__iexact="Finalizado",
-            fecha_finalizacion__range=(ahora - timedelta(days=90), ahora),
+            fecha_finalizacion__gte=ahora-timedelta(days=90),
+            **{f"fecha_finalizacion__{operador_fin}": ahora},
         )
         .exclude(cuenta_completa="")
         .exclude(cuenta_completa__isnull=True)

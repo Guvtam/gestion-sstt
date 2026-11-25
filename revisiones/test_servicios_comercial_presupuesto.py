@@ -28,7 +28,8 @@ class ServiciosComercialPresupuestoTests(TestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser("admin", password="prueba")
         self.client.force_login(self.admin)
-        finalizacion = timezone.now() - timedelta(hours=1)
+        # Fecha dentro del período predeterminado 21 anterior / 20 actual.
+        finalizacion = timezone.make_aware(datetime.combine(timezone.localdate().replace(day=1), datetime.min.time()))
         for numero, servicio, monto in ((1,COMERCIAL,10000),(2,PRESUPUESTO,20000),
                                        (3,SERVICIOS_PRINCIPALES[0],5000),(4,"OTRO SERVICIO",9000)):
             ODT.objects.create(numero=numero,servicio=servicio,valor_pago_tecnico=monto,

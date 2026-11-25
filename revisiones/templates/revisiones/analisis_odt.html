@@ -52,6 +52,7 @@ body{background:#eef3f9}.hist-main{max-width:1600px}.header-titulo h1{letter-spa
 {% block contenido %}
 <main class="hist-main" id="dashboard">
 <div class="exportar-pantalla"><a class="btn alt exportar-pdf-filtros" href="?{{ request.GET.urlencode }}&amp;formato=pdf">Exportar PDF con estos filtros</a></div>
+<p class="chart-nota">Las ventanas de incidencias terminan {% if hasta %}el {{ hasta }}, incluyendo el día completo{% else %}en el momento actual{% endif %}. Conservan los criterios de cuenta y contratista de cada indicador.</p>
 <div class="dashboard-intro"><div><h2>Panorama operativo</h2><p>Explora los resultados seleccionando KPI o categorías de los gráficos.</p></div><a class="btn alt" href="{{ quitar_selecciones }}">Quitar selecciones de gráficos</a></div>
 <section class="hist-panel"><form class="preventivos-filtros" method="get">
 <input type="hidden" name="cuenta" value="{{ cuenta }}">

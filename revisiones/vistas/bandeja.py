@@ -37,8 +37,16 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
     es_coordinador = es_coordinador_sstt(request.user) and not por_instalacion
     coordinador_sesion = datos_coordinador(request.user) if es_coordinador else None
 
+    hoy = timezone.localdate()
+    periodo_predeterminado = None
+    if not por_creacion and ('fecha_desde' not in request.GET or 'fecha_hasta' not in request.GET):
+        from ..consultas.periodo_bandeja import periodo_inicial
+        periodo_predeterminado = periodo_inicial(request.user, hoy, instalacion=por_instalacion)
+    from ..consultas.orden_bandeja import leer_orden, OPCIONES_ORDEN
+    orden_seleccionado, direccion = leer_orden(request.GET)
+
     seleccion = leer_seleccion(
-        request.GET, por_creacion=por_creacion, hoy=timezone.localdate(),
+        request.GET, por_creacion=por_creacion, hoy=hoy, periodo_predeterminado=periodo_predeterminado,
     )
     filtros = seleccion.filtros()
     servicios_seleccionados = list(seleccion.servicios)
@@ -73,7 +81,8 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
 
     from ..indicadores_odt import con_indicadores_odt
     registros = con_indicadores_odt(
-        base.select_related("revision", "seguimiento_correccion")
+        base.select_related("revision", "seguimiento_correccion"),
+        hasta=None if por_creacion else filtros["fecha_hasta"],
     )
 
     # ==================================================
@@ -157,7 +166,9 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
 
     pagina = paginar_filas(registros, request.GET.get("page"), request.GET.get("ubicar_odt"),
                            priorizar_correcciones=not por_creacion,
-                           filas_guardadas=request.GET.get("filas_guardadas"), priorizar_fallos=priorizar_fallos)
+                           filas_guardadas=request.GET.get("filas_guardadas"), priorizar_fallos=priorizar_fallos,
+                           orden_seleccionado=orden_seleccionado, direccion=direccion,
+                           resolver_coordinadores=lambda ns: coordinadores_para_mostrar(request, ns))
     filas = pagina.object_list
     coordinadores_pagina = coordinadores_para_mostrar(request, [odt.numero for odt in filas])
     complementos = cargar_complementos(filas)
@@ -192,6 +203,21 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
             servicios_seleccionados
         )
 
+
+    # Fijar fechas y filtros efectivos en la URL: paginación, retorno de guardado
+    # y selección de exportación deben conservar el mismo período aunque otro
+    # usuario termine de facturarlo mientras esta pantalla está abierta.
+    if 'orden' in request.GET or orden_seleccionado:
+        parametros['orden'] = orden_seleccionado
+        parametros['direccion'] = direccion
+    url_exportacion = request.path + '?' + parametros.urlencode()
+    consulta_actual = parametros.copy()
+    if 'page' in request.GET or pagina.number > 1:
+        consulta_actual['page'] = str(pagina.number)
+    for clave in ('ubicar_odt', 'filas_guardadas'):
+        if clave in request.GET:
+            consulta_actual[clave] = request.GET[clave]
+    url_consulta = request.path + '?' + consulta_actual.urlencode()
 
     inicio_servicios = tiempo.perf_counter()
     # ==================================================
@@ -235,6 +261,7 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
             "pagina": pagina,
             "page_obj": pagina,
             "querystring": parametros.urlencode(),
+            "url_consulta": url_consulta, "url_exportacion": url_exportacion,
             "filtros": filtros,
 
             "montos_disponibles": montos_disponibles,
@@ -242,6 +269,8 @@ def bandeja(request, por_creacion=False, por_instalacion=False):
             "contratistas": contratistas_disponibles,
             "es_coordinador": es_coordinador,
             "priorizar_fallos": priorizar_fallos,
+            "opciones_orden": OPCIONES_ORDEN, "orden_seleccionado": orden_seleccionado, "direccion": direccion,
+            "incidencias_hasta": "" if por_creacion else filtros["fecha_hasta"],
             "destacar_monto_cero": (not es_coordinador and request.user.has_perm("revisiones.revisar_pago_sstt")
                                      and (por_instalacion or request.user.is_superuser or request.user.groups.filter(name="Supervisor").exists())),
             "coordinador_sesion": coordinador_sesion,
