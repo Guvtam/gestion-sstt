@@ -30,7 +30,15 @@ def exportar_bandeja(request, registros, *, coordinador):
     except ValueError as e:return HttpResponseBadRequest(str(e), content_type='text/plain; charset=utf-8')
     formato=request.POST.get('formato','')
     if formato not in ('pdf','xlsx'):return HttpResponseBadRequest('Formato no válido.', content_type='text/plain; charset=utf-8')
-    filas = list(registros.filter(numero__in=numeros).select_related('revision', 'seguimiento_correccion'))
+    from ..consultas.orden_bandeja import leer_orden, expresiones_orden, clave_nombre
+    orden, direccion = leer_orden(request.GET)
+    seleccionados = registros.filter(numero__in=numeros)
+    if orden and orden != 'coordinador':
+        campos = expresiones_orden(orden, direccion)
+        if request.user.get_username().strip().casefold() == 'jiturriaga':
+            campos = ('es_fallo_prueba', *campos)
+        seleccionados = seleccionados.order_by(*campos)
+    filas = list(seleccionados.select_related('revision', 'seguimiento_correccion'))
     if {o.numero for o in filas} != set(numeros):
         return HttpResponseBadRequest('La selección contiene ODT fuera de los filtros o permisos vigentes. Actualiza o limpia la selección.', content_type='text/plain; charset=utf-8')
     from ..acceso_coordinadores import coordinadores_para_mostrar
@@ -39,10 +47,16 @@ def exportar_bandeja(request, registros, *, coordinador):
     from ..presentacion.filas_bandeja import preparar_filas
     from ..templatetags.formato_sstt import tiempo_sla
     complementos = cargar_complementos(filas)
-    preparar_filas(filas, coordinadores_pagina=coordinadores_para_mostrar(request, numeros),
+    coordinadores_exportacion = coordinadores_para_mostrar(request, numeros)
+    preparar_filas(filas, coordinadores_pagina=coordinadores_exportacion,
         facturadas=complementos.facturadas, catalogo=complementos.catalogo,
         puede_procesar=False, puede_asignar=False)
     asignar_ultimos_preventivos(filas)
+    if orden == 'coordinador':
+        filas.sort(key=lambda o: (o.numero, o.pk))
+        filas.sort(key=lambda o: clave_nombre(o.coordinador_nombre), reverse=direccion == 'desc')
+        filas.sort(key=lambda o: not coordinadores_exportacion[o.numero].get('disponible', True))
+        filas.sort(key=lambda o: bool(getattr(o, 'es_fallo_prueba', False)))
     cabeceras = ['ODT', 'Cuenta', 'Localidad', 'Técnico', 'Contratista', 'Servicio',
         'Observaciones', 'Coordinador', 'CECO', 'Tipo cliente', 'Creador ODT',
         'Creación', 'Finalización', 'Último preventivo', 'Incidencias 90 días',

@@ -1,4 +1,4 @@
-<div class="exportacion-seleccion" data-exportar-seleccion data-tipo="{{ tipo }}" data-url="{% if tipo == 'odt' %}{{ request.get_full_path }}{% else %}{% url 'informe_periodos_pdf' %}{% endif %}">
+<div class="exportacion-seleccion" data-exportar-seleccion data-tipo="{{ tipo }}" data-url="{% if tipo == 'odt' %}{{ url_exportacion|default:request.get_full_path }}{% else %}{% url 'informe_periodos_pdf' %}{% endif %}">
   {% csrf_token %}
   <p><strong data-cantidad-seleccion>0</strong> {% if tipo == 'odt' %}ODT seleccionadas (hasta 2.000). La selección se conserva entre páginas con los mismos filtros.{% else %}períodos seleccionados (hasta 120). El informe usa importes y servicios facturados.{% endif %}</p>
   <button type="button" class="btn" data-descargar="pdf" disabled>Exportar PDF</button>

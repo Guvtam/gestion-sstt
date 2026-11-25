@@ -10,6 +10,7 @@
 {% endblock %}
 {% block atributos_body %}
   data-pagina-actual="{{ pagina.number }}"
+  data-url-consulta="{{ url_consulta }}"
   data-puede-editar="{% if perms.revisiones.editar_odt_sstt and not es_coordinador %}1{% else %}0{% endif %}"
   data-puede-revisar="{% if perms.revisiones.revisar_pago_sstt and not es_coordinador %}1{% else %}0{% endif %}"
   data-guardar-url="{% if perms.revisiones.editar_odt_sstt and not es_coordinador %}{% url 'guardar_fila' %}{% endif %}"
@@ -154,6 +155,20 @@
           >
         </div>
 
+
+        <div class="field">
+          <label class="field-label" for="ordenListado">Ordenar por</label>
+          <select name="orden" id="ordenListado">
+            {% for valor, nombre in opciones_orden %}<option value="{{ valor }}" {% if valor == orden_seleccionado %}selected{% endif %}>{{ nombre }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="direccionListado">Dirección</label>
+          <select name="direccion" id="direccionListado">
+            <option value="asc" {% if direccion == 'asc' %}selected{% endif %}>Ascendente</option>
+            <option value="desc" {% if direccion == 'desc' %}selected{% endif %}>Descendente</option>
+          </select>
+        </div>
 
         <!-- ESTADO SOFTGUARD -->
 
@@ -423,6 +438,7 @@
       {% if destacar_monto_cero %}<p class="hint"><span class="monto-cero-marca">Monto $0</span> Las filas naranjas tienen monto efectivo cero, incluidos los ajustes guardados.</p>{% elif es_coordinador %}<p class="hint"><span class="correccion-pendiente-marca">Corrección pendiente</span> Las filas naranjas requieren aplicar cambios en SoftGuard.</p>{% endif %}
 
       {% if priorizar_fallos %}<p class="hint"><span class="fdp-marca">FDP / fallo detectado</span> Se muestran al final del listado. Las correcciones mantienen su destacado naranja.</p>{% endif %}
+      {% if incidencias_hasta %}<p class="hint">Incidencias 90 / 60 / 30 días: ventanas acumulativas que terminan el {{ incidencias_hasta }}, incluyendo el día completo. Misma cuenta y contratista; solo ODT finalizadas.</p>{% endif %}
       <!-- BARRA HORIZONTAL SUPERIOR -->
 
       <p class="tabla-ayuda">
@@ -746,9 +762,9 @@
                   <!-- INCIDENCIAS -->
 
                   <td class="incidencias-celda"><div class="incidencias-ventanas" aria-label="Incidencias acumulativas por cuenta y contratista">
-                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=90 valor=r.cantidad_incidencias only %}
-                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=60 valor=r.cantidad_incidencias_60 only %}
-                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=30 valor=r.cantidad_incidencias_30 only %}
+                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=90 valor=r.cantidad_incidencias hasta=incidencias_hasta only %}
+                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=60 valor=r.cantidad_incidencias_60 hasta=incidencias_hasta only %}
+                    {% include "revisiones/componentes/indicador_incidencia.html" with dias=30 valor=r.cantidad_incidencias_30 hasta=incidencias_hasta only %}
                   </div></td>
 
                   <!-- SLA -->
@@ -1120,6 +1136,7 @@
 
   <!-- JAVASCRIPT PRINCIPAL -->
 
+  <script src="{% static 'revisiones/contexto_bandeja.js' %}?v=20261125-1"></script>
   <script src="{% static 'revisiones/posicion_bandeja.js' %}?v=20261111-conservar-pagina"></script>
   <script src="{% static 'revisiones/reabrir_rechazo.js' %}?v=20261124-1"></script>
   <script src="{% static 'revisiones/bandeja.js' %}?v=20261110-sla-dias"></script>

@@ -18,7 +18,7 @@ class SeleccionBandeja:
         return dict(self.valores)
 
 
-def leer_seleccion(parametros, *, por_creacion: bool, hoy: date) -> SeleccionBandeja:
+def leer_seleccion(parametros, *, por_creacion: bool, hoy: date, periodo_predeterminado=None) -> SeleccionBandeja:
     """Distingue parámetro ausente, valor vacío y selección explícitamente vacía."""
     filtros = {k: parametros.get(k, "").strip() for k in (
         "estado", "revision", "coordinador", "q", "fecha_desde", "fecha_hasta",
@@ -27,9 +27,9 @@ def leer_seleccion(parametros, *, por_creacion: bool, hoy: date) -> SeleccionBan
         filtros["estado"] = "" if por_creacion else "Finalizado"
     if "fecha_desde" not in parametros:
         anterior = hoy.replace(day=1) - timedelta(days=1)
-        filtros["fecha_desde"] = anterior.replace(day=21).isoformat()
+        filtros["fecha_desde"] = (periodo_predeterminado[0] if periodo_predeterminado else anterior.replace(day=21)).isoformat()
     if "fecha_hasta" not in parametros:
-        filtros["fecha_hasta"] = hoy.isoformat()
+        filtros["fecha_hasta"] = (periodo_predeterminado[1] if periodo_predeterminado else hoy).isoformat()
     servicios = tuple(parametros.getlist("servicios"))
     if not parametros and not por_creacion:
         servicios = tuple(SERVICIOS_PRINCIPALES)

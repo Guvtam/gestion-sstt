@@ -17,7 +17,8 @@ class ComplementosFilas:
 
 
 def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_correcciones=True,
-                  filas_guardadas=None, priorizar_fallos=False):
+                  filas_guardadas=None, priorizar_fallos=False, orden_seleccionado="", direccion="asc",
+                  resolver_coordinadores=None):
     # Priorizar antes de paginar: no solo las correcciones de la página visible.
     # La ausencia de seguimiento conserva el estado pendiente de ediciones antiguas.
     pendientes = Q(seguimiento_correccion__estado="PENDIENTE") | (
@@ -25,17 +26,24 @@ def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_corr
         & (Q(servicio_editado__isnull=False) | Q(valor_pago_editado__isnull=False))
     )
     orden = ORDEN_BANDEJA
-    if priorizar_correcciones:
+    if priorizar_correcciones and not orden_seleccionado:
         registros = registros.alias(prioridad_correccion=Case(
             When(pendientes, then=Value(0)),
             When(seguimiento_correccion__estado="EN_PROCESO", then=Value(1)),
             default=Value(2), output_field=IntegerField(),
         ))
         orden = ("prioridad_correccion", *orden)
+    if orden_seleccionado and orden_seleccionado != "coordinador":
+        from .orden_bandeja import expresiones_orden
+        orden = expresiones_orden(orden_seleccionado, direccion)
     if priorizar_fallos:
         orden = ("es_fallo_prueba", *orden)
     # En ODT por creación una edición no debe mover la fila a otra página.
-    ids = registros.order_by(*orden).values_list("pk", flat=True)
+    if orden_seleccionado == "coordinador":
+        from .orden_bandeja import ids_por_coordinador
+        ids = ids_por_coordinador(registros, direccion, priorizar_fallos=priorizar_fallos, resolver=resolver_coordinadores)
+    else:
+        ids = registros.order_by(*orden).values_list("pk", flat=True)
     # Buscar solo dentro del alcance autorizado y de los filtros vigentes.
     # Se recorre una proyección de IDs, sin cargar todas las ODT en memoria.
     ancla = str(numero_ancla or "")
@@ -50,7 +58,7 @@ def paginar_filas(registros, numero_pagina, numero_ancla=None, *, priorizar_corr
     if not conservar and ancla.isascii() and ancla.isdigit() and 0 < len(ancla) <= 10:
         pk_ancla = registros.filter(numero=int(ancla)).values_list("pk", flat=True).first()
         if pk_ancla is not None:
-            for indice, pk in enumerate(ids.iterator(chunk_size=1000)):
+            for indice, pk in enumerate(ids if isinstance(ids, list) else ids.iterator(chunk_size=1000)):
                 if pk == pk_ancla:
                     numero_pagina = indice // TAMANO_PAGINA + 1
                     break

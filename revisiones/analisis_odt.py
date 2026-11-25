@@ -42,7 +42,7 @@ def analisis_odt(request):
     q=request.GET.get("q","").strip()
     if q:
         qs=qs.filter(Q(cuenta_completa__icontains=q)|Q(tecnico__icontains=q)|Q(contratista__icontains=q))
-    filas=cargar_metricas(qs)
+    filas=cargar_metricas(qs, hasta=hasta)
     servicios_disponibles = sorted(set(SERVICIOS_PRINCIPALES) | {o.servicio_efectivo for o in filas if o.servicio_efectivo})
     servicios_seleccionados = (request.GET.getlist("servicios") if "servicios_filtrados" in request.GET or "servicios" in request.GET
                               else list(SERVICIOS_PRINCIPALES))

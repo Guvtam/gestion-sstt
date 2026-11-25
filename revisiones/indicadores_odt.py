@@ -8,8 +8,9 @@ from .models import ODT
 from .dominio.indicadores import LIMITE_SLA
 
 
-def con_indicadores_odt(queryset):
-    ahora = timezone.now()
+def con_indicadores_odt(queryset, *, hasta=None):
+    from .consultas.ventanas_incidencias import referencia_incidencias
+    ahora, operador_fin = referencia_incidencias(hasta)
     fecha_inicio_incidencias = ahora - timedelta(days=90)
 
     incidencias_ventana = (
@@ -19,7 +20,7 @@ def con_indicadores_odt(queryset):
             contratista=OuterRef("contratista"),
             estado_softguard__iexact="Finalizado",
             fecha_finalizacion__gte=fecha_inicio_incidencias,
-            fecha_finalizacion__lte=ahora,
+            **{f"fecha_finalizacion__{operador_fin}": ahora},
         )
         .exclude(contratista__isnull=True)
         .exclude(contratista="")
