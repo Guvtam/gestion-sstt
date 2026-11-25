@@ -6,6 +6,6 @@
 <link rel="stylesheet" href="{% static 'contratistas/contratistas.css' %}">
 {% endblock %}
 {% block cuerpo %}
-<header class="header-sstt"><div class="header-contenido"><div class="header-titulo"><h1>Gestión de pagos SSTT</h1><p>Administración de contratistas y equivalencias SoftGuard</p></div>{% include "revisiones/componentes/sesion.html" %}</div></header>
+<header class="header-sstt"><div class="header-contenido"><img class="marca-logo" src="{% static 'revisiones/marca/logo_area.png' %}" alt="First Security · Área Mantenimiento"><div class="header-titulo"><h1>Gestión de pagos SSTT</h1><p>Administración de contratistas y equivalencias SoftGuard</p></div>{% include "revisiones/componentes/sesion.html" %}</div></header>
 {% menu_sstt %}
 <main class="container">{% for message in messages %}<div class="alert {% if message.tags == 'error' %}alert-error{% endif %}">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>{% endblock %}

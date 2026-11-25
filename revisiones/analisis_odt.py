@@ -182,6 +182,24 @@ def analisis_odt(request):
     pagina=Paginator(filas,50).get_page(request.GET.get("page"))
     params = request.GET.copy()
     params.pop("page",None)
+    if request.GET.get("formato") == "pdf":
+        from django.http import HttpResponseBadRequest
+        from .pdf.reportes import pdf_reporte, filtros_texto
+        from .vistas.reportes_consulta import moneda
+        if errores:return HttpResponseBadRequest(" ".join(errores))
+        if len(filas)>10000:return HttpResponseBadRequest("Reduce el período: máximo 10.000 ODT por informe.")
+        indicadores=[[t['nombre'],t['valor']] for t in tarjetas]
+        ranking_pdf=[[i+1,f['cuenta'],f['cantidad']] for i,f in enumerate(ranking)]
+        detalle_pdf=[[o.numero,o.cuenta_completa,o.contratista,o.servicio_efectivo,o.fecha_finalizacion,
+                      o.estado_sla,o.cantidad_incidencias,o.cantidad_incidencias_60,o.cantidad_incidencias_30] for o in filas]
+        return pdf_reporte('Análisis de ODT',[
+            ('Indicadores de la pantalla',['Indicador','Valor'],indicadores),
+            ('Distribución por servicio',['Servicio','ODT'],[[f['servicio_efectivo'],f['cantidad']] for f in por_servicio]),
+            ('Ranking de cuentas · Top 50',['Posición','Cuenta','ODT'],ranking_pdf),
+            ('Detalle de la vista seleccionada',['ODT','Cuenta','Contratista','Servicio','Finalización','SLA','90 días','60 días','30 días'],detalle_pdf),
+            ('Montos y antecedente preventivo',['ODT','Monto efectivo','Último preventivo'],
+             [[o.numero,moneda(o.monto_efectivo),o.fecha_ultimo_preventivo] for o in filas])],
+            filtros_texto(request.GET)+'; El modo de vista limita el detalle, igual que en pantalla.','Analisis_ODT.pdf')
     return render(request,"revisiones/analisis_odt.html",{
         "cuenta":cuenta, "ranking_cuentas":ranking,
         "incidencias_cuenta":incidencias_cuenta,"incidencias_grafico":incidencias_grafico,

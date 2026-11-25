@@ -8,8 +8,8 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, Table, TableStyle
 
-NAVY = colors.HexColor("#17324F")
-BLUE = colors.HexColor("#42688D")
+NAVY = colors.HexColor("#252525")
+BLUE = colors.HexColor("#c63b00")
 LIGHT = colors.HexColor("#F5F7FA")
 GRAY = colors.HexColor("#64748B")
 BORDER = colors.HexColor("#D5DEE7")
@@ -135,6 +135,8 @@ def tabla(data, widths, header=False):
 
 
 def pie_pagina(canvas, doc):
+    from .marca import encabezado
+    encabezado(canvas, doc)
     canvas.saveState()
 
     canvas.setFont("Helvetica", 8)

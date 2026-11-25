@@ -9,7 +9,8 @@ from .dominio.indicadores import LIMITE_SLA
 
 
 def con_indicadores_odt(queryset):
-    fecha_inicio_incidencias = timezone.now() - timedelta(days=90)
+    ahora = timezone.now()
+    fecha_inicio_incidencias = ahora - timedelta(days=90)
 
     incidencias_ventana = (
         ODT.objects
@@ -18,7 +19,7 @@ def con_indicadores_odt(queryset):
             contratista=OuterRef("contratista"),
             estado_softguard__iexact="Finalizado",
             fecha_finalizacion__gte=fecha_inicio_incidencias,
-            fecha_finalizacion__lte=timezone.now(),
+            fecha_finalizacion__lte=ahora,
         )
         .exclude(contratista__isnull=True)
         .exclude(contratista="")
@@ -107,4 +108,10 @@ def con_indicadores_odt(queryset):
         )
     )
 
+    # Misma cuenta/contratista, estado y fecha de referencia que la ventana de 90.
+    for dias in (60, 30):
+        ventana = incidencias_ventana.filter(fecha_finalizacion__gte=ahora-timedelta(days=dias))
+        conteo = ventana.order_by().values("cuenta_completa", "contratista").annotate(total=Count("pk")).values("total")[:1]
+        registros = registros.annotate(**{f"cantidad_incidencias_{dias}":Coalesce(
+            Subquery(conteo,output_field=IntegerField()),Value(0),output_field=IntegerField())})
     return registros

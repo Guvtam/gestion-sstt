@@ -44,7 +44,7 @@ def construir_documento_contratista(
         pagesize=landscape(A4),
         rightMargin=14 * mm,
         leftMargin=14 * mm,
-        topMargin=13 * mm,
+        topMargin=36 * mm,
         bottomMargin=17 * mm,
         title=f"Reporte SSTT - {nombre_contratista}",
     )

@@ -2,6 +2,7 @@
 from django.urls import path
 
 from .vistas import bandeja, odt, operaciones_odt, cuentas, correcciones
+from .vistas.reportes_consulta import informe_periodos_pdf
 from .analisis_odt import analisis_odt
 from .mantenimientos_preventivos import mantenimientos_preventivos
 from .calendario_servicios import calendario_servicios
@@ -16,6 +17,7 @@ from .historial_requisiciones import historial_requisiciones
 
 
 urlpatterns = [
+    path("informes/periodos-facturados.pdf", informe_periodos_pdf, name="informe_periodos_pdf"),
     path("reabrir-rechazo/", operaciones_odt.reabrir_rechazo, name="reabrir_rechazo"),
     path("calendario-servicios/odt/<int:numero>/", detalle_calendario, name="detalle_calendario"),
     path("pagos-nueva-instalacion/", bandeja.pagos_nueva_instalacion, name="pagos_instalacion"),

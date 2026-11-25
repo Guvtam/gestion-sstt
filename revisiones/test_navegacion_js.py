@@ -30,3 +30,6 @@ class NavegacionJSTests(SimpleTestCase):
 
     def test_reapertura_requiere_confirmacion_y_conserva_posicion(self):
         self.comprobar("reabrir_rechazo")
+
+    def test_exportacion_conserva_seleccion_y_valida_descarga(self):
+        self.comprobar("exportacion_seleccion")

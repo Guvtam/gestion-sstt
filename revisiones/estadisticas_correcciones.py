@@ -94,6 +94,23 @@ def estadisticas_correcciones(request):
     parametros.pop("page", None)
     parametros["carga_desde"] = periodo["desde"]
     parametros["carga_hasta"] = periodo["hasta"]
+    if request.GET.get("formato") == "pdf":
+        from django.http import HttpResponse, HttpResponseBadRequest
+        from .pdf.reportes import pdf_reporte, filtros_texto
+        from .vistas.reportes_consulta import moneda
+        if periodo['errores']:return HttpResponseBadRequest(" ".join(periodo['errores']))
+        if not carga['disponible']:return HttpResponse('No se pudo verificar la carga por coordinador.',status=503)
+        if len(detalle)>10000:return HttpResponseBadRequest('Reduce el período: máximo 10.000 ODT por informe.')
+        return pdf_reporte('Análisis por coordinador',[
+            ('Carga por período de finalización',['Coordinador','Total ODT','Con correcciones'],
+             [[f['nombre'],f['cantidad'],f['con_correcciones']] for f in carga['filas']]),
+            ('Resumen de correcciones',['Coordinador','ODT','Solo monto','Solo servicio','Ambos','Monto SG','Monto corregido','Diferencia'],
+             [[f['nombre'],f['cantidad'],f['solo_monto'],f['solo_servicio'],f['ambos'],moneda(f['original']),moneda(f['corregido']),moneda(f['diferencia'])] for f in filas]),
+            ('Detalle completo de correcciones',['ODT','Coordinador','Cuenta','Modificación','Estado','Monto SG','Monto corregido'],
+             [[f['numero'],f['coordinador'],f['cuenta'],f['tipo'],f['estado'],moneda(f['monto_softguard']),moneda(f['monto_corregido'])] for f in detalle]),
+            ('Servicios del detalle',['ODT','Servicio SoftGuard','Servicio corregido'],
+             [[f['numero'],f['servicio_softguard'],f['servicio_corregido']] for f in detalle])],
+            filtros_texto(request.GET),'Analisis_coordinadores.pdf')
     return render(request, 'revisiones/estadisticas_correcciones.html', {
         'carga': carga,
         'total': total, 'filas': filas, 'coordinadores': opciones,

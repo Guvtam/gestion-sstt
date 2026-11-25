@@ -1,0 +1,2 @@
+:root,html[data-theme="light"]{--primary:#a53400;--secondary:#8e2b00;--accent:#ffccaa;--header-bg:#fff;--header-color:#333;--header-link-color:#8e2b00;--link-fg:#a53400;--link-selected-fg:#762600;--button-bg:#a53400;--button-hover-bg:#842a00;--default-button-bg:#8e2b00}
+#header{border-top:4px solid #c63b00}#header a:link,#header a:visited{color:#8e2b00}
