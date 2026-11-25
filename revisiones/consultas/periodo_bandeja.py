@@ -15,10 +15,15 @@ def periodo_inicial(usuario, hoy, *, instalacion=False):
         return desde, hasta
     servicios = (SERVICIO_INSTALACION,) if instalacion else SERVICIOS_PRINCIPALES
     seleccion = SeleccionFacturacion(desde, hasta, servicios=servicios)
-    if odts_facturables(seleccion, usuario=usuario).filter(item_facturacion__isnull=True).exists():
+    # La bandeja general comparte período con los coordinadores (también Yasna).
+    # Su vista adicional de instalación es la que tiene el alcance de pagos extra.
+    usuario_pago = usuario if instalacion else None
+    if odts_facturables(seleccion, usuario=usuario_pago).filter(item_facturacion__isnull=True).exists():
         return desde, hasta
-    evidencia = limitar_pagos(usuario, FacturacionODT.objects.filter(
-        facturacion__periodo__fecha_desde=desde, facturacion__periodo__fecha_hasta=hasta), historico=True)
+    evidencia = FacturacionODT.objects.filter(
+        facturacion__periodo__fecha_desde=desde, facturacion__periodo__fecha_hasta=hasta)
+    if instalacion:
+        evidencia = limitar_pagos(usuario, evidencia, historico=True)
     if not instalacion:
         evidencia = evidencia.filter(servicio_facturado__in=servicios)
     else:

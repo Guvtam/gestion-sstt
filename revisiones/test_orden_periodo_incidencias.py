@@ -109,6 +109,10 @@ class PeriodoInicialTests(TestCase):
         self.facturar(generic)
         self.assertEqual(periodo_inicial(usuario,self.hoy,instalacion=True)[0],date(2026,11,21))
         self.assertEqual(self.inicial()[0],date(2026,10,21))
+        self.facturar(self.a);self.facturar(self.b)
+        self.assertEqual(periodo_inicial(usuario,self.hoy)[0],date(2026,10,21))
+        self.facturar(ODT.objects.get(numero=4))
+        self.assertEqual(periodo_inicial(usuario,self.hoy)[0],date(2026,11,21))
 
     def test_entrada_parcial_completa_y_consulta_abierta_conserva_fechas(self):
         self.client.force_login(self.usuario)
