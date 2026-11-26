@@ -167,7 +167,7 @@ class PagosInstalacionTests(TestCase):
         with patch('revisiones.vistas.exportacion_pdf.generar_zip_facturacion',return_value=b'zip') as pdf:
             respuesta=self.client.get(reverse('exportar_aprobados_pdf'),{'periodo':periodo.pk})
         self.assertEqual(respuesta.status_code,200)
-        self.assertEqual([d[0].numero for d in pdf.call_args.args[0]['Contratista']],[1])
+        self.assertEqual([d[0].numero for d in pdf.call_args.args[0][str(factura.pk)]],[1])
         self.assertFalse(pdf.call_args.kwargs['incluir_bancarios'])
 
     def test_no_cambia_requisicion_mixta_ni_borra_periodo(self):

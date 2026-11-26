@@ -533,7 +533,7 @@
         <div class="hist-heading">
             <div>
                 <h3>
-                    Contratistas del período
+                    Facturaciones del período
                     {{ periodo_seleccionado.fecha_desde|date:"d/m/Y" }}
                     al
                     {{ periodo_seleccionado.fecha_hasta|date:"d/m/Y" }}
@@ -554,7 +554,7 @@
                         Exportar PDF seleccionados
                     </button>
                     <span id="seleccionContador" role="status" aria-live="polite"></span>
-                    <small style="display:block;margin-top:6px">Descarga un ZIP con un PDF por contratista.</small>
+                    <small style="display:block;margin-top:6px">Descarga un ZIP con un PDF independiente por facturación y requisición.</small>
                 </form>
                 {% endif %}
 
@@ -592,12 +592,13 @@
                         {% if perms.revisiones.exportar_pagos_sstt %}
                         <td><input type="checkbox" class="seleccion-contratista" name="facturacion"
                                    value="{{ f.id }}" form="exportarSeleccion" checked
-                                   aria-label="Seleccionar {{ f.contratista }}"></td>
+                                   aria-label="Seleccionar facturación {{ f.id }} de {{ f.contratista }}"></td>
                         {% endif %}
                         <td>
                             <strong>
                                 {{ f.contratista }}
                             </strong>
+                            <small class="hist-sub" style="display:block">Registro {{ f.id }}</small>
                         </td>
 
                         <td>
@@ -654,7 +655,7 @@
 
                     <tr>
                         <td colspan="{% if perms.revisiones.exportar_pagos_sstt %}7{% else %}6{% endif %}" class="hist-empty">
-                            Sin contratistas registrados
+                            Sin facturaciones registradas
                             para este período.
                         </td>
                     </tr>

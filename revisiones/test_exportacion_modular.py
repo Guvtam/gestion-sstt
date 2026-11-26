@@ -91,7 +91,7 @@ class ExportacionModularTests(SimpleTestCase):
         request.user=SimpleNamespace(is_authenticated=True,has_perm=lambda permiso:True,has_perms=lambda permisos:True)
         periodo=SimpleNamespace(fecha_desde=self.desde,fecha_hasta=self.hasta)
         factura=SimpleNamespace(contratista="Prueba",numero_requisicion="REQ")
-        item=SimpleNamespace(odt=self.odt,facturacion=factura,servicio_facturado="Servicio",monto_facturado=0)
+        item=SimpleNamespace(odt=self.odt,facturacion=factura,facturacion_id=1,servicio_facturado="Servicio",monto_facturado=0)
         with patch("revisiones.vistas.exportacion_pdf.get_object_or_404",return_value=periodo), \
              patch("revisiones.vistas.exportacion_pdf.items_facturados",return_value=[item]), \
              patch("revisiones.vistas.exportacion_pdf.generar_zip_facturacion",side_effect=RuntimeError("fallo")):

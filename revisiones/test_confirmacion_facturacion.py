@@ -137,11 +137,16 @@ class ConfirmacionFacturacionTests(TestCase):
                 self.confirmar(requisiciones=requisiciones)
         self.assertFalse(PeriodoFacturacion.objects.exists())
 
-    def test_reutilizar_factura_no_sobrescribe_requisicion(self):
+    def test_nueva_facturacion_no_sobrescribe_ni_reutiliza_cabecera_anterior(self):
         periodo = PeriodoFacturacion.objects.create(fecha_desde=self.seleccion.desde, fecha_hasta=self.seleccion.hasta)
-        FacturacionContratista.objects.create(periodo=periodo, contratista="Prueba A", numero_requisicion="ANTERIOR")
+        anterior = FacturacionContratista.objects.create(periodo=periodo, contratista="Prueba A", numero_requisicion="ANTERIOR")
         self.confirmar(requisiciones={"Prueba A": "NUEVA", "Prueba B": ""})
-        self.assertEqual(FacturacionContratista.objects.get(contratista="Prueba A").numero_requisicion, "ANTERIOR")
+        anterior.refresh_from_db()
+        self.assertEqual(anterior.numero_requisicion, "ANTERIOR")
+        self.assertEqual(anterior.items.count(), 0)
+        nueva = FacturacionContratista.objects.get(contratista="Prueba A", numero_requisicion="NUEVA")
+        self.assertNotEqual(nueva.pk, anterior.pk)
+        self.assertEqual(nueva.items.count(), 2)
         self.assertEqual(PeriodoFacturacion.objects.count(), 1)
 
     def test_fallo_guardando_items_revierte_cabeceras_y_periodo(self):

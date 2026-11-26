@@ -58,6 +58,9 @@ def exportar_aprobados_pdf(request):
                 return HttpResponseBadRequest("La selección no corresponde al período.")
         items = items_facturados(periodo, seleccion, usuario=request.user)
 
+        if seleccion is not None and seleccion != {item.facturacion_id for item in items}:
+            return HttpResponseBadRequest("La selección contiene facturaciones sin ODT disponibles para tu perfil.")
+
         if not items:
             return HttpResponseBadRequest(
                 "El período no tiene ODT facturadas."
@@ -69,15 +72,18 @@ def exportar_aprobados_pdf(request):
 
         grupos = OrderedDict()
         requisiciones = {}
+        nombres = {}
 
         for item in items:
 
             nombre = item.facturacion.contratista
+            clave = str(item.facturacion_id)
+            nombres[clave] = nombre
 
-            if nombre not in grupos:
-                grupos[nombre] = []
+            if clave not in grupos:
+                grupos[clave] = []
 
-            grupos[nombre].append((
+            grupos[clave].append((
                 item.odt,
                 item.servicio_facturado,
                 (
@@ -88,7 +94,7 @@ def exportar_aprobados_pdf(request):
                 nombre,
             ))
 
-            requisiciones[nombre] = (
+            requisiciones[clave] = (
                 item.facturacion.numero_requisicion
             )
 
@@ -98,7 +104,7 @@ def exportar_aprobados_pdf(request):
 
         try:
             contenido_zip = generar_zip_facturacion(
-                grupos, requisiciones, desde, hasta,
+                grupos, requisiciones, desde, hasta, nombres=nombres,
                 incluir_bancarios=request.user.has_perm("contratistas.ver_bancos_contratistas_sstt"),
                 generar_pdf=generar_pdf_contratista, resolver_contratista=datos_contratista_pdf,
             )

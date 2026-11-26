@@ -25,17 +25,21 @@ def generar_pdf_contratista(nombre_contratista, registros_contratista, desde, ha
 
 
 def generar_zip_facturacion(grupos, requisiciones, desde, hasta, *,
-                            incluir_bancarios, generar_pdf, resolver_contratista):
+                            incluir_bancarios, generar_pdf, resolver_contratista, nombres=None):
     archivo = BytesIO()
     # Solo se devuelven bytes si todos los documentos terminaron correctamente.
     with zipfile.ZipFile(archivo, mode="w", compression=zipfile.ZIP_DEFLATED) as salida:
-        for indice, (nombre, filas) in enumerate(grupos.items(), start=1):
+        for indice, (clave, filas) in enumerate(grupos.items(), start=1):
+            nombre = nombres[clave] if nombres is not None else clave
             contenido = generar_pdf(
                 nombre_contratista=nombre, registros_contratista=filas,
-                desde=desde, hasta=hasta, requisicion=requisiciones.get(nombre, ""),
+                desde=desde, hasta=hasta, requisicion=requisiciones.get(clave, ""),
                 historico=True, datos_contratista=resolver_contratista(nombre),
                 incluir_bancarios=incluir_bancarios,
             )
             seguro = nombre_archivo_seguro(nombre)
+            if nombres is not None:
+                req = nombre_archivo_seguro(requisiciones.get(clave) or 'Pendiente')[:40]
+                seguro = f"{seguro}_Req_{req}_F{nombre_archivo_seguro(clave)}"
             salida.writestr(f"{indice:02d}_{seguro}_{desde:%Y%m%d}_{hasta:%Y%m%d}.pdf", contenido)
     return archivo.getvalue()

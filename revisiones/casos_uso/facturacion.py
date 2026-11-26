@@ -17,7 +17,7 @@ from ..facturacion_models import EventoRequisicion, FacturacionContratista, Fact
 from .autorizacion import exigir_permiso_operativo
 
 PERMISO = "revisiones.exportar_pagos_sstt"
-SALT = "sstt.confirmar-facturacion.v1"
+SALT = "sstt.confirmar-facturacion.v2"
 CAMPOS = (
     "id", "numero", "contratista", "servicio", "servicio_editado", "valor_pago_tecnico",
     "valor_pago_editado", "fecha_finalizacion", "cuenta_completa",
@@ -78,7 +78,7 @@ def previsualizar(usuario, seleccion):
         pendientes.only(*CAMPOS).order_by("numero").iterator(chunk_size=500)
     )
     confirmacion = signing.dumps({
-        "version": 1, "usuario": str(usuario.pk), "seleccion": seleccion.clave(),
+        "version": 2, "usuario": str(usuario.pk), "seleccion": seleccion.clave(),
         "huella": huella, "cantidad": cantidad,
     }, salt=SALT, compress=True)
     return Previsualizacion(resumen, cantidad, confirmacion)
@@ -91,7 +91,7 @@ def confirmar(usuario, seleccion, *, requisiciones, confirmacion):
             confirmacion, salt=SALT,
             max_age=getattr(settings, "SSTT_CONFIRMACION_FACTURACION_SEGUNDOS", 1800),
         )
-        valida = (datos.get("version") == 1 and datos.get("usuario") == str(usuario.pk)
+        valida = (datos.get("version") == 2 and datos.get("usuario") == str(usuario.pk)
                   and datos.get("seleccion") == seleccion.clave())
     except (signing.BadSignature, TypeError, ValueError, AttributeError):
         valida = False
@@ -121,11 +121,14 @@ def confirmar(usuario, seleccion, *, requisiciones, confirmacion):
             PeriodoFacturacion.objects.select_for_update().get(pk=periodo.pk)
             facturaciones = {}
             for nombre in sorted(requisiciones):
-                factura, creada = FacturacionContratista.objects.get_or_create(
+                _validar_requisicion_disponible(periodo.pk, nombre, requisiciones[nombre])
+                # Cada confirmación registra una cabecera independiente. Nunca anexar
+                # nuevas ODT a una requisición emitida por otra confirmación/usuario.
+                factura = FacturacionContratista.objects.create(
                     periodo=periodo, contratista=nombre,
-                    defaults={"numero_requisicion": requisiciones[nombre], "creado_por": usuario},
+                    numero_requisicion=requisiciones[nombre], creado_por=usuario,
                 )
-                if creada and factura.numero_requisicion:
+                if factura.numero_requisicion:
                     _registrar_requisicion(factura, usuario, "", factura.numero_requisicion)
                 facturaciones[nombre] = factura
             if FacturacionODT.objects.filter(odt__in=odts).exists():
@@ -142,23 +145,35 @@ def confirmar(usuario, seleccion, *, requisiciones, confirmacion):
         raise FacturacionInvalida("La selección cambió durante la operación. Actualiza la previsualización.") from None
 
 
+def _validar_requisicion_disponible(periodo_id, contratista, numero, *, excluir=None):
+    # El número puede quedar pendiente, pero uno informado no se reutiliza para
+    # el mismo contratista y período. La restricción de BD cubre las carreras.
+    if numero and FacturacionContratista.objects.filter(
+            periodo_id=periodo_id, contratista=contratista, numero_requisicion=numero).exclude(pk=excluir).exists():
+        raise FacturacionInvalida("La requisición ya está registrada para este contratista y período. Ingresa otra o déjala pendiente.")
+
+
 def actualizar_requisicion(usuario, *, facturacion_id, numero):
     exigir_permiso_operativo(usuario, PERMISO)
     numero = str(numero or "").strip()
     if len(numero) > 100:
         raise FacturacionInvalida("La requisición no puede superar los 100 caracteres.")
-    with transaction.atomic():
-        try:
-            factura = FacturacionContratista.objects.select_for_update().get(pk=facturacion_id)
-        except FacturacionContratista.DoesNotExist:
-            raise FacturacionNoEncontrada("Facturación no encontrada.") from None
-        exigir_factura_completa(usuario, factura)
-        if factura.numero_requisicion != numero:
-            anterior = factura.numero_requisicion
-            factura.numero_requisicion = numero
-            factura.save(update_fields=["numero_requisicion"])
-            _registrar_requisicion(factura, usuario, anterior, numero)
-        return RequisicionActualizada(factura.pk, factura.periodo_id, factura.contratista, numero)
+    try:
+        with transaction.atomic():
+            try:
+                factura = FacturacionContratista.objects.select_for_update().get(pk=facturacion_id)
+            except FacturacionContratista.DoesNotExist:
+                raise FacturacionNoEncontrada("Facturación no encontrada.") from None
+            exigir_factura_completa(usuario, factura)
+            if factura.numero_requisicion != numero:
+                _validar_requisicion_disponible(factura.periodo_id, factura.contratista, numero, excluir=factura.pk)
+                anterior = factura.numero_requisicion
+                factura.numero_requisicion = numero
+                factura.save(update_fields=["numero_requisicion"])
+                _registrar_requisicion(factura, usuario, anterior, numero)
+            return RequisicionActualizada(factura.pk, factura.periodo_id, factura.contratista, numero)
+    except IntegrityError:
+        raise FacturacionInvalida("La requisición ya está registrada para este contratista y período.") from None
 
 
 def _registrar_requisicion(factura, usuario, anterior, nuevo):

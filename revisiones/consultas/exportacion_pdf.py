@@ -27,7 +27,7 @@ def items_facturados(periodo, seleccion=None, usuario=None):
     if usuario is not None:
         consulta = limitar_pagos(usuario, consulta, historico=True)
     return list(consulta.select_related("odt", "facturacion").order_by(
-        "facturacion__contratista", "odt__numero"))
+        "facturacion__contratista", "facturacion_id", "odt__numero"))
 
 
 def odts_aprobadas(contratista, desde, hasta, *, estado="", tipo_cliente="", servicios=(), q="", montos=(), montos_filtrados=False, usuario=None):

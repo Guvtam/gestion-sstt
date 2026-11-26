@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.http import Http404
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
@@ -76,13 +77,14 @@ def previsualizar_facturacion(request):
     ya_facturadas = FacturacionODT.objects.filter(odt__in=odts_facturables(seleccion, usuario=request.user)).count()
     facturas_existentes = FacturacionContratista.objects.filter(
         periodo__fecha_desde=desde, periodo__fecha_hasta=hasta,
+        contratista__in=[g["contratista"] for g in resumen],
     )
     if pagos_instalacion(request.user):
         facturas_existentes = facturas_existentes.filter(
             items__in=limitar_pagos(request.user, FacturacionODT.objects.all(), historico=True))
-    existentes = {f.contratista: f.numero_requisicion for f in facturas_existentes}
+    existentes = {f["contratista"]: f["total"] for f in facturas_existentes.order_by().values("contratista").annotate(total=Count("pk", distinct=True))}
     for grupo in resumen:
-        grupo["requisicion_existente"] = existentes.get(grupo["contratista"], "")
+        grupo["facturaciones_anteriores"] = existentes.get(grupo["contratista"], 0)
 
     if request.method == "POST":
         if not resumen:

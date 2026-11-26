@@ -90,7 +90,7 @@ def historial_facturacion(request):
     periodos = list(
         PeriodoFacturacion.objects.annotate(
             cantidad_contratistas=Count(
-                "facturaciones",
+                "facturaciones__contratista",
                 distinct=True,
             ),
             cantidad_odt=Count(
@@ -156,7 +156,7 @@ def historial_facturacion(request):
                     "items__monto_facturado"
                 ),
             )
-            .order_by("contratista")
+            .order_by("contratista", "pk")
         )
 
         for facturacion in facturaciones:

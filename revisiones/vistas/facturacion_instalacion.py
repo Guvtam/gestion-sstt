@@ -14,7 +14,7 @@ def historial_instalacion(request):
         'odt', 'facturacion', 'facturacion__periodo'), historico=True)
     # El filtro del JOIN limita también conteos y sumas de facturas mixtas.
     periodos = list(PeriodoFacturacion.objects.filter(facturaciones__items__in=items).annotate(
-        cantidad_contratistas=Count('facturaciones', distinct=True),
+        cantidad_contratistas=Count('facturaciones__contratista', distinct=True),
         cantidad_odt=Count('facturaciones__items', distinct=True),
         monto_total=Sum('facturaciones__items__monto_facturado'),
     ).order_by('-fecha_hasta', '-id'))
@@ -57,7 +57,7 @@ def historial_instalacion(request):
         # La vista restringida tiene una única categoría autorizada.
         resumen['categorias'] = {'nueva_instalacion': {
             'nombre':'Mantenimiento nueva instalación', 'cantidad':resumen['cantidad'], 'monto':resumen['total']}}
-        facturas_periodo = list(facturas.filter(periodo=periodo).order_by('contratista'))
+        facturas_periodo = list(facturas.filter(periodo=periodo).order_by('contratista', 'pk'))
         for f in facturas_periodo:
             try:
                 exigir_factura_completa(request.user, f)

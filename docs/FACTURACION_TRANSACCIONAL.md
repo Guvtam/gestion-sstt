@@ -1,3 +1,5 @@
+> Actualización: la migración 0017 permite varias facturaciones por contratista/período. Para desplegar esa ampliación, consultar [requisiciones múltiples](FACTURACION_MULTIPLE.md); el apartado final describe el alcance de la extracción original.
+
 # Facturación: consulta, previsualización y confirmación
 
 ## Organización implementada
@@ -25,8 +27,8 @@ No se agregan índices ni se afirma una mejora medida en el despliegue real.
 - Se preservan filtros de contratistas, servicios, tipo de cliente, estado y búsqueda.
 - Una selección explícita sin contratistas no se amplía a todos. El filtro de
   servicios vacío conserva su semántica anterior, sin introducir otra regla.
-- Al reutilizar una facturación del mismo contratista/período, no se sobrescribe
-  su requisición existente, incluso si se recibe otro número al confirmar.
+- Desde la migración 0017, cada confirmación crea una facturación independiente
+  del mismo contratista/período; no reutiliza ni modifica cabeceras anteriores.
 - El cambio explícito de requisición continúa disponible en su operación separada.
 
 ## Confirmar exactamente lo revisado
@@ -61,8 +63,8 @@ entrega no cambia claves ni la configuración de seguridad del despliegue.
 
 El caso de uso comprueba usuario activo, permiso y restricción de coordinadores
 sin depender solo de los decoradores de la vista. Confirmar bloquea las ODT en
-orden estable, vuelve a validar la selección, crea o reutiliza el período y las
-cabeceras, y guarda los valores facturados como instantánea.
+orden estable, vuelve a validar la selección, crea o reutiliza el período y crea
+cabeceras independientes, y guarda los valores facturados como instantánea.
 
 Si falla una inserción, se revierten los items, cabeceras y período creados dentro
 de la operación. Repetir una confirmación no duplica items ni sobrescribe valores
@@ -82,7 +84,7 @@ elimina los posibles errores de bloqueo entre escritores.
 Las pruebas cubren permisos directos/HTTP, CSRF, períodos, límites de fecha,
 aprobación efectiva, servicio corregido, monto cero, confirmaciones ausentes,
 vencidas o manipuladas, cambio de usuario/filtros, cambio de ODT sin alterar la
-cantidad, reutilización de requisiciones y rollback después de insertar un item.
+cantidad, requisiciones independientes y rollback después de insertar un item.
 
 La suite también prueba GET de previsualización seguido de POST de confirmación,
 redirecciones del historial y actualización separada de requisición.
