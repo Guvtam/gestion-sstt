@@ -40,7 +40,7 @@ class DisenoFacturacionInstalacionTests(TestCase):
         self.assertEqual([(f.pk,f.cantidad_odt,f.monto_total) for f in facturas],[(factura.pk,2,500)])
         self.assertContains(respuesta,'Resumen de costos del período')
         self.assertContains(respuesta,'Exportar PDF seleccionados')
-        self.assertContains(respuesta,'Contratistas del período')
+        self.assertContains(respuesta,'Facturaciones del período')
         self.assertNotContains(respuesta,'Solo Cruzverde')
         self.assertNotContains(respuesta,'OCULTA')
         self.assertNotContains(respuesta,'hist-form-eliminar')

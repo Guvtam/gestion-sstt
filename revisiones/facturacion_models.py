@@ -24,8 +24,12 @@ class FacturacionContratista(models.Model):
     creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=['periodo', 'contratista'], name='sstt_periodo_contratista_unico')]
-        ordering = ['contratista']
+        constraints = [models.UniqueConstraint(
+            fields=['periodo', 'contratista', 'numero_requisicion'],
+            condition=~models.Q(numero_requisicion=''),
+            name='sstt_req_periodo_contratista',
+        )]
+        ordering = ['contratista', 'pk']
 
     def __str__(self):
         return f'{self.contratista} - {self.periodo}'

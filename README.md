@@ -57,6 +57,10 @@ de versiones. Registrar y validar versiones exactas antes de cada release.
 - El contratista operativo sigue al técnico actual no vacío de SoftGuard, con auditoría.
   Las cabeceras de facturación ya emitidas conservan su contratista histórico.
 - Una ODT facturada conserva servicio y monto facturados como instantánea.
+- Un contratista puede tener varias facturaciones independientes en el mismo período.
+  Cada confirmación crea una nueva cabecera; ninguna ODT puede facturarse dos veces.
+  Una requisición informada no se repite para ese contratista/período; puede quedar
+  pendiente y completarse por registro, con auditoría.
 - Una ODT rechazada bloquea edición. Solo la reapertura explícita autorizada,
   con motivo y auditoría, permite pasarla a Aprobada; nunca si está facturada.
 - El resumen del período excluye rechazados y separa Cruz Verde/Tattersall

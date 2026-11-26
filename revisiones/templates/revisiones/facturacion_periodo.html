@@ -229,41 +229,19 @@
 
                             <td>
 
-                                {% if grupo.requisicion_existente %}
+                                <input class="fact-input" type="text"
+                                       name="requisicion_{{ forloop.counter0 }}" maxlength="100" autocomplete="off"
+                                       placeholder="Nueva requisición (opcional)"
+                                       aria-label="Nueva requisición para {{ grupo.contratista }}">
 
-                                    <strong>
-                                        {{ grupo.requisicion_existente }}
-                                    </strong>
-
-                                {% else %}
-
-                                    <input
-                                        class="fact-input"
-                                        type="text"
-                                        name="requisicion_{{ forloop.counter0 }}"
-                                        maxlength="100"
-                                        placeholder="Opcional: ingresar requisición"
-                                        aria-label="Número de requisición para {{ grupo.contratista }}"
-                                    >
-
-                                {% endif %}
 
                             </td>
 
                             <td>
 
-                                {% if grupo.requisicion_existente %}
-
-                                    <span class="fact-status ok">
-                                        Registrada
-                                    </span>
-
-                                {% else %}
-
-                                    <span class="fact-status pending">
-                                        Pendiente
-                                    </span>
-
+                                <span class="fact-status pending">Nueva facturación</span>
+                                {% if grupo.facturaciones_anteriores %}
+                                <p class="hist-sub">{% if grupo.facturaciones_anteriores == 1 %}Ya existe una facturación.{% else %}Hay {{ grupo.facturaciones_anteriores }} facturaciones previas.{% endif %} Se guardará una nueva.</p>
                                 {% endif %}
 
                             </td>
@@ -317,7 +295,7 @@
             previsualizadas y sus montos y servicios revisados.
             Si los datos cambian, debes actualizar la previsualización.
             Las ODT previamente facturadas no se
-            duplican. Los números de requisición pueden
+            duplican. Cada confirmación crea una facturación independiente del contratista en este período. No se reutilizan las requisiciones anteriores. Los números de requisición pueden
             completarse posteriormente desde el historial.
         </p>
 
