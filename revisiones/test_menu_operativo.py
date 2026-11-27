@@ -36,9 +36,9 @@ class MenuOperativoTests(TestCase):
             self.assertEqual(nombres, orden)
             self.assertEqual([o["nombre"] for o in menu["opciones"] if o["activa"]], [pantalla])
 
-    def test_coordinador_solo_bandeja_y_calendario(self):
+    def test_coordinador_bandeja_calendario_y_consulta_contratistas(self):
         menu = datos_menu(self.peticion("bandeja", self.coordinador), {})
-        self.assertEqual([o["nombre"] for o in menu["opciones"]], ["bandeja", "calendario_servicios"])
+        self.assertEqual([o["nombre"] for o in menu["opciones"]], ["bandeja", "calendario_servicios", "contratistas:listado"])
         self.assertFalse(any(seccion["desplegable"] for seccion in menu["secciones"]))
 
     def test_agrupacion_no_duplica_destinos_y_reduce_opciones_visibles(self):
@@ -62,7 +62,7 @@ class MenuOperativoTests(TestCase):
 
     def test_perfil_calendario_no_recibe_opciones_de_pagos(self):
         menu = datos_menu(self.peticion("calendario_servicios", self.calendario), {})
-        self.assertEqual([o["nombre"] for o in menu["opciones"]], ["calendario_servicios"])
+        self.assertEqual([o["nombre"] for o in menu["opciones"]], ["calendario_servicios", "contratistas:listado"])
         self.assertEqual(menu["volver"], reverse("calendario_servicios"))
 
     def test_regreso_conserva_filtros_multiseleccion_y_pagina(self):

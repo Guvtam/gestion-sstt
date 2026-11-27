@@ -105,7 +105,7 @@ def exportar_aprobados_pdf(request):
         try:
             contenido_zip = generar_zip_facturacion(
                 grupos, requisiciones, desde, hasta, nombres=nombres,
-                incluir_bancarios=request.user.has_perm("contratistas.ver_bancos_contratistas_sstt"),
+                incluir_bancarios=True,
                 generar_pdf=generar_pdf_contratista, resolver_contratista=datos_contratista_pdf,
             )
 
@@ -245,7 +245,7 @@ def exportar_aprobados_pdf(request):
             requisicion="",
             historico=False,
             datos_contratista=datos_contratista_pdf(contratista),
-            incluir_bancarios=request.user.has_perm("contratistas.ver_bancos_contratistas_sstt"),
+            incluir_bancarios=True,
         )
 
     except Exception as error:

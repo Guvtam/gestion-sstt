@@ -1,21 +1,53 @@
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
+from django.db.models.functions import Trim
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_safe
 from .models import Contratista, EquivalenciaSoftGuard
 from .forms import ContratistaForm, EquivalenciaForm
 
 @login_required
-@permission_required("contratistas.gestionar_contratistas_sstt", raise_exception=True)
+@require_safe
 def listado(request):
     q = request.GET.get("q", "").strip()
     qs = Contratista.objects.prefetch_related("equivalencias").all()
     if q:
         qs = qs.filter(Q(nombre__icontains=q) | Q(nombre_empresa__icontains=q) | Q(rut__icontains=q) | Q(nombre_softguard__icontains=q) | Q(equivalencias__nombre_softguard__icontains=q)).distinct()
+    vinculacion = request.GET.get("vinculacion", "")
+    if vinculacion not in ("pendientes", "vinculados"):
+        vinculacion = ""
+    qs = qs.annotate(
+        tiene_equivalencia=Exists(EquivalenciaSoftGuard.objects.filter(contratista_id=OuterRef("pk"))),
+        nombre_manual=Trim("nombre_softguard"),
+    )
+    # El nombre manual es un vínculo validado del catálogo anterior.
+    pendientes = Q(tiene_equivalencia=False, nombre_manual="")
+    if vinculacion == "pendientes":
+        qs = qs.filter(pendientes)
+    elif vinculacion == "vinculados":
+        qs = qs.exclude(pendientes)
     pagina = Paginator(qs, 30).get_page(request.GET.get("page"))
-    return render(request, "contratistas/listado.html", {"pagina": pagina, "q": q})
+    return render(request, "contratistas/listado.html", {
+        "pagina": pagina, "q": q, "vinculacion": vinculacion,
+        "puede_administrar": request.user.has_perm("contratistas.gestionar_contratistas_sstt"),
+    })
+
+
+@login_required
+@require_safe
+def detalle(request, pk):
+    contratista = get_object_or_404(Contratista.objects.prefetch_related("equivalencias"), pk=pk)
+    etiquetas = [
+        ("Nombre", "nombre"), ("Nombre / razón social", "nombre_empresa"),
+        ("RUT", "rut"), ("Teléfono", "fono"), ("Correo", "correo"),
+        ("Correo alternativo", "correo_alternativo"), ("Ciudad", "ciudad"),
+        ("Banco", "banco"), ("Tipo de cuenta", "tipo_cuenta"),
+        ("Número de cuenta", "numero_cuenta"), ("Categoría", "categoria"),
+    ]
+    campos = [(etiqueta, getattr(contratista, campo)) for etiqueta, campo in etiquetas]
+    return render(request, "contratistas/detalle.html", {"contratista": contratista, "campos": campos})
 
 @login_required
 @permission_required("contratistas.gestionar_contratistas_sstt", raise_exception=True)

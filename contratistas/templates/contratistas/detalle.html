@@ -1,0 +1,6 @@
+{% extends 'contratistas/base.html' %}
+{% block title %}Datos del contratista | SSTT{% endblock %}
+{% block content %}
+<div class="page-head"><div><h2>{{ contratista.nombre }}</h2><p>Datos del contratista · Solo consulta</p></div><div class="page-actions"><a class="btn btn-light" href="{% url 'contratistas:listado' %}">Volver al catálogo</a>{% if perms.contratistas.gestionar_contratistas_sstt %}<a class="btn" href="{% url 'contratistas:editar' contratista.pk %}">Editar</a>{% endif %}</div></div>
+<section class="panel"><h3>Información del contratista</h3><div class="table-wrap"><table><tbody>{% for nombre, valor in campos %}<tr><th scope="row">{{ nombre|capfirst }}</th><td>{{ valor|default:'—' }}</td></tr>{% endfor %}<tr><th scope="row">Estado</th><td>{{ contratista.activo|yesno:'Activo,Inactivo' }}</td></tr><tr><th scope="row">Equivalencias SoftGuard</th><td>{% for e in contratista.equivalencias.all %}<div>{{ e.nombre_softguard }}</div>{% empty %}{{ contratista.nombre_softguard|default:'Sin vincular' }}{% endfor %}</td></tr></tbody></table></div></section>
+{% endblock %}

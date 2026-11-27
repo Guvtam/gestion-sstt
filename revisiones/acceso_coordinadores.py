@@ -124,6 +124,11 @@ class AccesoCoordinadorMiddleware(MiddlewareMixin):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         nombre = request.resolver_match.url_name
+        if getattr(request.resolver_match, "namespace", "") == "contratistas":
+            # Consulta disponible para toda sesión; las escrituras conservan
+            # el permiso explícito de cada vista de administración.
+            if nombre in ("listado", "detalle") or request.user.has_perm("contratistas.gestionar_contratistas_sstt"):
+                return None
         if pagos_instalacion(request.user) and nombre in (
                 "pagos_instalacion", "facturacion_previsualizar", "historial_facturacion",
                 "detalle_facturacion", "actualizar_requisicion", "historial_requisiciones",

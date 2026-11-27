@@ -56,8 +56,8 @@ def datos_menu(request, contexto):
     agregar("estadisticas_correcciones", "Análisis por coordinador", bandeja and not coordinador)
     agregar("historial_facturacion", "Facturación", (not coordinador or pagos_instalacion(usuario)) and usuario.has_perm("revisiones.exportar_pagos_sstt"),
             ("facturacion_previsualizar", "detalle_facturacion", "historial_requisiciones"))
-    agregar("contratistas:listado", "Administrar contratistas", not coordinador and usuario.has_perm("contratistas.gestionar_contratistas_sstt"),
-            ("contratistas:nuevo", "contratistas:editar", "contratistas:equivalencias", "contratistas:vinculacion_softguard"))
+    agregar("contratistas:listado", "Administrar contratistas" if usuario.has_perm("contratistas.gestionar_contratistas_sstt") else "Consultar contratistas", True,
+            ("contratistas:detalle", "contratistas:nuevo", "contratistas:editar", "contratistas:equivalencias", "contratistas:vinculacion_softguard"))
     agregar("administrar_cuentas", "Administrar cuentas SSTT", not coordinador and usuario.has_perm("revisiones.administrar_cuentas_sstt"))
     actual = getattr(getattr(request, "resolver_match", None), "view_name", "")
     permitidas = {nombre for opcion in opciones for nombre in opcion["activos"]}
